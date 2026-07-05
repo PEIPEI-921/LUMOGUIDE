@@ -123,8 +123,11 @@ When creating or modifying files in this project, always follow these convention
 # Or manual start
 /opt/homebrew/bin/php artisan serve
 
-# Clear caches
+# Clear caches (use after config/route changes)
 /opt/homebrew/bin/php artisan config:clear && /opt/homebrew/bin/php artisan cache:clear && /opt/homebrew/bin/php artisan route:clear && /opt/homebrew/bin/php artisan view:clear
+
+# Clear route cache specifically (after editing routes/web.php)
+/opt/homebrew/bin/php artisan route:clear
 
 # Run migrations
 /opt/homebrew/bin/php artisan migrate
@@ -143,6 +146,11 @@ When creating or modifying files in this project, always follow these convention
 # Dcat Admin commands
 /opt/homebrew/bin/php artisan admin:install    # Install/reinstall admin panel assets
 /opt/homebrew/bin/php artisan admin:make       # Scaffold a new admin controller
+
+# Web frontend — validate files
+# Open http://localhost:8000/ in browser after starting server
+# Verify API compatibility: curl http://localhost:8000/api/common/config
+# Verify SPA shell loads: curl http://localhost:8000/
 ```
 
 ## Development Environment
@@ -162,17 +170,77 @@ If the configuration breaks, recreate it manually: Settings → PHP → CLI Inte
 
 ## Frontend
 
-All static frontend pages live in `frontend/` directory:
+### Web Frontend (SPA)
+
+The web frontend is a **Vue.js 3 + Vue Router** single-page application served from `frontend/`. No build tools — all libraries loaded via CDN. The SPA replicates all functionality from the Flutter mobile app using the same backend REST APIs.
+
+**Tech stack**: Vue 3 (global prod), Vue Router 4 (hash mode), custom CSS (no framework), Fetch API.
 
 ```
 frontend/
-├── css/        ← CSS files
-├── js/         ← JavaScript files
-├── index.html  ← Homepage
-└── 404.html    ← 404 error page
+├── index.html                  # SPA shell (CDN links + <div id="app">)
+├── 404.html                    # Error page
+├── css/
+│   ├── variables.css           # Design tokens (matches mobile AppColors)
+│   ├── app.css                 # Global layout, typography, utilities
+│   └── components.css          # Card, nav, form, button, badge, etc.
+└── js/
+    ├── app.js                  # Vue.createApp(), global components, mount
+    ├── router.js               # Hash-based routes (56 routes + auth guard)
+    ├── api/
+    │   ├── provider.js         # Fetch wrapper — never throws, returns {success, data, message}
+    │   └── urls.js             # All 120+ API URL constants (mirrors mobile ApiUrl)
+    ├── stores/
+    │   ├── user.js             # Vue.reactive — auth state, token, profile, login/logout
+    │   └── config.js           # System config cache from /common/config
+    ├── i18n/
+    │   ├── index.js            # Translation service (detects browser lang, persists to localStorage)
+    │   ├── zh-CN.js            # Simplified Chinese (~180 keys)
+    │   ├── zh-TW.js            # Traditional Chinese (identity mapping)
+    │   └── en.js               # English
+    ├── utils/
+    │   ├── storage.js          # localStorage wrapper (mirrors Flutter StorageStone keys)
+    │   └── helpers.js          # timeAgo, imageUrl, safeInt/safeString, showToast, debounce
+    ├── components/
+    │   ├── app-nav.js          # 5-tab bottom navigation (Home/City/News/Message/Mine)
+    │   ├── app-header.js       # Sticky header with back button + title
+    │   ├── loading-spinner.js  # Loading indicator
+    │   └── empty-state.js      # Empty data placeholder with retry
+    └── pages/
+        ├── welcome.js          # Landing page
+        ├── auth/
+        │   ├── login.js        # Email/password login with remember-me
+        │   └── register.js     # Registration with email code verification
+        ├── home/index.js       # Home: search, city strategy, hot cities, guides, merchants, news
+        ├── city/index.js       # City list browser with continent tabs
+        ├── news/index.js       # Information/articles with category filter
+        ├── message/index.js    # Message center (5 categories)
+        └── mine/index.js       # Profile, VIP status, service menu grid
 ```
 
-Routes reference files via `base_path('frontend/xxx.html')`. Root route (`/`) serves `frontend/index.html`.
+**Architecture patterns**:
+- **API**: `ApiProvider.get/post(path, data)` → always returns `{success, code, message, data}`. JWT automatically attached from `Storage.token`. Never throws — matches Flutter's `ApiResult` pattern.
+- **Auth**: `UserStore` (Vue.reactive) manages token + profile. Login stores credentials in localStorage under keys matching Flutter's `StorageStone` (`token`, `user_number`, `user_sig`, `user_info`). 401 responses trigger logout redirect. Route guard in `router.beforeEach` checks `meta.requiresAuth`.
+- **i18n**: Keys are Traditional Chinese characters (matching Flutter). `I18n.t('首頁')` returns locale-appropriate text. Language persisted to localStorage.
+- **Pages**: Each page is a Vue Options API component definition object (`{template, data, methods, mounted}`). Registered globally via `app.component()`. Full pages for 5 tabs + auth; remaining 40+ routes use `ComingSoon` placeholder — ready for Phase 2.
+- **Routing**: Hash-based (`#/home`, `#/city/detail?id=1`). Tab bar shown only on 5 main routes; hidden on sub-pages (matches Flutter push navigation). Scroll position resets on navigation.
+
+**Backend route for SPA** (`routes/web.php`):
+```php
+// Root route serves SPA shell
+Route::get('/', fn() => response()->file(base_path('frontend/index.html')));
+
+// SPA catch-all — all non-API, non-admin routes serve index.html
+Route::get('/{any}', fn() => response()->file(base_path('frontend/index.html')))
+    ->where('any', '^(?!api|manage).*$');
+```
+This ensures `/api/*` (mobile app) and `/manage*` (admin panel) are unaffected.
+
+**Implementation status**: Phase 1 complete (shell, auth, 5 tabs, i18n). Phases 2-6 pending (detail pages, forms, publishing, commerce, polish). See plan at `.claude/plans/modular-swimming-sky.md`.
+
+### Mobile Frontend Reference
+
+The Flutter mobile app source is at `/Users/guanpei/Downloads/LUMOGUIDE- Front/LUMOGUIDE-frontend/` (see `[[mobile-frontend-reference]]` in memory for full details). All API endpoints and data models are defined there — use as reference when building web pages.
 
 ## Server Connection
 
