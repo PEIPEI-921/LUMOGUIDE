@@ -1,0 +1,4 @@
+enum EvaluateListType {
+  news,
+  merchant,
+}

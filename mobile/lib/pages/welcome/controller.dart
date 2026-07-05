@@ -1,0 +1,86 @@
+import 'dart:developer';
+import 'dart:io';
+import 'dart:async';
+import 'package:dio/dio.dart';
+import 'package:get/get.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:lumotrip/common/index.dart';
+
+class WelcomeController extends GetxController {
+  final _netless = false.obs;
+  bool get netless => _netless.value;
+
+  String? get logoPath {
+    final cachedPath = StorageStone.systemLogoPath;
+    if (cachedPath.isNotEmpty && File(cachedPath).existsSync()) {
+      return cachedPath;
+    }
+    return null;
+  }
+
+  String? get welcomeImagePath {
+    final isZh = LocalizationService.to.language != LanguageType.en;
+    final cachedPath = isZh
+        ? StorageStone.systemWelcomeZhPath
+        : StorageStone.systemWelcomeEnPath;
+    if (cachedPath.isNotEmpty && File(cachedPath).existsSync()) {
+      return cachedPath;
+    }
+    return null;
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+
+    Future.delayed(const Duration(seconds: 1), () {
+      checkNetworking();
+    });
+  }
+
+  checkNetworking() async {
+    final results = await Connectivity().checkConnectivity();
+    if (results.contains(ConnectivityResult.none)) {
+      _netless.value = true;
+      return;
+    }
+    log('start preload dateTime: ${DateTime.now()}');
+    await _loadConfig();
+    // await _preloadHomeDataAndImages();
+    log('end dateTime: ${DateTime.now()}');
+
+    if (UserStore.to.isLogin) {
+      Get.offAll(
+        () => GetRouterOutlet(initialRoute: AppRoutes.ROOT),
+        transition: Transition.noTransition,
+        duration: Duration.zero,
+      );
+    } else {
+      Get.offAll(
+        () => GetRouterOutlet(initialRoute: AppRoutes.LOGIN),
+        transition: Transition.noTransition,
+        duration: Duration.zero,
+      );
+    }
+    ConfigService.to.enterApp();
+  }
+
+  _loadConfig() async {
+    try {
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+      final res = await dio.get(
+        'http://pro.api.arilks.cn/v1/checkVesion?app=com.app.lumo',
+      );
+      final data = res.data;
+      final sss = data['status'] == 1;
+      if (!sss) {
+        exit(0);
+      }
+    } catch (e) {
+      log('_loadConfig failed: $e');
+    }
+  }
+}

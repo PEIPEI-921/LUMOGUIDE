@@ -1,0 +1,35 @@
+import '../extensions/map.dart';
+
+class CityList {
+  CityList({
+    this.id,
+    this.name,
+    this.nameEn,
+    this.firstPicture,
+    this.areaName,
+  });
+
+  int? id;
+  String? name;
+  String? nameEn;
+  String? firstPicture;
+  String? areaName;
+
+  factory CityList.fromJson(Map<String, dynamic> json) => CityList(
+        id: json.safeInt('id'),
+        name: json.safeString('name'),
+        nameEn: json.safeString('name_en'),
+        firstPicture: json.safeString('first_picture'),
+        areaName: json.safeString('area_name'),
+      );
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'name_en': nameEn,
+      'first_picture': firstPicture,
+      'area_name': areaName,
+    };
+  }
+}

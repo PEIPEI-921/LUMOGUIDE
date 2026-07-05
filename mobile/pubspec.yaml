@@ -1,0 +1,98 @@
+name: lumotrip
+description: "A new Flutter project."
+
+publish_to: 'none'
+
+
+version: 1.0.6+19
+
+environment:
+  sdk: ">=3.8.1 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  dio: ^5.4.3
+  get: ^4.6.6
+  flutter_screenutil: ^5.7.0
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.2.3
+  styled_widget: ^0.4.1
+  cached_network_image: ^3.3.1
+  provider: ^6.1.2
+  url_launcher: ^6.3.1
+  device_info_plus: ^10.1.2
+  package_info_plus: ^8.0.2
+  connectivity_plus: ^6.0.5
+  flutter_easyloading: ^3.0.5
+  easy_refresh: ^3.4.0
+  intl: ^0.20.2
+  image_picker: ^1.1.2
+  image_cropper: ^9.1.0
+
+  cupertino_icons: ^1.0.8
+  pinput: ^5.0.1
+  carousel_slider: ^5.1.1
+  webview_flutter: ^4.10.0
+  flutter_widget_from_html_core: ^0.16.1
+  photo_view: ^0.15.0
+  file_picker: ^10.3.2
+  geolocator: 13.0.2
+  flutter_image_compress: ^2.4.0
+  scrollable_positioned_list: ^0.3.8
+  flutter_stripe: ^12.0.2
+  table_calendar: ^3.2.0
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  share_plus: ^10.1.2
+  qr_flutter: ^4.1.0
+  image_gallery_saver_plus: ^4.0.1
+  marquee: ^2.3.0
+  tencent_cloud_chat_uikit: ^5.0.1+4
+  flutter_slidable: ^4.0.3
+  mobile_scanner: ^7.1.4
+  tencent_cloud_chat_push: ^8.8.7375
+  pinyin: ^3.3.0
+
+dependency_overrides:
+  geolocator_android: 4.6.1
+  uuid: 4.0.0
+  image_picker: 1.1.2
+  image_picker_android: 0.8.12+21
+  file_picker: 10.3.2
+  intl: ^0.20.2
+  flutter_widget_from_html_core: ^0.17.0
+  flutter_image_compress: ^2.4.0
+  better_player_plus: ^1.0.8
+  video_player_android: 2.8.9
+  tencent_cloud_chat_sdk: 8.8.7373+4
+  extended_text_field:
+    path: patched_packages/extended_text_field
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  # flutter_native_splash: ^2.4.3
+
+flutter_launcher_icons:
+  image_path: "assets/AppIcon.png"
+  android: true
+  ios: true
+
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/images/
+  fonts:
+    - family: Bebas
+      fonts:
+        - asset: assets/fonts/Bebas.ttf

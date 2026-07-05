@@ -1,0 +1,327 @@
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:lumotrip/common/index.dart';
+import '../index.dart';
+import 'section.dart';
+
+class HomeMerchantWidget extends StatelessWidget {
+  const HomeMerchantWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+
+    return Obx(
+      () => controller.home?.shop.isEmpty == true
+          ? const SizedBox.shrink()
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const HomeSectionWidget(section: HomeSection.merchant),
+                13.w.verticalSpace,
+                const _Category(),
+                14.w.verticalSpace,
+                if (controller
+                        .home
+                        ?.shop[controller.merchantCategoryIndex.value]
+                        .banner
+                        .isNotEmpty ==
+                    true)
+                  const _Carousel().padding(bottom: 10.w),
+                if (controller
+                        .home
+                        ?.shop[controller.merchantCategoryIndex.value]
+                        .list
+                        .isNotEmpty ==
+                    true)
+                  const _GirdDataWidget(),
+              ],
+            ).padding(horizontal: 14.w, top: 20.w),
+    );
+  }
+}
+
+class _Category extends StatelessWidget {
+  const _Category();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+
+    return Obx(() {
+      final categories =
+          controller.home?.shop.map((e) => e.name).toList() ?? [];
+      return Row(
+        children: [
+          ...categories.map(
+            (e) => Obx(
+              () =>
+                  Text(
+                        e ?? '',
+                        style: TextStyle(
+                          color:
+                              controller.merchantCategoryIndex.value ==
+                                  categories.indexOf(e)
+                              ? Colors.white
+                              : AppColors.primaryText.withOpacity(0.8),
+                          fontSize: 12.sp,
+                        ),
+                      )
+                      .padding(horizontal: 10.w, vertical: 7.w)
+                      .decorated(
+                        color:
+                            controller.merchantCategoryIndex.value ==
+                                categories.indexOf(e)
+                            ? AppColors.primary
+                            : AppColors.primaryText.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(100),
+                      )
+                      .gestures(
+                        onTap: () => controller.merchantCategoryIndex.value =
+                            categories.indexOf(e),
+                        behavior: HitTestBehavior.opaque,
+                      )
+                      .padding(right: 5.w),
+            ),
+          ),
+        ],
+      ).scrollable(scrollDirection: Axis.horizontal);
+    });
+  }
+}
+
+class _Carousel extends StatelessWidget {
+  const _Carousel();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+
+    return Obx(() {
+      final items =
+          controller
+              .home
+              ?.shop[controller.merchantCategoryIndex.value]
+              .banner ??
+          [];
+      return Column(
+        children: [
+          CarouselSlider(
+            options: CarouselOptions(
+              height: 265.w,
+              autoPlay: items.length > 1,
+              viewportFraction: 1,
+              onPageChanged: (index, reason) {
+                controller.merchantCarouselIndex.value = index;
+              },
+            ),
+            items: [...items.map((e) => _CarouselItem(banner: e))],
+          ),
+          if (items.length > 1) ...[
+            10.w.verticalSpace,
+            Wrap(
+              spacing: 5,
+              children: [
+                ...items.asMap().entries.map(
+                  (e) => Container(
+                    width: 12.w,
+                    height: 12.w,
+                    decoration: BoxDecoration(
+                      color: controller.merchantCarouselIndex.value == e.key
+                          ? AppColors.primary
+                          : AppColors.primaryText.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _CarouselItem extends StatelessWidget {
+  const _CarouselItem({required this.banner});
+  final MerchantList banner;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+    return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NetImageCached(
+              banner.firstPicture ?? '',
+              width: double.infinity,
+              height: 195.w,
+              fit: BoxFit.cover,
+            ),
+            10.w.verticalSpace,
+            Text(
+              banner.name ?? '',
+              style: TextStyle(
+                color: AppColors.primaryText,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ).padding(horizontal: 10.w),
+            4.w.verticalSpace,
+            Row(
+              children: [
+                if (banner.phone.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Image.asset(Assets.iconTel, width: 12.w, height: 12.w),
+                      5.w.horizontalSpace,
+                      Text(
+                        '${'電話'.tr}: ${banner.phone ?? ''}',
+                        style: TextStyle(
+                          color: AppColors.primaryText.withOpacity(0.8),
+                          fontSize: 11.sp,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ).expanded(),
+                  5.w.horizontalSpace,
+                ],
+                Row(
+                  children: [
+                    Image.asset(Assets.iconLocation, width: 12.w, height: 12.w),
+                    5.w.horizontalSpace,
+                    Text(
+                      '${'城市'.tr}: ${banner.cityName ?? ''}',
+                      style: TextStyle(
+                        color: AppColors.primaryText.withOpacity(0.8),
+                        fontSize: 11.sp,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ).expanded(),
+                  ],
+                ).expanded(),
+              ],
+            ).padding(horizontal: 10.w),
+          ],
+        )
+        .decorated(color: Colors.white)
+        .clipRRect(topLeft: 6.w, topRight: 6.w)
+        .padding(horizontal: 2.w)
+        .gestures(
+          onTap: () => controller.onTapMerchantItem(banner),
+          behavior: HitTestBehavior.opaque,
+        );
+  }
+}
+
+class _GirdDataWidget extends StatelessWidget {
+  const _GirdDataWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+    return Obx(
+      () => GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisExtent: 180.w,
+          crossAxisSpacing: 10.w,
+          mainAxisSpacing: 10.w,
+        ),
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount:
+            controller
+                .home
+                ?.shop[controller.merchantCategoryIndex.value]
+                .list
+                .length ??
+            0,
+        itemBuilder: (context, index) => _GirdItem(
+          shop: controller
+              .home!
+              .shop[controller.merchantCategoryIndex.value]
+              .list[index],
+        ),
+      ),
+    );
+  }
+}
+
+class _GirdItem extends StatelessWidget {
+  const _GirdItem({required this.shop});
+  final MerchantList shop;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<HomeController>();
+    return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NetImageCached(
+              shop.firstPicture ?? '',
+              width: double.infinity,
+              height: 95.w,
+              fit: BoxFit.cover,
+            ),
+            8.w.verticalSpace,
+            Text(
+              shop.name ?? '',
+              style: TextStyle(
+                color: AppColors.primaryText,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ).padding(horizontal: 8.w),
+            if (shop.phone.isNotEmpty) ...[
+              Row(
+                children: [
+                  Image.asset(Assets.iconTel, width: 12.w, height: 12.w),
+                  5.w.horizontalSpace,
+                  Text(
+                    '${'電話'.tr}: ${shop.phone ?? ''}',
+                    style: TextStyle(
+                      color: AppColors.primaryText.withOpacity(0.8),
+                      fontSize: 11.sp,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ).expanded(),
+                ],
+              ).padding(top: 8.w, horizontal: 8.w),
+            ],
+            Row(
+              children: [
+                Image.asset(Assets.iconLocation, width: 12.w, height: 12.w),
+                5.w.horizontalSpace,
+                Text(
+                  '${'城市'.tr}: ${shop.cityName ?? ''}',
+                  style: TextStyle(
+                    color: AppColors.primaryText.withOpacity(0.8),
+                    fontSize: 11.sp,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ).expanded(),
+              ],
+            ).padding(top: 6.w, horizontal: 8.w),
+          ],
+        )
+        .decorated(color: Colors.white)
+        .clipRRect(topLeft: 6.w, topRight: 6.w)
+        .gestures(
+          onTap: () => controller.onTapMerchantItem(shop),
+          behavior: HitTestBehavior.opaque,
+        );
+  }
+}

@@ -1,0 +1,4 @@
+enum MerchantEditorType {
+  add,
+  edit,
+}
