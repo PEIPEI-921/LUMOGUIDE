@@ -7,42 +7,99 @@ define('LARAVEL_START', microtime(true));
 
 /*
 |--------------------------------------------------------------------------
-| Check If The Application Is Under Maintenance
+| API Proxy for Local Dev
 |--------------------------------------------------------------------------
 |
-| If the application is in maintenance / demo mode via the "down" command
-| we will load this file so that any pre-rendered content can be shown
-| instead of starting the framework, which could cause an exception.
+| When running locally without swoole_loader, API requests are proxied
+| to the production server so the frontend SPA can talk to a working API
+| without CORS issues.
 |
 */
+
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$isApiRequest = str_starts_with($requestUri, '/api/');
+
+if ($isApiRequest && file_exists(__DIR__ . '/../.env')) {
+    $targetBase = 'https://api.lumoguide.com';
+    $targetUrl  = $targetBase . $requestUri;
+
+    $ch = curl_init($targetUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER    => true,
+        CURLOPT_HEADER            => true,
+        CURLOPT_TIMEOUT           => 60,
+        CURLOPT_CONNECTTIMEOUT    => 10,
+        CURLOPT_FOLLOWLOCATION    => true,
+        CURLOPT_CUSTOMREQUEST     => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+        CURLOPT_HTTPHEADER        => [
+            'Accept: application/json',
+            'Content-Type: application/json',
+        ],
+    ]);
+
+    // Forward auth token so JWT-protected routes work
+    if (! empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'Authorization: ' . $_SERVER['HTTP_AUTHORIZATION'],
+        ]);
+    }
+
+    // Forward POST/PUT/PATCH body
+    $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    if (in_array($method, ['POST', 'PUT', 'PATCH'], true)) {
+        $body = file_get_contents('php://input');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+    }
+
+    $response   = curl_exec($ch);
+    $httpCode   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $error      = curl_error($ch);
+    curl_close($ch);
+
+    if ($error) {
+        http_response_code(502);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'code'    => 502,
+            'message' => 'API proxy error: ' . $error,
+            'data'    => [],
+        ]);
+        exit;
+    }
+
+    // Split headers from body
+    $rawHeaders = substr($response, 0, $headerSize);
+    $body       = substr($response, $headerSize);
+
+    // Forward response headers (skip transfer-encoding / connection)
+    foreach (explode("\r\n", $rawHeaders) as $headerLine) {
+        $headerLine = trim($headerLine);
+        if ($headerLine === '' || str_starts_with($headerLine, 'HTTP/')) {
+            continue;
+        }
+        if (stripos($headerLine, 'Transfer-Encoding:') !== false) continue;
+        if (stripos($headerLine, 'Connection:') !== false) continue;
+        if (stripos($headerLine, 'Content-Encoding:') !== false) continue;
+        header($headerLine);
+    }
+
+    http_response_code($httpCode);
+    echo $body;
+    exit;
+}
+
+// ──────────────────────────────────────────────
+// Below: standard Laravel bootstrap (unchanged)
+// ──────────────────────────────────────────────
 
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Register The Auto Loader
-|--------------------------------------------------------------------------
-|
-| Composer provides a convenient, automatically generated class loader for
-| this application. We just need to utilize it! We'll simply require it
-| into the script here so we don't need to manually load our classes.
-|
-*/
-
 require __DIR__.'/../vendor/autoload.php';
-
-/*
-|--------------------------------------------------------------------------
-| Run The Application
-|--------------------------------------------------------------------------
-|
-| Once we have the application, we can handle the incoming request using
-| the application's HTTP kernel. Then, we will send the response back
-| to this client's browser, allowing them to enjoy our application.
-|
-*/
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
 

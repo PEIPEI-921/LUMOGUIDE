@@ -14,13 +14,20 @@ When creating or modifying files in this project, always follow these convention
 
 ### Static Frontend Files (HTML / CSS / JavaScript)
 
+> ⚠️ **CRITICAL**: All frontend files MUST be stored under `frontend/`. Never create or edit frontend files directly in `public/`.
+
+`frontend/` is the **single source of truth** for all HTML, CSS, and JavaScript. The web server serves them through two mechanisms:
+
+1. **`public/css/` and `public/js/` are symlinks** → `../frontend/css/` and `../frontend/js/`. PHP's built-in server resolves these via `server.php` → `file_exists(public/...)`. Do NOT break these symlinks or create real directories under `public/css/` or `public/js/`.
+2. **HTML pages** are served by Laravel routes in `routes/web.php` pointing to `base_path('frontend/xxx.html')`.
+
 | File Type | Location | Examples |
 |-----------|----------|---------|
 | HTML pages | `frontend/` | `frontend/index.html`, `frontend/404.html` |
 | CSS stylesheets | `frontend/css/` | `frontend/css/style.css` |
 | JavaScript | `frontend/js/` | `frontend/js/app.js` |
 
-> Routes serve these files via `base_path('frontend/xxx.html')`. See `routes/web.php`.
+> If you find frontend files duplicated in `public/`, delete them — the symlinks make `public/` serve `frontend/` content automatically.
 
 ### Server-Side Templates (Blade)
 
@@ -98,10 +105,13 @@ When creating or modifying files in this project, always follow these convention
 | Dcat Admin assets | `public/vendor/dcat-admin/` | Managed by `php artisan admin:install` |
 | Other vendor assets | `public/vendor/` | Published by `vendor:publish` |
 | robots.txt | `public/robots.txt` | ✅ plaintext |
+| Frontend CSS/JS | `public/css/` `public/js/` | Symlinks → `../frontend/css/` and `../frontend/js/` |
+
+> `frontend/` is the single source of truth for all frontend files. `public/css` and `public/js` are symlinks so PHP's built-in server finds them via `server.php` while serving from ONE copy.
 
 ### Decision Rules for New Files
 
-1. **Is it a frontend page (HTML/CSS/JS)?** → `frontend/`
+1. **Is it a frontend page (HTML/CSS/JS)?** → `frontend/` (NOT `public/` — the `public/css` and `public/js` symlinks exist only to bridge PHP's built-in server)
 2. **Is it a Blade template?** → `resources/views/`
 3. **Is it an API endpoint?** → Create controller in `app/Http/Controllers/Api/`, add route in `routes/api.php`
 4. **Is it business logic?** → `app/Services/`, one service per domain
@@ -160,6 +170,17 @@ When creating or modifying files in this project, always follow these convention
 - **IDE**: PhpStorm 2026.1, Run Configuration uses `start.sh` (Shell Script type)
 - **Local dev DB**: Connects to production MySQL via SSH tunnel. `.env` DB_HOST=127.0.0.1, DB_PORT=3307. The tunnel maps 3307 → server's 127.0.0.1:3306.
 
+### Local Dev Without swoole_loader
+
+Since `app/` source files are encoded with swoole_loader (not installed locally), `public/index.php` contains an **API proxy** at the top of the file. It intercepts all `/api/*` requests and forwards them to `https://api.lumoguide.com` via cURL, returning the production response directly — entirely bypassing Laravel's encoded controllers.
+
+- Proxy code lives at the TOP of `public/index.php` (before `require autoload.php`)
+- Requests are matched by `str_starts_with($requestUri, '/api/')`
+- Timeout: 60s total, 10s connect
+- Non-API requests (`/`, `/test.html`, etc.) fall through to normal Laravel bootstrap
+
+> **Important**: Local proxy software (Surge, ClashX, V2Ray) interferes with this. These tools hijack DNS for `api.lumoguide.com` to a virtual IP (`198.18.0.51`) and SSL handshakes time out. Disable the proxy software for local dev, or the API proxy will return 502 errors.
+
 ### PhpStorm Setup
 
 Run Configuration (`start`) executes `start.sh`, which:
@@ -174,7 +195,14 @@ If the configuration breaks, recreate it manually: Settings → PHP → CLI Inte
 
 The web frontend is a **Vue.js 3 + Vue Router** single-page application served from `frontend/`. No build tools — all libraries loaded via CDN. The SPA replicates all functionality from the Flutter mobile app using the same backend REST APIs.
 
-**Tech stack**: Vue 3 (global prod), Vue Router 4 (hash mode), custom CSS (no framework), Fetch API.
+**Tech stack**: Vue 3 + Vue Router 4 (CDN), custom CSS (no framework), Fetch API.
+
+**CDN versions (pinned)**:
+```html
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-router@4.3.3/dist/vue-router.global.js"></script>
+```
+> ⚠️ **Do NOT use unpkg CDN or `vue.global.prod.js`**. The production build's template compiler silently fails — `app.mount('#app')` returns `null` without error, DOM unchanged. jsdelivr dev builds work correctly. Also, `app.js` (which calls `app.mount()`) **MUST be the last `<script>` at end of `<body>`**, after `<div id="app">`. If placed in `<head>`, `#app` doesn't exist yet and mount fails silently.
 
 ```
 frontend/
