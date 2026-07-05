@@ -1,39 +1,73 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>恭喜，站点创建成功！</title>
-    <style>
-        .container {
-            width: 60%;
-            margin: 10% auto 0;
-            background-color: #f0f0f0;
-            padding: 2% 5%;
-            border-radius: 10px
-        }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>LUMOGUIDE — 你的随身旅游指南</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
 
-        ul {
-            padding-left: 20px;
-        }
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/components.css">
 
-            ul li {
-                line-height: 2.3
-            }
+  <!-- Vue 3 + Vue Router (CDN) -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
 
-        a {
-            color: #20a53a
-        }
-    </style>
+  <!-- Utils (load order matters) -->
+  <script src="/js/utils/storage.js"></script>
+  <script src="/js/utils/helpers.js"></script>
+
+  <!-- i18n -->
+  <script src="/js/i18n/zh-CN.js"></script>
+  <script src="/js/i18n/zh-TW.js"></script>
+  <script src="/js/i18n/en.js"></script>
+  <script src="/js/i18n/index.js"></script>
+
+  <!-- API -->
+  <script src="/js/api/urls.js"></script>
+  <script src="/js/api/provider.js"></script>
+
+  <!-- Stores -->
+  <script src="/js/stores/config.js"></script>
+  <script src="/js/stores/user.js"></script>
+
+  <!-- Components -->
+  <script src="/js/components/loading-spinner.js"></script>
+  <script src="/js/components/empty-state.js"></script>
+  <script src="/js/components/app-header.js"></script>
+  <script src="/js/components/app-nav.js"></script>
+
+  <!-- Pages — Auth -->
+  <script src="/js/pages/welcome.js"></script>
+  <script src="/js/pages/auth/login.js"></script>
+  <script src="/js/pages/auth/register.js"></script>
+
+  <!-- Pages — Tab Content -->
+  <script src="/js/pages/home/index.js"></script>
+  <script src="/js/pages/city/index.js"></script>
+  <script src="/js/pages/news/index.js"></script>
+  <script src="/js/pages/message/index.js"></script>
+  <script src="/js/pages/mine/index.js"></script>
+
+  <!-- Router -->
+  <script src="/js/router.js"></script>
+
+  <!-- App Entry -->
+  <script src="/js/app.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>恭喜, 站点创建成功！</h1>
-        <h3>这是默认index.html，本页面由系统自动生成</h3>
-        <ul>
-            <li>本页面在FTP根目录下的index.html</li>
-            <li>您可以修改、删除或覆盖本页面</li>
-            <li>FTP相关信息，请到“面板系统后台 > FTP” 查看</li>
-        </ul>
+  <div id="app">
+    <!-- Initial loading state before Vue mounts -->
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;font-family:sans-serif;">
+      <div style="font-size:48px;">🌍</div>
+      <div style="font-size:20px;font-weight:700;color:#666FFF;">LUMOGUIDE</div>
+      <div style="width:32px;height:32px;border:3px solid #f0f0f0;border-top-color:#666FFF;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
+  </div>
 </body>
 </html>
