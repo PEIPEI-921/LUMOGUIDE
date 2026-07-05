@@ -2,11 +2,13 @@
    API URL Constants — mirrors Flutter ApiUrl class
    ============================================ */
 
-// Set to true for local dev
-const API_IS_DEV = false;
+// Auto-detect: use relative path for same-origin dev, absolute for production
+const API_IS_DEV = window.location.hostname === 'localhost'
+  || window.location.hostname === '127.0.0.1'
+  || window.location.hostname.startsWith('192.168.');
 
 const API_BASE = API_IS_DEV
-  ? 'https://dev.lumoguide.com/'
+  ? window.location.origin + '/'
   : 'https://api.lumoguide.com/';
 
 const API_URL = API_BASE + 'api';

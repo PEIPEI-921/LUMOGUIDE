@@ -206,12 +206,9 @@ const HomePage = {
     imageUrl: imageUrl,
 
     async fetchHomeData() {
-      // Try cache first
       const cache = Storage.homeData;
       if (cache) {
-        try {
-          this.homeData = JSON.parse(cache);
-        } catch (e) {}
+        try { this.homeData = JSON.parse(cache); } catch (e) {}
       }
 
       this.loading = true;
