@@ -28,6 +28,12 @@ macOS desktop target was added with `flutter create . --platforms=macos`. Prereq
 - CocoaPods 1.16.2 installed via Homebrew (`brew install cocoapods`)
 - Run from terminal: `flutter run -d macos` (Android Studio `--start-paused` causes debug connection to drop on macOS)
 
+**Desktop window adaptation:** The app uses a mobile-first design (375×834). On desktop, `flutter_screenutil` would otherwise scale `.w` values by full window width (e.g. `scaleWidth = 1440/375 = 3.84`), making UI elements huge. Solution in `lib/main.dart`:
+- `ScreenUtilInit` widget (not `ScreenUtil.init()`) — screenutil sees the constrained context
+- On desktop (`Platform.isMacOS || Windows || Linux`): content wrapped in `Center` + `ConstrainedBox(maxWidth: 600)` with primary color background on sides
+- `lib/global.dart` skips `setPreferredOrientations` on desktop (portrait lock is mobile-only)
+- `macos/Runner/MainFlutterWindow.swift`: minSize 400×600, default 450×800 centered
+
 ## Build & Run Commands
 
 ```bash
@@ -159,6 +165,7 @@ Initial route is `/welcome` (landing page), which flows into `/root` after auth.
 2. **macOS `--start-paused` 断连:** Android Studio 运行 macOS 时 `--start-paused` 会导致 "Lost connection to device"。从终端直接 `flutter run -d macos` 或在 Run Configuration 中去掉该参数。
 3. **`_loadConfig()` 网络超时:** `lib/pages/welcome/controller.dart` 中版本检查请求已加 try-catch + 10s 超时，请求失败不再阻塞导航。
 4. **Code Runner 抢占 VS Code ▶ 按钮导致 FFI 编译崩溃:** Code Runner 扩展的 `dart` executor 会直接调用 `dart` VM 而非 Flutter 框架，导致 `InvalidType/FfiUseSiteTransformer` kernel 编译错误。永远用 **F5** 或菜单栏 **Run → Start Debugging** 启动 Flutter 应用，不要用 Code Runner。
+5. ✅ **flutter_screenutil 在 macOS 上等比放大导致 UI 过大:** `ScreenUtil.init()` + 桌面大窗口 → scaleWidth 可达 3.84，`.w` 组件超大。已修复：用 `ScreenUtilInit` widget 替代，桌面端套 `ConstrainedBox(maxWidth: 600)` 居中内容，`MainFlutterWindow.swift` 设 minSize 400×600 + 默认 450×800。
 
 ## New machine setup
 

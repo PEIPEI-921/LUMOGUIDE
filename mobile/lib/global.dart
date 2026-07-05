@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -9,7 +11,9 @@ class Global {
   static Future init() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    if (!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) {
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    }
     await ScreenUtil.ensureScreenSize();
 
     /// 使用 Android 13 相册
