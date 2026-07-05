@@ -8,7 +8,9 @@ LUMOGUIDE (`lumotrip`) — a Flutter travel guide app for iOS and Android. App n
 
 ## Environment
 
-Flutter 3.44.4 (Dart 3.12.2), installed at `~/flutter/`. Android Studio 2025.1.1 run configuration set up at `.idea/runConfigurations/main_dart.xml`.
+Flutter 3.44.4 (Dart 3.12.2), installed at `~/flutter/`. Android Studio 2025.1.1 run configuration set up at `.idea/runConfigurations/main_dart.xml`. VS Code with Dart-Code.flutter extension v3.138.0. Project `.vscode/` config presets: settings (Flutter SDK paths, format-on-save, file excludes) + launch (macOS / Android / iOS / auto).
+
+Git repo initialized (`main` branch), remote `origin`: `https://github.com/PEIPEI-921/LUMOGUIDE-frontend.git`.
 
 ### China mirrors (required for package downloads)
 
@@ -50,6 +52,14 @@ flutter test
 # Generate launcher icons
 flutter pub run flutter_launcher_icons
 ```
+
+### In VS Code
+
+- Open `lib/main.dart`, then **F5** to start debugging (or **Ctrl+F5** for Run Without Debugging)
+- Select target device from the bottom status bar before launching
+- Top-right ▶ provided by the Flutter extension only appears when `main()` is visible in the editor
+
+**Do NOT use Code Runner** to run `.dart` files — it invokes the standalone `dart` VM, which cannot compile Flutter apps and will crash with FFI/kernel compilation errors.
 
 No code generation (build_runner, json_serializable) is used — models are hand-written with `fromJson`/`toJson`.
 
@@ -148,6 +158,7 @@ Initial route is `/welcome` (landing page), which flows into `/root` after auth.
 1. **`extended_text_field` 与 Flutter 3.44 不兼容:** 上述补丁已修复。若 `flutter pub get` 后补丁失效，检查 `pubspec.yaml` 中 `dependency_overrides` 是否仍指向 `patched_packages/extended_text_field`。
 2. **macOS `--start-paused` 断连:** Android Studio 运行 macOS 时 `--start-paused` 会导致 "Lost connection to device"。从终端直接 `flutter run -d macos` 或在 Run Configuration 中去掉该参数。
 3. **`_loadConfig()` 网络超时:** `lib/pages/welcome/controller.dart` 中版本检查请求已加 try-catch + 10s 超时，请求失败不再阻塞导航。
+4. **Code Runner 抢占 VS Code ▶ 按钮导致 FFI 编译崩溃:** Code Runner 扩展的 `dart` executor 会直接调用 `dart` VM 而非 Flutter 框架，导致 `InvalidType/FfiUseSiteTransformer` kernel 编译错误。永远用 **F5** 或菜单栏 **Run → Start Debugging** 启动 Flutter 应用，不要用 Code Runner。
 
 ## New machine setup
 
