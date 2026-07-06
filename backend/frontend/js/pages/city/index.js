@@ -15,9 +15,16 @@ const CityPage = {
       <div class="ds-page-wrapper">
       <loading-spinner v-if="!continents.length && loading" />
 
+      <!-- Fallback empty: no continents loaded at all -->
+      <div v-if="!continents.length && !loading" style="text-align:center;padding:60px 0">
+        <div style="font-size:48px;margin-bottom:12px;opacity:.3">🌍</div>
+        <p style="color:var(--color-secondary-text);font-size:14px;margin-bottom:16px">{{ t('暫無城市數據') }}</p>
+        <button @click="fetchCities" class="ds-btn ds-btn-outline" style="border-radius:100px">{{ t('重新載入') }}</button>
+      </div>
+
       <template v-if="continents.length">
         <!-- Continent Tabs -->
-        <div class="filter-pills">
+        <div class="filter-pills" style="margin-top:8px">
           <button v-for="(c, idx) in continents" :key="'ct-'+idx"
             class="filter-pill" :class="{ active: continentIndex === idx }"
             @click="selectContinent(idx)">
@@ -26,7 +33,7 @@ const CityPage = {
         </div>
 
         <!-- Cities Grid -->
-        <div class="card-grid-2" style="margin-top:8px;">
+        <div class="card-grid-2" style="margin-top:12px">
           <div v-for="city in currentCities" :key="'city-'+city.id"
             class="city-card" style="cursor:pointer;" @click="goCityDetail(city.id)">
             <img class="city-img" :src="imageUrl(city.first_picture)" />
@@ -38,7 +45,9 @@ const CityPage = {
           </div>
         </div>
 
-        <empty-state v-if="!currentCities.length && !loading" :text="t('暫無城市')" />
+        <div v-if="!currentCities.length && !loading" style="text-align:center;padding:30px 0;color:var(--color-assistant-text);font-size:13px">
+          {{ t('此分類暫無城市') }}
+        </div>
       </template>
 
       <div style="height:20px;"></div>
@@ -67,10 +76,38 @@ const CityPage = {
 
     async fetchCities() {
       this.loading = true;
-      const res = await ApiProvider.get(ApiUrl.cityList);
+      const res = await ApiProvider.get(ApiUrl.cityList, { limit: 1000, page: 1 });
       this.loading = false;
       if (res.success && res.data) {
-        this.continents = Array.isArray(res.data) ? res.data : [];
+        const list = res.data.list || res.data || [];
+        const cities = Array.isArray(list) ? list : [];
+
+        // Group cities by continent (reuse home page's AREA_TO_CONTINENT mapping)
+        const continentMap = {};
+        cities.forEach(city => {
+          const areaName = city.area_name || '';
+          const continent = (typeof AREA_TO_CONTINENT !== 'undefined' && AREA_TO_CONTINENT[areaName])
+            || areaName || this.t('其他');
+          if (!continentMap[continent]) {
+            continentMap[continent] = { name: continent, city: [] };
+          }
+          continentMap[continent].city.push(city);
+        });
+
+        // Sort continents in a consistent order
+        const order = ['亚洲', '亞洲', '欧洲', '歐洲', '北美洲', '南美洲', '非洲', '大洋洲'];
+        const result = [];
+        order.forEach(name => {
+          const match = Object.keys(continentMap).find(k => k === name);
+          if (match) {
+            result.push(continentMap[match]);
+            delete continentMap[match];
+          }
+        });
+        // Append any remaining continents not in the order list
+        Object.values(continentMap).forEach(g => result.push(g));
+
+        this.continents = result;
       }
     },
 

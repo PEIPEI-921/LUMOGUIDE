@@ -4,7 +4,7 @@
    ============================================ */
 
 /* ============================================
-   TOP NAVIGATION BAR (primary indigo)
+   TOP NAVIGATION BAR (#7C5CFF — seamless with body gradient)
    ============================================ */
 
 .app-topbar {
@@ -15,17 +15,17 @@
   align-items: center;
   height: 52px;
   padding: 0 var(--spacing-lg);
-  background: linear-gradient(135deg, #666FFF 0%, #5A5FE8 100%);
-  box-shadow: 0 2px 12px rgba(102, 111, 255, 0.25);
+  background: #7C5CFF;
   gap: var(--spacing-sm);
 }
 
-/* Full logo (icon + text combined) — far left */
+/* Full logo — white version via filter for dark bg */
 .topbar-logo-full {
   height: 36px;
   width: auto;
   flex-shrink: 0;
   object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 /* Nav group — tabs + search, right-aligned */
@@ -45,10 +45,13 @@
 
 .topbar-tab {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 7px 13px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   border-radius: 10px;
   transition: all 0.2s var(--ease-out);
   white-space: nowrap;
@@ -60,7 +63,7 @@
 
 .topbar-tab:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .topbar-tab.active {
@@ -69,10 +72,14 @@
   font-weight: 600;
 }
 
-/* Icon-only tabs — larger emoji */
+/* Icon tabs — SVG icon sizing */
 .topbar-tab-icon {
-  font-size: 17px;
   padding: 7px 11px;
+}
+
+.topbar-tab-icon .topbar-svg {
+  width: 18px;
+  height: 18px;
 }
 
 .topbar-tab-badge {
@@ -94,12 +101,20 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* SVG icons inside tabs */
+.topbar-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 /* Search icon button */
 .topbar-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 19px;
+  color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   padding: 7px 10px;
   border-radius: 8px;
@@ -110,7 +125,168 @@
 
 .topbar-search-btn:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.topbar-search-btn .topbar-svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* ============================================
+   CITY STRATEGY — grid cards with line+accent icons
+   ============================================ */
+
+.strategy-section {
+  margin: 20px var(--spacing-lg) 8px;
+}
+
+.strategy-title {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  margin-bottom: 16px;
+  padding-left: 0;
+}
+
+.strategy-title-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: #162539;
+  letter-spacing: 0.5px;
+}
+
+.strategy-title-line {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: #7C5CFF;
+  margin-left: 6px;
+  align-self: flex-end;
+  margin-bottom: 3px;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.strategy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  min-width: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.strategy-card:hover {
+  transform: translateY(-2px);
+}
+
+.strategy-card:active {
+  transform: translateY(0);
+}
+
+.strategy-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.strategy-icon svg {
+  display: block;
+}
+
+.strategy-label {
+  font-size: 24px;
+  font-weight: 500;
+  color: #162539;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 860px) {
+  .strategy-grid {
+    gap: 8px;
+  }
+  .strategy-card {
+    padding: 8px 4px;
+    border-radius: 12px;
+    gap: 2px;
+  }
+  .strategy-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  .strategy-label { font-size: 21px; }
+}
+
+@media (max-width: 480px) {
+  .strategy-section {
+    margin: 16px var(--spacing-md) 6px;
+  }
+  .strategy-grid {
+    gap: 6px;
+  }
+  .strategy-card {
+    padding: 6px 2px;
+    border-radius: 10px;
+    gap: 1px;
+  }
+  .strategy-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .strategy-label { font-size: 18px; }
+  .strategy-title-text { font-size: 16px; }
+}
+
+/* ── Strategy Type Pills (city strategy page — rectangular, icon left of text) ── */
+.strategy-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.strategy-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1.5px solid transparent;
+}
+.strategy-pill:hover { transform: translateY(-1px); }
+.strategy-pill svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.strategy-pill-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #162539;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .strategy-pills { gap: 6px; }
+  .strategy-pill { padding: 6px 10px; gap: 4px; border-radius: 10px; }
+  .strategy-pill svg { width: 18px; height: 18px; }
+  .strategy-pill-label { font-size: 12px; }
 }
 
 /* ============================================
@@ -335,6 +511,74 @@
   transform: translateY(-1px);
 }
 
+/* ── City Content Grid (4-column, smaller images) ── */
+.city-content-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.city-card-item {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  overflow: hidden;
+}
+.city-card-img {
+  height: 100px;
+  overflow: hidden;
+  background: var(--color-bg-card);
+}
+.city-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.city-card-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  opacity: .25;
+}
+.city-card-body {
+  padding: 10px 12px;
+}
+.city-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.city-card-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.city-card-tags span {
+  font-size: 10px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+.city-card-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-assistant-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Info Card (horizontal scroll, 300px wide) ── */
 .ds-info-card {
   flex: 0 0 300px;
@@ -483,41 +727,6 @@
   white-space: nowrap;
 }
 .ds-hero-search button:hover { opacity: 0.9; }
-
-/* ============================================
-   STRATEGY CARD (city guide category)
-   ============================================ */
-
-.strategy-card {
-  background: var(--color-bg-white);
-  border-radius: var(--radius-sm);
-  padding: 14px 12px;
-  text-align: center;
-  text-decoration: none;
-  color: inherit;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid transparent;
-  transition: all 0.25s;
-  display: block;
-}
-.strategy-card:hover {
-  border-color: var(--cat-color, var(--color-accent-soft));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-}
-.strategy-icon {
-  width: 40px;
-  height: 40px;
-  margin: 0 auto 6px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-}
-.strategy-label {
-  font-size: 12px;
-  font-weight: 600;
-}
 
 /* ============================================
    DS MESSAGE SUMMARY CARDS (3-col grid)
@@ -1602,11 +1811,12 @@
 .search-bar {
   display: flex;
   align-items: center;
+  max-width: 640px;
+  margin: 24px auto;
   background: var(--color-bg-white);
   border-radius: var(--radius-md);
   padding: var(--spacing-sm) var(--spacing-lg);
   gap: var(--spacing-sm);
-  margin: var(--spacing-md) var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border-light);
   transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
@@ -2433,6 +2643,8 @@ textarea.form-input {
 
   .card-grid-4 { grid-template-columns: repeat(3, 1fr); }
   .card-grid-5 { grid-template-columns: repeat(4, 1fr); }
+  .city-content-grid { grid-template-columns: repeat(3, 1fr); }
+  .city-card-img { height: 90px; }
 }
 
 @media (max-width: 480px) {
@@ -2455,12 +2667,17 @@ textarea.form-input {
 
   .card-grid-4 { grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md); }
   .card-grid-5 { grid-template-columns: repeat(3, 1fr); gap: var(--spacing-md); }
+  .city-content-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .city-card-img { height: 80px; }
+  .city-card-body { padding: 8px 10px; }
+  .city-card-title { font-size: 12px; }
   .card-grid-3 { gap: var(--spacing-md); }
   .card-grid-2 { gap: var(--spacing-md); }
   .h-scroll { gap: var(--spacing-md); }
   .shop-banner-img { max-height: 280px; }
   .shop-banner-ph .shop-banner-img { max-height: 280px; }
   .shop-banner-name { font-size: var(--font-sm); }
+  .search-bar { max-width: 100%; margin: 16px var(--spacing-md); }
 }
 
 /* ============================================

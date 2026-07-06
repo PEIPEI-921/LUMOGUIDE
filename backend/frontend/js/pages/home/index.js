@@ -48,7 +48,7 @@ const HomePage = {
   template: `
     <div class="page-content">
       <!-- Search Bar -->
-      <div class="search-bar" style="margin-top:12px;">
+      <div class="search-bar">
         <span>🔍</span>
         <input
           v-model="searchQuery"
@@ -78,17 +78,17 @@ const HomePage = {
       <div class="ds-page-wrapper">
       <template v-if="homeData">
         <!-- City Strategy -->
-        <div v-if="homeData.city && homeData.city.length" style="margin:12px 16px;padding:16px;background:var(--color-primary-light);border-radius:12px;border:1px solid rgba(102,111,255,0.08);">
-          <div class="section-header" style="padding:0 0 10px 0;">
-            <div class="section-header-left">
-              <span class="section-accent"></span>
-              <span style="font-size:15px;font-weight:600;color:var(--color-primary-text);">{{ t('城市攻略') }}</span>
-            </div>
+        <div v-if="homeData.city && homeData.city.length" class="strategy-section">
+          <div class="strategy-title">
+            <span class="strategy-title-text">{{ t('城市攻略') }}</span>
+            <span class="strategy-title-line"></span>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-around;">
-            <div v-for="cat in strategyCategories" :key="cat.key" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;" @click="onStrategyTap(cat)">
-              <div :style="{width:'48px',height:'48px',borderRadius:'50%',background:cat.color+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px'}">{{ cat.icon }}</div>
-              <span style="font-size:11px;color:var(--color-primary-text);">{{ t(cat.label) }}</span>
+          <div class="strategy-grid">
+            <div v-for="cat in strategyCategories" :key="cat.key"
+              class="strategy-card" :style="{background:cat.bg}"
+              @click="onStrategyTap(cat)">
+              <div class="strategy-icon" v-html="cat.svg"></div>
+              <span class="strategy-label">{{ t(cat.label) }}</span>
             </div>
           </div>
         </div>
@@ -279,12 +279,18 @@ const HomePage = {
       shopBannerTimer: null,
 
       strategyCategories: [
-        { key: 'guide', label: '導遊', color: '#666FFF', icon: '🧑‍💼' },
-        { key: 'attraction', label: '景點', color: '#00EBC2', icon: '🏛️' },
-        { key: 'restaurant', label: '餐廳', color: '#F4B413', icon: '🍽️' },
-        { key: 'shopping', label: '購物', color: '#FF6C00', icon: '🛍️' },
-        { key: 'accommodation', label: '住宿', color: '#A837FF', icon: '🏨' },
-        { key: 'ticket', label: '票務', color: '#00B4FF', icon: '🎫' },
+        { key: 'guide', label: '導遊', bg: '#EDEAF6',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="4.5" r="3.5" stroke="#162539" stroke-width="1.6"/><path d="M4.5 21v-6a4 4 0 0 1 4-3.5" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="16.5" y1="2" x2="16.5" y2="13" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 2l4.5 2.5-4.5 2.5z" fill="#7C5CFF" stroke="none"/></svg>' },
+        { key: 'attraction', label: '景點', bg: '#E2F0E8',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 22l5-10 3 4 2-3 4-5.5 3.5 7.5" stroke="#162539" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 11c-1.5 0-3 .8-3 2s1.5 2 3 2h8c1.2 0 2.2-.8 2.2-1.8 0-1-.8-2-2-1.8-.3-1.8-2-2.5-3.5-1.8" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="8.5" r="1.5" fill="#06D6A0" stroke="none"/></svg>' },
+        { key: 'restaurant', label: '餐廳', bg: '#FBF3E0',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M4 7.5c0-2 3.5-3 8-3s8 1 8 3" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><rect x="4.5" y="8.5" width="15" height="2.8" rx="0.5" fill="#FF8C42" stroke="none"/><path d="M4 13c0 2 3.5 3 8 3s8-1 8-3" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><rect x="9" y="17" width="6" height="5" rx="1.3" stroke="#162539" stroke-width="1.6"/><line x1="12" y1="14.5" x2="12" y2="17" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/></svg>' },
+        { key: 'shopping', label: '購物', bg: '#FDE8E2',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M7 3L3.5 7v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V7l-3.5-4z" stroke="#162539" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.5 7h17" stroke="#162539" stroke-width="1.6"/><path d="M7 3a5 5 0 0 1 10 0" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><path d="M9 7.5V6" stroke="#EF476F" stroke-width="2.2" stroke-linecap="round"/><path d="M15 7.5V6" stroke="#EF476F" stroke-width="2.2" stroke-linecap="round"/></svg>' },
+        { key: 'accommodation', label: '住宿', bg: '#F2E8F5',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="15" rx="1" stroke="#162539" stroke-width="1.6"/><rect x="7" y="10" width="3.5" height="12" stroke="#162539" stroke-width="1.6"/><rect x="13.5" y="10" width="3.5" height="12" stroke="#162539" stroke-width="1.6"/><rect x="14.5" y="12" width="2" height="3.5" rx="0.3" fill="#A837FF" stroke="none"/><line x1="5" y1="3" x2="5" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="3" x2="12" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="19" y1="3" x2="19" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/></svg>' },
+        { key: 'ticket', label: '票務', bg: '#E3F0F8',
+          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#162539" stroke-width="1.6"/><line x1="14" y1="4" x2="14" y2="20" stroke="#162539" stroke-width="1.6"/><circle cx="17" cy="8" r="1.2" fill="#4ECDC4" stroke="none"/><circle cx="17" cy="12" r="1.2" fill="#4ECDC4" stroke="none"/><circle cx="17" cy="16" r="1.2" fill="#4ECDC4" stroke="none"/></svg>' },
       ]
     };
   },
