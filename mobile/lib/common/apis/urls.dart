@@ -162,6 +162,9 @@ abstract class ApiUrl {
   /// 删除预约公司
   static const userReserveCompanyDelete = '/user/reserveCompanyDel';
 
+  /// 我的历程
+  static const userJourneyList = '/user/journeyList';
+
   /// 地址列表
   static const addressLists = '/user/address';
 

@@ -18,6 +18,7 @@ class MineController extends GetxController with UserStoreMixin {
         MineMenu.mall,
         // MineMenu.exchange,
         MineMenu.invite,
+        MineMenu.journey,
         MineMenu.certificate,
         if (!userInfo.inAudit || kDebugMode) MineMenu.vip,
       ];
@@ -30,6 +31,7 @@ class MineController extends GetxController with UserStoreMixin {
         MineMenu.mall,
         // MineMenu.exchange,
         MineMenu.invite,
+        MineMenu.journey,
         MineMenu.certificate,
         if (!userInfo.inAudit) MineMenu.vip,
       ];
@@ -39,6 +41,7 @@ class MineController extends GetxController with UserStoreMixin {
       MineMenu.mall,
       // MineMenu.exchange,
       MineMenu.invite,
+      MineMenu.journey,
     ];
   }
 
@@ -179,6 +182,9 @@ class MineController extends GetxController with UserStoreMixin {
         break;
       case MineMenu.vip:
         await Get.toNamed(AppRoutes.MEMBER_CENTER);
+        break;
+      case MineMenu.journey:
+        await Get.toNamed(AppRoutes.JOURNEY);
         break;
       default:
         break;

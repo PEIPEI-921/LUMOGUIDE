@@ -157,5 +157,8 @@ class AppRoutes {
   static const GROUP_PROFILE = '/group_profile';
   static const GROUP_QR = '/group_qr';
 
+  static const JOURNEY = '/journey';
+  static const JOURNEY_DETAIL = '/journey_detail';
+  static const JOURNEY_EDITOR = '/journey_editor';
   static const USER_AVATAR = '/user_avatar';
 }

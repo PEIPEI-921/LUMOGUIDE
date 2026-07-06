@@ -34,8 +34,8 @@ class LoginController extends GetxController with ApiMixin {
       /// zhouguanpei@gmail.com
       /// business@lumoguide.com
       /// zhouguanpei@hotmail.com
-      email.value = 'arilks@qq.com';
-      password.value = '654123';
+      email.value = 'zhouguanpei@hotmail.com';
+      password.value = 'zhou123';
       emailController.text = email.value;
       passwordController.text = password.value;
       rememberPassword.value = true;

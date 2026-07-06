@@ -28,3 +28,4 @@ export 'comment.dart';
 export 'company.dart';
 export 'search.dart';
 export 'member_info.dart';
+export 'journey_work.dart';

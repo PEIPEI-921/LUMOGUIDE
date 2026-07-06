@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -17,6 +19,15 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
   final guideCategoryIndex = 0.obs;
   final merchantCategoryIndex = 0.obs;
   final informationCategoryIndex = 0.obs;
+
+  // 导游分类自动轮播
+  Timer? _guideAutoScrollTimer;
+  static const _guideAutoScrollInterval = Duration(seconds: 3);
+
+  // 商家分类自动轮播（轮播内容驱动）
+  bool _merchantAutoRotateEnabled = true;
+  int _previousMerchantBannerIndex = 0;
+  Timer? _merchantSingleBannerTimer;
 
   final _home = Rxn<HomeModel>();
   HomeModel? get home => _home.value;
@@ -48,12 +59,23 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     searchController.addListener(() {
       _showSearchClose.value = searchController.text.isNotEmpty;
     });
+
+    // 商家分类切换时，处理单 banner 或无 banner 的分类
+    ever(merchantCategoryIndex, (_) {
+      if (!_merchantAutoRotateEnabled) return;
+      final banners = _home.value?.shop[merchantCategoryIndex.value].banner ?? [];
+      if (banners.length <= 1) {
+        _startMerchantSingleBannerTimer();
+      }
+    });
   }
 
   @override
   void onClose() {
     searchController.dispose();
     _searchDebounceWorker?.dispose();
+    _stopGuideAutoScroll();
+    _resetMerchantBannerState();
     super.onClose();
   }
 
@@ -203,6 +225,80 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     guideCategoryIndex.value = 0;
     merchantCategoryIndex.value = 0;
     informationCategoryIndex.value = 0;
+    _stopGuideAutoScroll();
+    _merchantAutoRotateEnabled = true;
+    _resetMerchantBannerState();
+  }
+
+  void _startGuideAutoScroll() {
+    _stopGuideAutoScroll();
+    final count = _home.value?.guide.length ?? 0;
+    if (count <= 1) return;
+    _guideAutoScrollTimer = Timer.periodic(_guideAutoScrollInterval, (_) {
+      guideCategoryIndex.value = (guideCategoryIndex.value + 1) % count;
+    });
+  }
+
+  void _stopGuideAutoScroll() {
+    _guideAutoScrollTimer?.cancel();
+    _guideAutoScrollTimer = null;
+  }
+
+  void onGuideCategoryTap(int index) {
+    guideCategoryIndex.value = index;
+    _stopGuideAutoScroll();
+    _guideAutoScrollTimer = Timer(_guideAutoScrollInterval, () {
+      _startGuideAutoScroll();
+    });
+  }
+
+  void _advanceMerchantCategory() {
+    final count = _home.value?.shop.length ?? 0;
+    if (count <= 1) return;
+    _resetMerchantBannerState();
+    merchantCategoryIndex.value = (merchantCategoryIndex.value + 1) % count;
+  }
+
+  void _resetMerchantBannerState() {
+    _previousMerchantBannerIndex = 0;
+    _merchantSingleBannerTimer?.cancel();
+    _merchantSingleBannerTimer = null;
+  }
+
+  void _startMerchantSingleBannerTimer() {
+    _resetMerchantBannerState();
+    _merchantSingleBannerTimer =
+        Timer(const Duration(seconds: 4), _advanceMerchantCategory);
+  }
+
+  void onMerchantBannerPageChanged(
+    int index,
+    CarouselPageChangedReason reason,
+    int bannerCount,
+  ) {
+    if (!_merchantAutoRotateEnabled) return;
+
+    // 手动滑动 → 永久停止自动轮播
+    if (reason == CarouselPageChangedReason.manual) {
+      _merchantAutoRotateEnabled = false;
+      _resetMerchantBannerState();
+      return;
+    }
+
+    // 自动轮播：检测是否完成一轮（从最后一张回到第一张）
+    if (bannerCount > 1 &&
+        index == 0 &&
+        _previousMerchantBannerIndex == bannerCount - 1) {
+      _advanceMerchantCategory();
+    }
+
+    _previousMerchantBannerIndex = index;
+  }
+
+  void onMerchantCategoryTap(int index) {
+    _merchantAutoRotateEnabled = false;
+    _resetMerchantBannerState();
+    merchantCategoryIndex.value = index;
   }
 
   @override
@@ -214,6 +310,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
       if (cacheData.isNotEmpty) {
         final jsonData = jsonDecode(cacheData) as Map<String, dynamic>;
         _home.value = HomeModel.fromJson(jsonData);
+        _startGuideAutoScroll();
         endLoad([]);
       }
     } catch (e) {}
@@ -230,6 +327,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     _home.value = HomeModel.fromJson(res.dataJson);
     _home.refresh();
     StorageStone.setHomeData(jsonEncode(_home.value!.toJson()));
+    _startGuideAutoScroll();
     endLoad([]);
   }
 }

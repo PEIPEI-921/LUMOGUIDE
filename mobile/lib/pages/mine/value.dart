@@ -14,6 +14,7 @@ enum MineMenu {
   certificate,
   merchant,
   vip,
+  journey,
 }
 
 extension MineMenuExt on MineMenu {
@@ -43,6 +44,8 @@ extension MineMenuExt on MineMenu {
         return '商家管理'.tr;
       case MineMenu.vip:
         return '會員中心'.tr;
+      case MineMenu.journey:
+        return '我的歷程'.tr;
     }
   }
 
@@ -72,6 +75,8 @@ extension MineMenuExt on MineMenu {
         return Assets.iconAccountMenuCircleStar;
       case MineMenu.vip:
         return Assets.iconAccountMenuCircleStar;
+      case MineMenu.journey:
+        return Assets.iconAccountMenuJourney;
     }
   }
 }

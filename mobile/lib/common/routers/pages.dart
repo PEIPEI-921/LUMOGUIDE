@@ -219,6 +219,18 @@ class AppPages {
       page: () => const NicknamePage(),
     ),
     GetPage(
+      name: AppRoutes.JOURNEY,
+      page: () => const JourneyPage(),
+    ),
+    GetPage(
+      name: AppRoutes.JOURNEY_DETAIL,
+      page: () => const JourneyDetailPage(),
+    ),
+    GetPage(
+      name: AppRoutes.JOURNEY_EDITOR,
+      page: () => const JourneyEditorPage(),
+    ),
+    GetPage(
       name: AppRoutes.RESERVATION,
       page: () => const ReservationPage(),
     ),

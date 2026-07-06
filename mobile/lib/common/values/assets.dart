@@ -22,6 +22,7 @@ class Assets {
   static const iconAccountMenuExchange = 'assets/images/icon_account_menu_exchange.webp';
   static const iconAccountMenuFun = 'assets/images/icon_account_menu_fun.webp';
   static const iconAccountMenuInvite = 'assets/images/icon_account_menu_invite.webp';
+  static const iconAccountMenuJourney = 'assets/images/icon_account_menu_journey.png';
   static const iconAccountMenuMall = 'assets/images/icon_account_menu_mall.webp';
   static const iconAccountMenuMyReserve = 'assets/images/icon_account_menu_my_reserve.webp';
   static const iconAccountMenuReserveMe = 'assets/images/icon_account_menu_reserve_me.webp';

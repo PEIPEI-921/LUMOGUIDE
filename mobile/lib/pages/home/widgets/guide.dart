@@ -86,8 +86,8 @@ class _Category extends StatelessWidget {
                         borderRadius: BorderRadius.circular(100),
                       )
                       .gestures(
-                        onTap: () => controller.guideCategoryIndex.value =
-                            categories.indexOf(e),
+                        onTap: () => controller.onGuideCategoryTap(
+                            categories.indexOf(e)),
                         behavior: HitTestBehavior.opaque,
                       )
                       .padding(right: 5.w),

@@ -28,17 +28,17 @@ class StatusWidget extends StatelessWidget {
   Color get statusColor {
     switch (status) {
       case 1:
-        return AppColors.primary;
+        return AppColors.primary;       // 紫色：即将发生
       case 2:
-        return const Color(0xFF00D6C4);
+        return AppColors.jadeGreen;     // 浅绿：正在进行
       case 3:
-        return AppColors.primaryText;
+        return AppColors.primaryText;   // 深色：已完成
       case 4:
-        return AppColors.assistantText;
+        return AppColors.assistantText; // 灰色：已取消
       case 5:
-        return const Color(0xFFDD0000);
+        return AppColors.assistantText; // 灰色：已拒绝
       case 6:
-        return AppColors.assistantText;
+        return AppColors.assistantText; // 灰色：已过期
       default:
         return AppColors.primary;
     }

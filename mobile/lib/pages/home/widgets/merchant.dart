@@ -12,33 +12,59 @@ class HomeMerchantWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
 
-    return Obx(
-      () => controller.home?.shop.isEmpty == true
-          ? const SizedBox.shrink()
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const HomeSectionWidget(section: HomeSection.merchant),
-                13.w.verticalSpace,
-                const _Category(),
-                14.w.verticalSpace,
-                if (controller
-                        .home
-                        ?.shop[controller.merchantCategoryIndex.value]
-                        .banner
-                        .isNotEmpty ==
-                    true)
-                  const _Carousel().padding(bottom: 10.w),
-                if (controller
-                        .home
-                        ?.shop[controller.merchantCategoryIndex.value]
-                        .list
-                        .isNotEmpty ==
-                    true)
-                  const _GirdDataWidget(),
-              ],
-            ).padding(horizontal: 14.w, top: 20.w),
-    );
+    return Obx(() {
+      final shops = controller.home?.shop ?? [];
+      if (shops.isEmpty) return const SizedBox.shrink();
+
+      // 预计算所有分类的最大内容量，用于占位防止页面跳动
+      final hasAnyBanner = shops.any((s) => s.banner.isNotEmpty);
+      final maxBannerCount = shops
+          .map((s) => s.banner.length)
+          .reduce((a, b) => a > b ? a : b);
+      final maxListCount = shops
+          .map((s) => s.list.length)
+          .reduce((a, b) => a > b ? a : b);
+
+      // 轮播区域固定高度：banner + 指示器圆点 + 底部间距
+      final carouselHeight = hasAnyBanner
+          ? 265.w + (maxBannerCount > 1 ? 22.w : 0) + 10.w
+          : 0.0;
+
+      // 网格区域固定高度：按最大行数预留
+      final maxRows = (maxListCount / 2).ceil();
+      final gridHeight = maxListCount > 0
+          ? maxRows * 180.w + (maxRows - 1) * 10.w
+          : 0.0;
+
+      final currentBanners =
+          shops[controller.merchantCategoryIndex.value].banner;
+      final currentList =
+          shops[controller.merchantCategoryIndex.value].list;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const HomeSectionWidget(section: HomeSection.merchant),
+          13.w.verticalSpace,
+          const _Category(),
+          14.w.verticalSpace,
+          // 轮播区域：始终占位，防止切换分类时高度跳动
+          if (hasAnyBanner)
+            SizedBox(
+              height: carouselHeight,
+              child: currentBanners.isNotEmpty
+                  ? const _Carousel().padding(bottom: 10.w)
+                  : null,
+            ),
+          // 网格区域：始终占位，防止切换分类时高度跳动
+          if (maxListCount > 0)
+            SizedBox(
+              height: gridHeight,
+              child: currentList.isNotEmpty ? const _GirdDataWidget() : null,
+            ),
+        ],
+      ).padding(horizontal: 14.w, top: 20.w);
+    });
   }
 }
 
@@ -78,8 +104,8 @@ class _Category extends StatelessWidget {
                         borderRadius: BorderRadius.circular(100),
                       )
                       .gestures(
-                        onTap: () => controller.merchantCategoryIndex.value =
-                            categories.indexOf(e),
+                        onTap: () => controller.onMerchantCategoryTap(
+                            categories.indexOf(e)),
                         behavior: HitTestBehavior.opaque,
                       )
                       .padding(right: 5.w),
@@ -114,6 +140,11 @@ class _Carousel extends StatelessWidget {
               viewportFraction: 1,
               onPageChanged: (index, reason) {
                 controller.merchantCarouselIndex.value = index;
+                controller.onMerchantBannerPageChanged(
+                  index,
+                  reason,
+                  items.length,
+                );
               },
             ),
             items: [...items.map((e) => _CarouselItem(banner: e))],

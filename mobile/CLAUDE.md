@@ -137,6 +137,79 @@ Every page follows a strict 3-file pattern:
 
 Initial route is `/welcome` (landing page), which flows into `/root` after auth.
 
+**Homepage guide auto-scroll:** The 「推荐導遊」 section auto-rotates through guide category pills every 3 seconds (`Timer.periodic` in `HomeController`). Manual tap pauses for 3s then resumes. See [[guide-auto-scroll]].
+
+**Homepage merchant auto-scroll:** The 「推薦商家」 section auto-rotates through merchant categories driven by **banner carousel cycle completion** (not a timer). When the `CarouselSlider` finishes one full cycle through all banners, it advances to the next category. Single-banner categories use a 4s fallback timer. Manual swipe on the carousel or tap on a category pill permanently stops auto-rotation. See [[merchant-auto-scroll]].
+
+**Homepage merchant category height stabilization:** Different categories may have different banner/grid item counts. To prevent layout jumping when switching categories, the merchant section pre-computes the maximum banner count and grid row count across all categories, and reserves fixed-height `SizedBox` containers for both the carousel area and the grid area. See `lib/pages/home/widgets/merchant.dart`.
+
+### Login page
+
+Debug mode default credentials (in `lib/pages/login/controller.dart`): `zhouguanpei@hotmail.com` / `zhou123`.
+
+### User booking appointments
+
+**Calendar:** The `DatePickerCalendarWidget` (`lib/common/widgets/date_picker_calendar.dart`) was redesigned:
+- Full month view (`CalendarFormat.month`) instead of week view
+- Year/month selected via `ListWheelScrollView` wheel pickers with direct text input
+- Year range: 1970–3000 (firstDay/lastDay set accordingly to prevent `TableCalendar` assertion failures)
+- Navigation arrows removed; tap year/month chips to open pickers
+- Used by 4 pages: user booking (guide/merchant), guide booking manager, merchant booking manager
+
+**Booking list items** (`lib/pages/user_booking_manager/widgets/guide.dart`, `merchant.dart`):
+- Sorted by `arrivalTime` ascending
+- Color-coded left border (3.w):
+  - status=1 (pending) → `AppColors.primary` (#666FFF purple)
+  - status=2 (confirmed) → `AppColors.jadeGreen` (#44D7B6 green)
+  - status≥3 (completed/cancelled/rejected/expired) → `AppColors.assistantText` (#999999 gray)
+- `StatusWidget` badge colors updated to match
+
+See [[calendar-redesign]], [[booking-color-coding]].
+
+### Journey feature（我的历程）
+
+`MineMenu.journey` entry in 「我的 → 我的服务」, icon: `icon_account_menu_journey.png`. See [[journey-feature]].
+
+**3 pages:**
+| Route | Page | Purpose |
+|-------|------|---------|
+| `/journey` | `JourneyPage` | Work list with search, status/region filters, calendar, work cards |
+| `/journey_detail` | `JourneyDetailPage` | Work detail with route info, link to bookings |
+| `/journey_editor` | `JourneyEditorPage` | Create/edit work trip form with auto day-by-day content |
+
+**Data model:** `JourneyWork` (`lib/common/models/journey_work.dart`) with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Backend API `GET /user/journeyList` is TODO — `mockData()` provides 4 sample entries as fallback. Mock data loaded immediately (no API wait) to avoid blank screen.
+
+**Dynamic status (`effectiveStatus`):** Status is computed from dates relative to today, not stored:
+- 进行中：startDate ≤ today ≤ endDate
+- 待出发：startDate > today
+- 已结束：endDate < today
+- Filtering and card display use `effectiveStatus`/`effectiveStatusValue`
+
+**Calendar date backgrounds:** Each date cell is color-coded by work status:
+- 进行中 → jadeGreen 25% background + green dot
+- 待出发 → primary 15% background + purple dot
+- 已结束 → assistantText 12% background + gray dot
+- Priority when overlapping: inProgress > pending > ended
+- `_JourneyCalendar` is StatefulWidget; only the header row uses `Obx`; `TableCalendar` has `ValueKey(focusedMonth)` to prevent `_dependents.isEmpty` assertion failures.
+
+**Editor redesign (2026-07):** Simplified to natural trip-planning flow:
+- Departure: date (tap → system date picker) + city
+- Return: date + city
+- **Auto day-by-day content:** When both dates are filled, automatically generates content fields for each day (e.g., 「第1天 (7/3)」, 「第2天 (7/4)」…) with light purple background
+- Removed: arrival method/time/location, departure method, cities list, manual status selector (status is date-derived)
+
+**UI design spec:**
+- Search bar: white capsule input (38.h) + separate purple square search button (10.w border radius)
+- Calendar card: 14.w radius, light shadow
+- Legend: small squares (2.w radius) not circles
+- Work cards: NO left color strip. Header row (region tag + title + status capsule), detail rows stacked vertically (icon + text per row), 14.w card radius with light shadow
+- Date format: short `MM/dd - MM/dd日`
+
+**Critical bug fixes:**
+1. **`Obx` wrapping `CustomScrollView` → `_dependents.isEmpty` crash:** `CustomScrollView` internally creates `Scrollable` (StatefulWidget). Fixed by removing outer `Obx` and using local `Obx` only for the sliver list/empty section (returns `SliverPadding` > `SliverList` or `SliverToBoxAdapter`, neither is StatefulWidget).
+2. **Nested ScrollView → RenderViewport error:** `EmptyListWidget` (contains `ListView`) inside `SliverToBoxAdapter` caused Viewport nesting. Fixed with `_JourneyEmptyWidget` (Center + Column, no ListView).
+3. **Page blank for 2-3 seconds:** `fetchData()` waited for API timeout before fallback. Fixed: mock data renders immediately, API request runs in background.
+
 ### IM (Tencent Cloud Chat)
 
 `TIMStore` manages the IM SDK lifecycle: init → login with userSig → register push → maintain conversation/friend lists. SDK App ID: `1600121769`. User credentials (`userNumber`, `userSig`) come from the login API response and are stored in shared_preferences. On `onKickedOffline` or `onUserSigExpired`, the user is force-logged-out.
@@ -166,6 +239,13 @@ Initial route is `/welcome` (landing page), which flows into `/root` after auth.
 3. **`_loadConfig()` 网络超时:** `lib/pages/welcome/controller.dart` 中版本检查请求已加 try-catch + 10s 超时，请求失败不再阻塞导航。
 4. **Code Runner 抢占 VS Code ▶ 按钮导致 FFI 编译崩溃:** Code Runner 扩展的 `dart` executor 会直接调用 `dart` VM 而非 Flutter 框架，导致 `InvalidType/FfiUseSiteTransformer` kernel 编译错误。永远用 **F5** 或菜单栏 **Run → Start Debugging** 启动 Flutter 应用，不要用 Code Runner。
 5. ✅ **flutter_screenutil 在 macOS 上等比放大导致 UI 过大:** `ScreenUtil.init()` + 桌面大窗口 → scaleWidth 可达 3.84，`.w` 组件超大。已修复：用 `ScreenUtilInit` widget 替代，桌面端套 `ConstrainedBox(maxWidth: 600)` 居中内容，`MainFlutterWindow.swift` 设 minSize 400×600 + 默认 450×800。
+6. **iOS CocoaPods 依赖版本冲突（`flutter pub get` 后必须修复）:** `pubspec.lock` 中的 `stripe_ios 12.6.0` 和 `tencent_cloud_chat_push 8.9.7538` 需要比 `Podfile.lock` 更新的原生 SDK 版本，且 `tencent_cloud_chat_push` 和 `tencent_cloud_chat_sdk` 对 `TXIMSDK_Plus_iOS_XCFramework` 的 `~>` 约束互斥。**每次 `flutter pub get` 后**需修改两个 podspec 文件：
+   - `ios/.symlinks/plugins/tencent_cloud_chat_push/ios/tencent_cloud_chat_push.podspec` — `TXIMSDK_Plus_iOS_XCFramework` 加 `'>= 8.9.7537'` 约束
+   - `ios/.symlinks/plugins/tencent_cloud_chat_sdk/ios/tencent_cloud_chat_sdk.podspec` — 将 `"~> 8.8.7373"` 改为 `">= 8.8.7373"`
+   - 然后删除 `ios/Podfile.lock`，运行 `pod install --repo-update`
+   - 详见 [[ios-podspec-patches]]
+7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable`、`TableCalendar` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
+8. **macOS App Sandbox 缺网络权限导致所有 API 请求失败:** `DebugProfile.entitlements` 和 `Release.entitlements` 需要添加 `com.apple.security.network.client` 权限，否则沙箱会阻止所有 HTTP 请求。已在两个 entitlements 文件中添加。详见 [[macos-network-entitlement]]。
 
 ## New machine setup
 
