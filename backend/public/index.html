@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>路盟 LUMOGUIDE — 路上有光，盟友相伴</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/components.css">
+
+  <!-- Fonts: Noto Serif SC for brand display moments -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+
+  <!-- Vue 3 + Vue Router -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@4.3.3/dist/vue-router.global.js"></script>
+
+  <!-- Utils (load order matters) -->
+  <script src="/js/utils/storage.js"></script>
+  <script src="/js/utils/helpers.js"></script>
+
+  <!-- i18n -->
+  <script src="/js/i18n/zh-CN.js"></script>
+  <script src="/js/i18n/zh-TW.js"></script>
+  <script src="/js/i18n/en.js"></script>
+  <script src="/js/i18n/index.js"></script>
+
+  <!-- API -->
+  <script src="/js/api/urls.js"></script>
+  <script src="/js/api/provider.js"></script>
+
+  <!-- Stores -->
+  <script src="/js/stores/config.js"></script>
+  <script src="/js/stores/user.js"></script>
+
+  <!-- Components -->
+  <script src="/js/components/loading-spinner.js"></script>
+  <script src="/js/components/empty-state.js"></script>
+  <script src="/js/components/app-header.js"></script>
+  <script src="/js/components/app-nav.js"></script>
+
+  <!-- Pages — Auth -->
+  <script src="/js/pages/welcome.js"></script>
+  <script src="/js/pages/auth/login.js"></script>
+  <script src="/js/pages/auth/register.js"></script>
+
+  <!-- Pages — Tab Content -->
+  <script src="/js/pages/home/index.js"></script>
+  <script src="/js/pages/city/index.js"></script>
+  <script src="/js/pages/news/index.js"></script>
+  <script src="/js/pages/message/index.js"></script>
+  <script src="/js/pages/mine/index.js"></script>
+
+  <!-- Router -->
+  <script src="/js/router.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Initial loading state before Vue mounts -->
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F3F4FA;">
+      <div style="position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#666FFF,#4A52E0);transform:rotate(45deg);box-shadow:0 6px 20px rgba(102,111,255,0.25);"></div>
+        <span style="position:relative;z-index:2;color:#fff;font-size:24px;font-weight:700;font-family:'Noto Serif SC',serif;">盟</span>
+      </div>
+      <div style="font-size:16px;font-weight:700;color:#1A2035;">LUMOGUIDE</div>
+      <div style="font-size:12px;color:#9196A8;">路上有光，盟友相伴</div>
+      <div style="width:28px;height:28px;border:3px solid #E4E6F0;border-top-color:#666FFF;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:8px;"></div>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    </div>
+  </div>
+
+  <!-- App Entry (MUST be at end of body so #app exists) -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

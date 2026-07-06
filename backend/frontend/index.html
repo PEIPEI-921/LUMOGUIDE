@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>LUMOGUIDE — 你的随身旅游指南</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <title>路盟 LUMOGUIDE — 路上有光，盟友相伴</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 
   <!-- CSS -->
   <link rel="stylesheet" href="/css/variables.css">
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/components.css">
+
+  <!-- Fonts: Noto Serif TC/SC for brand display moments -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
 
   <!-- Vue 3 + Vue Router -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.js"></script>
@@ -39,19 +44,55 @@
   <script src="/js/components/loading-spinner.js"></script>
   <script src="/js/components/empty-state.js"></script>
   <script src="/js/components/app-header.js"></script>
-  <script src="/js/components/app-nav.js"></script>
+  <script src="/js/components/app-topbar.js"></script>
 
   <!-- Pages — Auth -->
   <script src="/js/pages/welcome.js"></script>
   <script src="/js/pages/auth/login.js"></script>
   <script src="/js/pages/auth/register.js"></script>
+  <script src="/js/pages/auth/extra.js"></script>
 
   <!-- Pages — Tab Content -->
   <script src="/js/pages/home/index.js"></script>
   <script src="/js/pages/city/index.js"></script>
+  <script src="/js/pages/city/detail.js"></script>
+  <script src="/js/pages/city/extra.js"></script>
+  <script src="/js/pages/common/details.js"></script>
   <script src="/js/pages/news/index.js"></script>
+  <script src="/js/pages/news/detail.js"></script>
+  <script src="/js/pages/search/index.js"></script>
   <script src="/js/pages/message/index.js"></script>
+  <script src="/js/pages/message/subpages.js"></script>
   <script src="/js/pages/mine/index.js"></script>
+  <script src="/js/pages/mine/profile.js"></script>
+  <script src="/js/pages/mine/extra.js"></script>
+  <script src="/js/pages/address/list.js"></script>
+
+  <!-- Pages — Guide / Publish / Merchant -->
+  <script src="/js/pages/guide/certify.js"></script>
+  <script src="/js/pages/guide/publish.js"></script>
+  <script src="/js/pages/guide/publish-city.js"></script>
+  <script src="/js/pages/guide/bookings.js"></script>
+  <script src="/js/pages/guide/change-city.js"></script>
+  <script src="/js/pages/publish/form.js"></script>
+  <script src="/js/pages/merchant/entry.js"></script>
+  <script src="/js/pages/merchant/manage.js"></script>
+  <script src="/js/pages/merchant/bookings.js"></script>
+
+  <!-- Pages — Integral / VIP / Booking -->
+  <script src="/js/pages/integral/index.js"></script>
+  <script src="/js/pages/integral/goods.js"></script>
+  <script src="/js/pages/integral/exchange.js"></script>
+  <script src="/js/pages/integral/records.js"></script>
+  <script src="/js/pages/vip/index.js"></script>
+  <script src="/js/pages/booking/form.js"></script>
+
+  <!-- Pages — Evaluation -->
+  <script src="/js/pages/evaluation.js"></script>
+
+  <!-- Pages — Misc (Phase 6) -->
+  <script src="/js/pages/misc/photo.js"></script>
+  <script src="/js/pages/misc/web.js"></script>
 
   <!-- Router -->
   <script src="/js/router.js"></script>
@@ -59,10 +100,14 @@
 <body>
   <div id="app">
     <!-- Initial loading state before Vue mounts -->
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;font-family:sans-serif;">
-      <div style="font-size:48px;">🌍</div>
-      <div style="font-size:20px;font-weight:700;color:#666FFF;">LUMOGUIDE</div>
-      <div style="width:32px;height:32px;border:3px solid #f0f0f0;border-top-color:#666FFF;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#F9F9F6;">
+      <div style="position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#666FFF,#4A52E0);transform:rotate(45deg);box-shadow:0 6px 20px rgba(102,111,255,0.25);"></div>
+        <span style="position:relative;z-index:2;color:#fff;font-size:24px;font-weight:800;font-family:'Georgia','Noto Serif TC','Noto Serif SC',serif;">盟</span>
+      </div>
+      <div style="font-size:17px;font-weight:700;color:#162539;letter-spacing:-0.3px;">LUMOGUIDE</div>
+      <div style="font-size:12px;color:#9CA3AF;">路上有光，盟友相伴</div>
+      <div style="width:28px;height:28px;border:3px solid rgba(0,0,0,.06);border-top-color:#666FFF;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:8px;"></div>
       <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
   </div>

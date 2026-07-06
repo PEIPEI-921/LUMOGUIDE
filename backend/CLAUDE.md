@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**LuMo Guide** — a travel guide platform backend built on Laravel 9. Provides REST API for a mobile app and an admin panel for content management. The platform covers travel destinations (cities), tour guides, merchants/shops, information articles, reservations, Stripe VIP subscriptions, and a points/rewards system.
+**LuMo Guide（路盟）** — a professional platform for travel industry insiders (tour guides, merchants, content creators) built on Laravel 9. Slogan: **"路上有光，盟友相伴"**. Provides REST API for a Flutter mobile app, a Vue 3 SPA web frontend, and a Dcat Admin panel. The platform covers travel destinations (cities), tour guides, merchants/shops, information articles, reservations, Stripe VIP subscriptions, and a points/rewards system. **All users must log in and pass identity verification to access content.**
 
 **Important**: Source files under `app/` are encoded with **swoole_loader**. The PHP extension `swoole_loader` must be loaded or the files will appear garbled. Do not edit encoded files directly — work through the admin panel or API layer. A few files (like `helpers.php`, `lang/`, `routes/`, `config/`, `.env`, `composer.json`) are plaintext.
 
@@ -195,7 +195,24 @@ If the configuration breaks, recreate it manually: Settings → PHP → CLI Inte
 
 The web frontend is a **Vue.js 3 + Vue Router** single-page application served from `frontend/`. No build tools — all libraries loaded via CDN. The SPA replicates all functionality from the Flutter mobile app using the same backend REST APIs.
 
-**Tech stack**: Vue 3 + Vue Router 4 (CDN), custom CSS (no framework), Fetch API.
+**Tech stack**: Vue 3 + Vue Router 4 (CDN), custom CSS (no framework), Fetch API, Google Fonts (Noto Serif SC for brand display moments).
+
+**Design system** (refined 2025-07-05 via `frontend-design` skill, responsive refresh 2026-07-06):
+- Primary: `#666FFF` (indigo), Primary Dark: `#4A52E0`
+- Page background: `#F9F9F6` (warm paper-white), Card: `#FFFFFF`, Text: `#162539` (ink) / `#6B7280` (muted) / `#9CA3AF` (faint)
+- Accent colors: `#EF4444` (red), `#F97316` (orange), `#F59E0B` (amber), `#10B981` (green), `#8B5CF6` (purple)
+- Border: `rgba(0,0,0,.06)`, subtle shadows with `rgba(0,0,0,.03)`
+- Radius: large 20px / small 12px
+- Display typeface: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`; Body: system font stack
+- **Glassmorphism Header**: Replaced (2026-07-06) by primary indigo gradient header `linear-gradient(135deg, #666FFF, #5A5FE8)`, height 52px, with white text/icons.
+- **Signature element**: 路盟 badge (45° rotated square with "盟") — REMOVED. Replaced by `logo_lumoguide.png` full horizontal logo (36px high, transparent bg, white version via CSS filter on welcome page).
+
+**Responsive layout system** (2026-07-06 global refresh):
+- **3 breakpoints**: default ≥861px (32px side padding) → ≤860px tablet (16px) → ≤480px mobile (12px, reduced fonts/spacing)
+- **Container classes**: `.ds-container-600` (forms/lists), `.ds-container-640` (messages/addresses/records), `.ds-container-760` (detail/articles), `.ds-container-960` (galleries/malls), `.ds-container-1280` (wide dashboards)
+- **Default centering**: `.ds-page-wrapper` (max-width 1280px, margin auto) for tab pages; search/hero areas stay full-width
+- **Auth pages**: Redesigned (2026-07-06) to match Flutter mobile: full-screen indigo gradient background + centered white `.auth-card` (max-width 400px, radius 20px) with full-rounded inputs (radius 100px). Welcome page uses gradient bg + white logo + glass-morphism role cards.
+- **Full-screen pages** (not constrained): Welcome (`.welcome-page`), Photo Viewer, Web View
 
 **CDN versions (pinned)**:
 ```html
@@ -208,16 +225,19 @@ The web frontend is a **Vue.js 3 + Vue Router** single-page application served f
 frontend/
 ├── index.html                  # SPA shell (CDN links + <div id="app">)
 ├── 404.html                    # Error page
+├── images/
+│   ├── logo.png                # Logo icon (small square)
+│   └── logo_lumoguide.png      # Full horizontal logo (5326×1024, transparent bg)
 ├── css/
 │   ├── variables.css           # Design tokens (matches mobile AppColors)
 │   ├── app.css                 # Global layout, typography, utilities
-│   └── components.css          # Card, nav, form, button, badge, etc.
+│   └── components.css          # .ds-* component classes, topbar, auth cards, skeleton screens, evaluation form
 └── js/
-    ├── app.js                  # Vue.createApp(), global components, mount
-    ├── router.js               # Hash-based routes (56 routes + auth guard)
+    ├── app.js                  # Vue.createApp(), AppShell with inline topbar (indigo gradient), global components, mount
+    ├── router.js               # Hash-based routes (69 routes + auth guard)
     ├── api/
     │   ├── provider.js         # Fetch wrapper — never throws, returns {success, data, message}
-    │   └── urls.js             # All 120+ API URL constants (mirrors mobile ApiUrl)
+    │   └── urls.js             # All 183 API URL constants (mirrors Flutter ApiUrl class)
     ├── stores/
     │   ├── user.js             # Vue.reactive — auth state, token, profile, login/logout
     │   └── config.js           # System config cache from /common/config
@@ -227,44 +247,141 @@ frontend/
     │   ├── zh-TW.js            # Traditional Chinese (identity mapping)
     │   └── en.js               # English
     ├── utils/
-    │   ├── storage.js          # localStorage wrapper (mirrors Flutter StorageStone keys)
-    │   └── helpers.js          # timeAgo, imageUrl, safeInt/safeString, showToast, debounce
+    │   ├── storage.js          # localStorage wrapper (mirrors Flutter StorageStone keys, incl. cityAreaMap)
+    │   └── helpers.js          # timeAgo, imageUrl, safeInt/safeString, showToast, debounce, ListPageHelper, setupInfiniteScroll
     ├── components/
-    │   ├── app-nav.js          # 5-tab bottom navigation (Home/City/News/Message/Mine)
-    │   ├── app-header.js       # Sticky header with back button + title
+    │   ├── app-nav.js          # Bottom tab navigation (DEPRECATED — replaced by inline topbar in app.js)
+    │   ├── app-header.js       # Sticky header with back button + title (DEPRECATED — topbar always tabs mode)
+    │   ├── app-topbar.js       # Top bar component [REFERENCE only — template inline in app.js]
     │   ├── loading-spinner.js  # Loading indicator
     │   └── empty-state.js      # Empty data placeholder with retry
     └── pages/
-        ├── welcome.js          # Landing page
+        ├── welcome.js              # Landing page (indigo gradient bg, white logo, glass cards, full-rounded buttons)
         ├── auth/
-        │   ├── login.js        # Email/password login with remember-me
-        │   └── register.js     # Registration with email code verification
-        ├── home/index.js       # Home: search, city strategy, hot cities, guides, merchants, news
-        ├── city/index.js       # City list browser with continent tabs
-        ├── news/index.js       # Information/articles with category filter
-        ├── message/index.js    # Message center (5 categories)
-        └── mine/index.js       # Profile, VIP status, service menu grid
+        │   ├── login.js            # Login (gradient bg + white card, full-rounded inputs, matches Flutter LoginPage)
+        │   ├── register.js         # Registration (same card style, inline verify-code send button)
+        │   └── extra.js            # ForgetPassword, VerifyCode, PasswordInput (all auth card style)
+        ├── home/index.js           # Home: search, city strategy, continent-grouped cities (auto-switch), guides (auto-switch 5s), merchants (banner carousel drives category switch), news
+        ├── city/
+        │   ├── index.js            # City list browser with continent tabs
+        │   ├── detail.js           # City detail — Banner + 10 Tabs + content grid
+        │   └── extra.js            # CityStrategy, CityGuideList
+        ├── common/
+        │   └── details.js          # GuideDetail, CommonDetail, CompanyDetail, EvaluationDetail, EvaluationList
+        ├── news/
+        │   ├── index.js            # Information/articles with category filter
+        │   └── detail.js           # News detail + evaluations
+        ├── search/
+        │   └── index.js            # Search with tabs (city/guide/content)
+        ├── message/
+        │   ├── index.js            # Message center (5 categories)
+        │   └── subpages.js         # MessageSystem, MessageFollow, MessageComments, MessageReserves
+        ├── mine/
+        │   ├── index.js            # My page — menu grid (legacy, being replaced by profile.js)
+        │   ├── profile.js          # Profile (refactored) + ProfileEdit
+        │   └── extra.js            # Settings, ModifyPassword, ModifyPhone, Feedback, Contact, Invite,
+        │                           #   Followers, Following, MyEvaluations, MyBookings, BookingDetail
+        ├── address/
+        │   └── list.js             # AddressList + AddressEdit
+        ├── guide/
+        │   ├── certify.js          # GuideCertifyPage（3步认证向导）
+        │   ├── publish.js          # GuidePublishPage（5 Tab发布管理）
+        │   ├── publish-city.js     # GuidePublishCityPage（城市管理）
+        │   ├── bookings.js         # GuideBookingsPage + GuideBookingDetailPage
+        │   └── change-city.js      # GuideChangeCityPage（切换服务城市）
+        ├── publish/
+        │   └── form.js             # 5个发布表单组件（createPublishPage工厂函数）
+        └── merchant/
+            ├── entry.js            # MerchantEntryPage（4步入驻向导）
+            ├── manage.js           # MerchantManagePage（店铺CRUD）
+            └── bookings.js         # MerchantBookingsPage + MerchantBookingDetailPage
+        ├── integral/
+        │   ├── index.js            # IntegralPage（积分商城首页）
+        │   ├── goods.js            # IntegralGoodsPage（商品详情）
+        │   ├── exchange.js         # IntegralExchangePage + Result + Order
+        │   └── records.js          # IntegralRecordsPage（积分记录）
+        ├── vip/
+        │   └── index.js            # VipPage（VIP会员中心）
+        ├── booking/
+        │   └── form.js             # BookingGuidePage + BookingMerchantPage
+        ├── evaluation.js            # EvaluationSubmitPage（星级评价+图片上传）
+        └── misc/
+            ├── photo.js             # PhotoViewerPage（全屏图片查看器）
+            └── web.js               # WebViewPage（内嵌网页）
 ```
 
 **Architecture patterns**:
-- **API**: `ApiProvider.get/post(path, data)` → always returns `{success, code, message, data}`. JWT automatically attached from `Storage.token`. Never throws — matches Flutter's `ApiResult` pattern.
-- **Auth**: `UserStore` (Vue.reactive) manages token + profile. Login stores credentials in localStorage under keys matching Flutter's `StorageStone` (`token`, `user_number`, `user_sig`, `user_info`). 401 responses trigger logout redirect. Route guard in `router.beforeEach` checks `meta.requiresAuth`.
-- **i18n**: Keys are Traditional Chinese characters (matching Flutter). `I18n.t('首頁')` returns locale-appropriate text. Language persisted to localStorage.
-- **Pages**: Each page is a Vue Options API component definition object (`{template, data, methods, mounted}`). Registered globally via `app.component()`. Full pages for 5 tabs + auth; remaining 40+ routes use `ComingSoon` placeholder — ready for Phase 2.
-- **Routing**: Hash-based (`#/home`, `#/city/detail?id=1`). Tab bar shown only on 5 main routes; hidden on sub-pages (matches Flutter push navigation). Scroll position resets on navigation.
+- **API**: `ApiProvider.get/post(path, data)` → always returns `{success, code, message, data}`. JWT automatically attached from `Storage.token`. Never throws — matches Flutter's `ApiResult` pattern. In local dev, API proxy in `public/index.php` forwards `/api/*` to `https://api.lumoguide.com`.
+- **Auth**: `UserStore` (Vue.reactive) manages token + profile. Login stores credentials in localStorage under keys matching Flutter's `StorageStone` (`token`, `user_number`, `user_sig`, `user_info`). 401 responses trigger logout redirect. Route guard in `router.beforeEach` checks `meta.requiresAuth`. Profile refetched via `UserStore.fetchProfile()` after edits.
+- **i18n**: Keys are Traditional Chinese characters (matching Flutter). `I18n.t('首頁')` returns locale-appropriate text. Language persisted to localStorage. Switchable via Settings page.
+- **Pages**: Each page is a Vue Options API component definition object (`{template, data, methods, mounted}`). Multiple related components per file (e.g. `pages/city/detail.js` contains `CityDetailPage`, `pages/mine/extra.js` contains 11 components). Files loaded via `<script>` tags in `index.html` — order matters: dependencies must load before dependents.
+- **Component resolution**: Shared components (`AppHeader`, `LoadingSpinner`, `EmptyState`) are registered on the root Vue instance's `components` option. Vue 3 resolves them through the parent chain via `<router-view>`, so they're available in all route components without `app.component()` global registration.
+- ⚠️ **Vue 3 CDN component registration pitfall**: Components registered locally on the root component via `components: {}` may NOT be resolved in child components' templates (e.g., a component registered on root but used inside `AppShell`'s template). This differs from Vue 3 SFC/build-tool behavior. If a component renders blank with no errors, the ONLY reliable fix is to **inline the template HTML directly in the parent component.** Do NOT create separate component files — even `app.component()` global registration is unreliable in the CDN build. If a component renders blank: **inline the template HTML directly — do NOT create separate component files.** The `app-topbar.js` file is kept only as reference (marked `[REFERENCE]` / `⚠️ NOT USED at runtime`), with the actual template inlined in `app.js` AppShell. **Never repeat this mistake.** See [[vue3-cdn-component-pitfall]] and [[web-standard-layout-patterns]] in memory.
+- **Routing**: Hash-based (`#/home`, `#/city/detail?id=1`). Tab bar shown only on 5 main routes; hidden on sub-pages (matches Flutter push navigation). Scroll position resets on navigation. Route params via `this.$route.params.id` and query via `this.$route.query.id`. Route changes watched via `watch: { '$route.params.id': handler }` for same-component navigation.
+- **Top navigation bar**: Built inline in `AppShell` template (`app.js`). Shows full logo image (`logo_lumoguide.png`, 36px), 5 tabs (首頁/城市/資訊/🔔/👤) left-aligned, 🔍 search button on right. Indigo gradient background. Always in 'tabs' mode on every page (back mode removed). Hidden only on `/welcome`, `/login`, `/register`. Deprecates both `AppNav` and `AppHeader` components.
+- **Design system v2** (2025-07-05, ref PPCC): Warm paper-white bg `#F9F9F6`, ink text `#162539`, primary `#666FFF`, accent soft `#EEEDFF`. Radius: 20px/12px. Serif: `Georgia, Noto Serif TC, Noto Serif SC`. All pages now use `.ds-*` component classes (`.ds-card`, `.ds-tab`, `.ds-type-tab`, `.ds-profile-card`, `.ds-menu-group`, `.ds-btn`, `.ds-input`, etc.) from `components.css`.
+- **Page templates** (4 patterns): (1) **列表页** — filter pills + card grid/list + empty/loading/error; (2) **详情页** — banner + info card + tab content + actions; (3) **表单页** — `.ds-input`/`.ds-textarea` + submit button + loading; (4) **仪表盘** — stats row + `.ds-menu-group` sections.
+
+**Welcome page design** (路盟品牌入口):
+- 路盟 badge (45° rotated rounded square with "盟" character) + radial background glow
+- Slogan "路上有光，盟友相伴" in Noto Serif SC
+- Platform positioning: "旅游行业人士的信息资源交流平台"
+- Three role cards: 导游 (publish city content), 商家 (manage shop bookings), 创作者 (share industry news)
+- Login/Register CTAs + "已通过身份审核的成员方可进入" lock notice
+- No guest browsing path — all access requires authentication
 
 **Backend route for SPA** (`routes/web.php`):
 ```php
 // Root route serves SPA shell
 Route::get('/', fn() => response()->file(base_path('frontend/index.html')));
 
-// SPA catch-all — all non-API, non-admin routes serve index.html
-Route::get('/{any}', fn() => response()->file(base_path('frontend/index.html')))
-    ->where('any', '^(?!api|manage).*$');
-```
-This ensures `/api/*` (mobile app) and `/manage*` (admin panel) are unaffected.
+// Protocol pages (Blade views) — must be before SPA catch-all
+Route::get('/protocol/{type}', function ($type) {
+    return view('protocol', ['content' => systemConfig($type)]);
+});
 
-**Implementation status**: Phase 1 complete (shell, auth, 5 tabs, i18n). Phases 2-6 pending (detail pages, forms, publishing, commerce, polish). See plan at `.claude/plans/modular-swimming-sky.md`.
+// SPA catch-all — all non-API, non-admin routes serve index.html
+// Regex excludes paths with dots (static files) and api/manage prefixes
+Route::get('/{any}', fn() => response()->file(base_path('frontend/index.html')))
+    ->where('any', '^(?!api|manage)[^.]*$');
+```
+This ensures `/api/*` (mobile app), `/manage*` (admin panel), and static files (`/css/...`, `/js/...`) are unaffected. Protocol pages (`/protocol/user`, `/protocol/privacy`) render Blade views with system config content.
+
+**Implementation status** (updated 2026-07-06):
+| Phase | 名称 | 页面数 | 状态 |
+|-------|------|--------|------|
+| Phase 0 | 顶部导航栏 + LOGO | — | ✅ |
+| Phase 1 | 外壳 + 认证 + 5 Tab | 8 | ✅ |
+| Phase 2 | 详情页 + 设计系统刷新 | 14 | ✅ |
+| Phase 3 | 用户操作 | 18 | ✅ |
+| Phase 4 | 发布功能 | 12 | ✅ |
+| Phase 5 | 电商功能 | 13 | ✅ |
+| Phase 6 | 打磨收尾 | 2 + 全局 | ✅ (含 2026-07-06 响应式布局刷新) |
+| Phase 7 | 评价提交 + App/Web 一致性审计 | 1 + 审计 | ✅ (2026-07-06) |
+| Phase 8 | 导航栏+认证页+商家区块改造 | 全局 | ✅ (2026-07-06) |
+
+**69/69 routes implemented** (100%). See `plan.md` for full details. Top nav bar redesigned with primary indigo gradient, auth pages match Flutter mobile layout, shop section has banner carousel driving category auto-switch.
+
+### App-Web Feature Parity
+
+The web frontend replicates all Flutter mobile app features that are feasible in a browser environment. A comprehensive audit (2026-07-06) confirmed functional alignment across all 71 Flutter pages vs 69 Web routes.
+
+**Mobile-only features (not applicable to Web):**
+- Chat/IM (Tencent Cloud Chat SDK — native only)
+- QR code scanning (requires camera hardware)
+- Group chat management (select members, group profiles, group QR codes)
+
+**Key feature alignment validations:**
+- **Evaluation submission** (Phase 7): Star rating (1-5★) + text content + image upload (up to 9), matching Flutter's `EvaluationPage`. Entry points added to news detail and common detail pages. Uses `addContentEvaluate` and `addInformationEvaluate` APIs.
+- **Booking rejection**: Web uses `prompt()` dialog for rejection reason vs Flutter's dedicated `RejectReservationPage` — functionally equivalent.
+- **All other features** (auth, city browsing, guide/merchant profiles, content publishing, bookings, points/VIP, search, messages, address management, etc.) are fully aligned.
+
+**Audit findings & fixes (2026-07-06):**
+- ✅ Added evaluation submission page (critical gap)
+- ✅ Added "Write Evaluation" buttons to news detail & common detail pages
+- ✅ Fixed integral exchange result page hardcoded `order/0` → dynamic `order_id` from route query
+
+**API coverage**: 183 API endpoints defined in `urls.js`, mirroring Flutter's `ApiUrl` class. A few endpoints are intentionally unused in Web (e.g., `getContinents`, `getLocation`) — they serve mobile-specific flows.
 
 ### Mobile Frontend Reference
 
@@ -383,3 +500,14 @@ MySQL (`lumo_guide`). Migrations in `database/migrations/` — custom tables sta
 - **Stripe is live**: `.env` contains production Stripe keys. Webhook secret is `whsec_ia...`. Test keys are commented out.
 - **System config Redis caching**: Config loaded via `systemConfig()` caches all `system_config` table rows into a Redis hash, refreshing on cache miss.
 - **Response format**: All API responses follow `{code: int, message: string, data: object/array}`.
+- **Claude Code Skills**: 18 skills installed via `npx skills add anthropics/skills` in `.agents/skills/`, including `frontend-design` for UI work. Use `Skill` tool to invoke (e.g., `/frontend-design`). See also [[frontend-design-skill]] in memory.
+- **Web-standard layout patterns**: The web frontend follows web-standard patterns, not mobile patterns. Key rules: (1) Never extract inline templates into separate component files in Vue 3 CDN build — the component will silently render blank; (2) Use `.ds-container-*` + `.ds-page-wrapper` for content centering, not inline `max-width`; (3) Top navigation bar (not bottom tabs) — `AppNav` is deprecated; (4) New pages should be audited against the Flutter app for feature parity. See [[web-standard-layout-patterns]] in memory.
+- **Feature parity audit**: The web frontend should stay aligned with the Flutter mobile app. When the mobile app adds new features, the web frontend should follow. When unsure about a feature's behavior, reference the Flutter source at `/Users/guanpei/Downloads/LUMOGUIDE- Front/LUMOGUIDE-frontend/lib/pages/`. See [[mobile-frontend-reference]] in memory.
+- **Home page city continents**: Recommended cities from `homeData.city` don't include `area_name`. Use `cityList` API in parallel (`Promise.all`) to enrich with continent data. Process `cityAreaMap` first, then update `homeData` so `continentGroups` computed renders correctly on first trigger. See [[home-page-city-continents]] and [[parallel-api-data-enrichment]] in memory.
+- **Home page guide auto-switch**: Guide categories auto-switch every 5s (matching Flutter's `_guideAutoScrollTimer`). Manual tap resets the timer. Keep original `.h-scroll` layout — do NOT change guide card visual style.
+- **Reuse existing styles**: Before creating new CSS classes, check if existing utility classes (`.filter-pills`, `.filter-pill`, `.card-grid-*`, `.h-scroll`, `.ds-*`) already provide the needed style. Creating custom styles when existing ones suffice causes visual inconsistency. See [[reuse-existing-styles]] in memory.
+- **Layout stability during auto-switch**: Use placeholder slots (invisible cards with `visibility: hidden`) to pad to the max row count across all categories, preventing page height from jumping. City placeholders work via `aspect-ratio: 16/9`; Guide/Shop placeholders MUST have full DOM structure (image + info + text) — an empty `<div>` collapses to zero height because there's no content to push it open. See [[shop-banner-carousel]] and [[home-page-city-continents]] in memory.
+- **Topbar (top navigation bar)**: Redesigned 2026-07-06 — indigo gradient background `linear-gradient(135deg, #666FFF, #5A5FE8)`, height 52px. Logo uses `logo_lumoguide.png` (36px high, far left). Tabs (首頁/城市/資訊/🔔/👤) are left-aligned after logo, never centered. Search button 🔍 at far right. `topBarMode` always `'tabs'` — nav bar visible on ALL pages except welcome/login/register. See [[topbar-redesign]] in memory.
+- **Auth pages**: Redesigned 2026-07-06 to match Flutter mobile layout — full-screen indigo gradient bg + centered white `.auth-card` (max-width 400px, border-radius 20px) + full-rounded inputs (border-radius 100px) + title with small primary underline bar. Login/Register/Welcome/ForgetPassword/VerifyCode/PasswordInput all use this unified style. See [[auth-pages-redesign]] in memory.
+- **Shop/Business section**: Banner carousel from `cat.banner` drives category switching — all banner slides shown (4s each), then auto-advance to next category. Categories with no banner AND no list are filtered out. Placeholder padding prevents layout jumping between categories. Merchant card images use `aspect-ratio: 16/9` (same as city cards). List: 4 columns on desktop, 2 on mobile. See [[shop-banner-carousel]] in memory.
+- **Spacing (web traditional)**: Card grids (`.card-grid-*`) and horizontal scroll (`.h-scroll`) use `--spacing-lg` (16px) gap — the web standard, not the tight 8px mobile-native spacing. On mobile ≤480px, reduced to `--spacing-md` (12px). See [[reuse-existing-styles]] in memory.
