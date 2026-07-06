@@ -3,6 +3,47 @@
    Mirrors Flutter HomePage + HomeController
    ============================================ */
 
+// Sub-region → top-level continent mapping (API returns area_name as sub-region)
+const AREA_TO_CONTINENT = {
+  // Europe
+  '西欧': '欧洲', '西歐': '欧洲',
+  '东欧': '欧洲', '東歐': '欧洲',
+  '南欧': '欧洲', '南歐': '欧洲',
+  '北欧': '欧洲', '北歐': '欧洲',
+  '中欧': '欧洲', '中歐': '欧洲',
+  // Asia
+  '东亚': '亚洲', '東亞': '亚洲',
+  '东南亚': '亚洲', '東南亞': '亚洲',
+  '南亚': '亚洲', '南亞': '亚洲',
+  '中亚': '亚洲', '中亞': '亚洲',
+  '西亚': '亚洲', '西亞': '亚洲',
+  // Americas
+  '北美': '北美洲',
+  '南美': '南美洲',
+  '中美': '北美洲',
+  '加勒比': '北美洲',
+  // Africa
+  '北非': '非洲',
+  '东非': '非洲', '東非': '非洲',
+  '西非': '非洲',
+  '南非': '非洲',
+  '中非': '非洲',
+  // Oceania
+  '澳新': '大洋洲',
+  '澳洲': '大洋洲',
+  '澳大利亚': '大洋洲', '澳大利亞': '大洋洲',
+};
+
+// Top-level continent names (identity mapping)
+const TOP_CONTINENTS = new Set([
+  '欧洲', '歐洲',
+  '亚洲', '亞洲',
+  '北美洲', '南美洲',
+  '非洲',
+  '大洋洲',
+  '南极洲', '南極洲',
+]);
+
 const HomePage = {
   template: `
     <div class="page-content">
@@ -34,12 +75,14 @@ const HomePage = {
       <loading-spinner v-if="!homeData && loading" :text="t('加載中...')" />
 
       <!-- Content Sections -->
+      <div class="ds-page-wrapper">
       <template v-if="homeData">
         <!-- City Strategy -->
-        <div v-if="homeData.city && homeData.city.length" style="margin:12px;padding:16px;background:linear-gradient(135deg, #EEF0FF, #F0F0FF);border-radius:12px;">
-          <div class="section-header" style="padding:0 0 8px 0;">
+        <div v-if="homeData.city && homeData.city.length" style="margin:12px 16px;padding:16px;background:var(--color-primary-light);border-radius:12px;border:1px solid rgba(102,111,255,0.08);">
+          <div class="section-header" style="padding:0 0 10px 0;">
             <div class="section-header-left">
-              <span class="section-title" style="font-size:16px;">{{ t('城市攻略') }}</span>
+              <span class="section-accent"></span>
+              <span style="font-size:15px;font-weight:600;color:var(--color-primary-text);">{{ t('城市攻略') }}</span>
             </div>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-around;">
@@ -50,23 +93,41 @@ const HomePage = {
           </div>
         </div>
 
-        <!-- Hot Cities -->
-        <div v-if="homeData.city && homeData.city.length">
+        <!-- Hot Cities by Continent (后台推荐城市，按大洲分类) -->
+        <div v-if="continentGroups.length > 0">
           <div class="section-header">
             <div class="section-header-left">
-              <span class="section-title">{{ t('熱門城市') }}</span>
-              <span class="section-subtitle">{{ t('在路上輕鬆掌握每個城市') }}</span>
+              <span class="section-accent"></span>
+              <div>
+                <span class="section-title">{{ t('熱門城市') }}</span>
+                <span class="section-subtitle" style="display:block;">{{ t('在路上輕鬆掌握每個城市') }}</span>
+              </div>
             </div>
             <a href="#/city" class="section-more">{{ t('查看全部') }} ›</a>
           </div>
-          <div class="h-scroll">
-            <div v-for="city in homeData.city" :key="'c-'+city.id" class="city-card" style="width:140px;flex-shrink:0;cursor:pointer;" @click="goCityDetail(city.id)">
-              <img class="city-img" :src="imageUrl(city.first_picture)" />
-              <div class="city-overlay">
-                <span class="city-name">{{ city.name }}</span>
-                <span v-if="city.name_en" class="city-name-en">{{ city.name_en }}</span>
-                <span v-if="city.area_name" class="city-badge">{{ city.area_name }}</span>
-              </div>
+
+          <!-- Continent Tabs — same style as guide/merchant filter pills -->
+          <div v-if="continentGroups.length > 1" class="filter-pills">
+            <button v-for="(group, idx) in continentGroups" :key="'ct-'+idx"
+              class="filter-pill" :class="{ active: currentContinentIndex === idx }"
+              @click="switchContinent(idx)">
+              {{ group.name }}
+            </button>
+          </div>
+
+          <!-- City Grid (4 per row, max 12 per continent) — placeholder slots prevent height jump -->
+          <div class="card-grid-4 continent-city-grid" :key="'cg-'+currentContinentIndex">
+            <div v-for="city in paddedContinentCities" :key="'c-'+city.id"
+              :class="['city-card', { 'grid-placeholder': city._placeholder }]"
+              :style="city._placeholder ? '' : 'cursor:pointer'"
+              @click="city._placeholder ? null : goCityDetail(city.id)">
+              <template v-if="!city._placeholder">
+                <img class="city-img" :src="imageUrl(city.first_picture)" />
+                <div class="city-overlay">
+                  <span class="city-name">{{ city.name }}</span>
+                  <span v-if="city.name_en" class="city-name-en">{{ city.name_en }}</span>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -75,6 +136,7 @@ const HomePage = {
         <div v-if="homeData.guide && homeData.guide.length">
           <div class="section-header">
             <div class="section-header-left">
+              <span class="section-accent"></span>
               <span class="section-title">{{ t('推薦導遊') }}</span>
             </div>
             <a href="#/search?type=guide" class="section-more">{{ t('查看全部') }} ›</a>
@@ -82,9 +144,9 @@ const HomePage = {
           <div class="filter-pills" v-if="guideCategories.length > 1">
             <button v-for="(cat, idx) in guideCategories" :key="'gc-'+idx"
               class="filter-pill" :class="{ active: guideCatIndex === idx }"
-              @click="guideCatIndex = idx">{{ cat.name || t('全部') }}</button>
+              @click="onGuideCatTap(idx)">{{ cat.name || t('全部') }}</button>
           </div>
-          <div class="h-scroll">
+          <div class="h-scroll" :key="'gg-'+guideCatIndex">
             <div v-for="guide in currentGuides" :key="'g-'+guide.id" class="guide-card" style="cursor:pointer;" @click="goGuideDetail(guide.id)">
               <img class="guide-img" :src="imageUrl(guide.photo)" />
               <div class="guide-info">
@@ -96,9 +158,10 @@ const HomePage = {
         </div>
 
         <!-- Recommended Businesses -->
-        <div v-if="homeData.shop && homeData.shop.length">
+        <div v-if="shopCategories.length > 0">
           <div class="section-header">
             <div class="section-header-left">
+              <span class="section-accent"></span>
               <span class="section-title">{{ t('推薦商家') }}</span>
             </div>
             <span class="section-more" style="cursor:pointer;" @click="goSearch('shop')">{{ t('查看全部') }} ›</span>
@@ -106,14 +169,55 @@ const HomePage = {
           <div class="filter-pills" v-if="shopCategories.length > 1">
             <button v-for="(cat, idx) in shopCategories" :key="'sc-'+idx"
               class="filter-pill" :class="{ active: shopCatIndex === idx }"
-              @click="shopCatIndex = idx">{{ cat.name || t('全部') }}</button>
+              @click="onShopCatTap(idx)">{{ cat.name || t('全部') }}</button>
           </div>
-          <div class="card-grid-2">
-            <div v-for="shop in currentShops" :key="'sh-'+shop.id" class="merchant-card" style="cursor:pointer;" @click="goCommonDetail(shop.id, shop.city_id, shop.type_id)">
-              <img class="merchant-img" :src="imageUrl(shop.first_picture)" />
+
+          <!-- Shop Banner Carousel (v-show + placeholder: no layout jump) -->
+          <div v-if="maxShopBannerCount > 0">
+            <div v-show="currentShopBanner.length > 0" class="shop-banner">
+              <div class="shop-banner-viewport">
+                <div class="shop-banner-track" :style="{ transform: 'translateX(-' + shopBannerIndex * 100 + '%)' }">
+                  <div v-for="banner in currentShopBanner" :key="'sb-'+banner.id"
+                    class="shop-banner-slide" @click="goCommonDetail(banner.id, banner.city_id, banner.type_id)">
+                    <img :src="imageUrl(banner.first_picture)" class="shop-banner-img" />
+                    <div class="shop-banner-info">
+                      <div class="shop-banner-name">{{ banner.name }}</div>
+                      <div class="shop-banner-meta">
+                        <span v-if="banner.phone">📞 {{ banner.phone }}</span>
+                        <span v-if="banner.city_name">📍 {{ banner.city_name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="currentShopBanner.length > 1" class="shop-banner-dots">
+                <span v-for="(dot, idx) in currentShopBanner" :key="'bd-'+idx"
+                  class="shop-banner-dot" :class="{ active: shopBannerIndex === idx }"
+                  @click="goBannerSlide(idx)"></span>
+              </div>
+            </div>
+            <!-- Invisible placeholder: keeps banner height when current category has none -->
+            <div v-show="currentShopBanner.length === 0" class="shop-banner shop-banner-ph" aria-hidden="true">
+              <div class="shop-banner-slide">
+                <div class="shop-banner-img"></div>
+                <div class="shop-banner-info">
+                  <div class="shop-banner-name">&nbsp;</div>
+                  <div class="shop-banner-meta"><span>&nbsp;</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-grid-4">
+            <div v-for="shop in paddedCurrentShops" :key="'sh-'+shop.id"
+              :class="['merchant-card', { 'shop-grid-ph': shop._placeholder }]"
+              :style="shop._placeholder ? '' : 'cursor:pointer'"
+              @click="shop._placeholder ? null : goCommonDetail(shop.id, shop.city_id, shop.type_id)">
+              <img class="merchant-img" :src="shop._placeholder ? '' : imageUrl(shop.first_picture)" />
               <div class="merchant-info">
-                <div class="merchant-name">{{ shop.name }}</div>
-                <div class="merchant-meta" v-if="shop.city_name">
+                <div class="merchant-name">{{ shop._placeholder ? ' ' : shop.name }}</div>
+                <div class="merchant-phone" v-if="!shop._placeholder && shop.phone">📞 {{ shop.phone }}</div>
+                <div class="merchant-meta" v-if="!shop._placeholder && shop.city_name">
                   <span>📍</span>{{ shop.city_name }}
                 </div>
               </div>
@@ -125,6 +229,7 @@ const HomePage = {
         <div v-if="homeData.information && homeData.information.length">
           <div class="section-header">
             <div class="section-header-left">
+              <span class="section-accent"></span>
               <span class="section-title">{{ t('熱門資訊') }}</span>
             </div>
             <a href="#/news" class="section-more">{{ t('查看全部') }} ›</a>
@@ -151,7 +256,8 @@ const HomePage = {
       </template>
 
       <!-- Error State -->
-      <empty-state v-if="!homeData && !loading" :text="t('加載失敗')" :retry="true" @retry="fetchHomeData" />
+      <empty-state v-if="!homeData && !loading" :text="t('加載失敗')" :retry="true" @retry="initData" />
+    </div>
     </div>
   `,
 
@@ -165,6 +271,12 @@ const HomePage = {
       shopCatIndex: 0,
       infoCatIndex: 0,
       searchDebounce: null,
+      cityAreaMap: {},
+      currentContinentIndex: 0,
+      continentTimer: null,
+      guideAutoTimer: null,
+      shopBannerIndex: 0,
+      shopBannerTimer: null,
 
       strategyCategories: [
         { key: 'guide', label: '導遊', color: '#666FFF', icon: '🧑‍💼' },
@@ -178,19 +290,114 @@ const HomePage = {
   },
 
   computed: {
+    continentGroups() {
+      // Only use homeData.city — backend-recommended cities
+      const source = this.homeData?.city || [];
+      if (!source.length) return [];
+
+      // Map sub-region area_name → top-level continent
+      const mapToContinent = (areaName) => {
+        if (!areaName) return '其他';
+        if (TOP_CONTINENTS.has(areaName)) return areaName;
+        return AREA_TO_CONTINENT[areaName] || areaName;
+      };
+
+      // Group by continent — use cityAreaMap for accurate area_name
+      const groups = {};
+      source.forEach(city => {
+        const areaName = this.cityAreaMap[city.id] || city.area_name;
+        const continent = mapToContinent(areaName);
+        if (!groups[continent]) groups[continent] = [];
+        groups[continent].push(city);
+      });
+
+      // Build result: 4 per row, max 12 (multiples of 4)
+      // Only keep groups that map to a recognized top-level continent
+      const VALID_CONTINENTS = new Set([
+        '欧洲', '亞洲', '亚洲',
+        '北美洲', '南美洲',
+        '非洲',
+        '大洋洲',
+        '南极洲', '南極洲',
+      ]);
+      let result = Object.entries(groups)
+        .filter(([name]) => VALID_CONTINENTS.has(name))
+        .filter(([, cities]) => cities.length > 0)
+        .map(([name, cities]) => ({
+          name,
+          cities: cities.slice(0, Math.min(12, Math.floor(cities.length / 4) * 4 || 4))
+        }))
+        .filter(g => g.cities.length > 0);
+
+      // Order: 欧洲 first, 亚洲 second, rest by city count descending
+      const ORDER = ['欧洲', '亞洲', '亚洲'];
+      result.sort((a, b) => {
+        const ai = ORDER.findIndex(n => a.name === n);
+        const bi = ORDER.findIndex(n => b.name === n);
+        if (ai >= 0 && bi >= 0) return ai - bi;
+        if (ai >= 0) return -1;
+        if (bi >= 0) return 1;
+        return b.cities.length - a.cities.length;
+      });
+
+      return result;
+    },
+    currentContinentCities() {
+      const group = this.continentGroups[this.currentContinentIndex];
+      return group ? group.cities : [];
+    },
+    // Pad to max rows to prevent layout jumping on auto-switch
+    maxContinentSlots() {
+      let max = 0;
+      this.continentGroups.forEach(g => { if (g.cities.length > max) max = g.cities.length; });
+      return Math.ceil(max / 4) * 4; // round up to nearest row of 4
+    },
+    paddedContinentCities() {
+      const list = this.currentContinentCities.slice();
+      while (list.length < this.maxContinentSlots) {
+        list.push({ id: '__ph_' + list.length, _placeholder: true });
+      }
+      return list;
+    },
     guideCategories() {
       return this.homeData?.guide || [];
     },
     currentGuides() {
       const cat = this.homeData?.guide?.[this.guideCatIndex];
-      return cat?.list || [];
+      return (cat?.list || []).slice(0, 10);
     },
     shopCategories() {
-      return this.homeData?.shop || [];
+      // Only show categories that have content (banner or list)
+      return (this.homeData?.shop || []).filter(cat =>
+        (cat.list && cat.list.length > 0) || (cat.banner && cat.banner.length > 0)
+      );
+    },
+    currentShopCat() {
+      return this.shopCategories[this.shopCatIndex] || {};
     },
     currentShops() {
-      const cat = this.homeData?.shop?.[this.shopCatIndex];
-      return cat?.list || [];
+      return this.currentShopCat.list || [];
+    },
+    currentShopBanner() {
+      return this.currentShopCat.banner || [];
+    },
+    // Prevent layout jump: max counts across all categories
+    maxShopBannerCount() {
+      let max = 0;
+      this.shopCategories.forEach(c => { if (c.banner && c.banner.length > max) max = c.banner.length; });
+      return max;
+    },
+    maxShopListCount() {
+      let max = 0;
+      this.shopCategories.forEach(c => { if (c.list && c.list.length > max) max = c.list.length; });
+      return Math.ceil(max / 4) * 4; // round to nearest row of 4
+    },
+    paddedCurrentShops() {
+      const list = this.currentShops.slice();
+      while (list.length < this.maxShopListCount) {
+        list.push({ id: '__sh_ph_' + list.length, _placeholder: true });
+      }
+      return list;
     },
     infoCategories() {
       return this.homeData?.information || [];
@@ -205,22 +412,58 @@ const HomePage = {
     t(key) { return I18n.t(key); },
     imageUrl: imageUrl,
 
-    async fetchHomeData() {
+    async initData() {
+      // Load cache for immediate display (both homeData and cityAreaMap)
       const cache = Storage.homeData;
+      const areaCache = Storage.cityAreaMap;
       if (cache) {
         try { this.homeData = JSON.parse(cache); } catch (e) {}
+        if (areaCache) {
+          try { this.cityAreaMap = JSON.parse(areaCache); } catch (e) {}
+        }
+        this.$nextTick(() => {
+          this.startGuideAutoSwitch();
+          this.startContinentAutoSwitch();
+          this.startShopAutoSwitch();
+          this.startShopBannerAutoSwitch();
+        });
       }
 
-      this.loading = true;
-      const res = await ApiProvider.get(ApiUrl.homeData);
+      this.loading = !this.homeData;
+
+      // Fire both APIs in PARALLEL
+      const [homeRes, cityRes] = await Promise.all([
+        ApiProvider.get(ApiUrl.homeData),
+        ApiProvider.get(ApiUrl.cityList, { limit: 1000, page: 1 })
+      ]);
       this.loading = false;
 
-      if (res.success && res.data) {
-        this.homeData = res.data;
-        Storage.homeData = JSON.stringify(res.data);
-      } else if (!this.homeData) {
-        // stay on error state
+      // Process city area mapping FIRST so it's ready when homeData triggers reactivity
+      if (cityRes.success && cityRes.data) {
+        const raw = Array.isArray(cityRes.data) ? cityRes.data
+          : (cityRes.data.list || cityRes.data.lists || cityRes.data.data || []);
+        const map = {};
+        raw.forEach(city => {
+          if (city.id && city.area_name) map[city.id] = city.area_name;
+        });
+        this.cityAreaMap = map;
+        Storage.cityAreaMap = JSON.stringify(map);
       }
+
+      // Process home data — continentGroups will now use populated cityAreaMap
+      if (homeRes.success && homeRes.data) {
+        this.homeData = homeRes.data;
+        Storage.homeData = JSON.stringify(homeRes.data);
+      }
+      if (!this.homeData) return;
+
+      // Start auto-switch now that both data sources are ready
+      this.$nextTick(() => {
+        this.startGuideAutoSwitch();
+        this.startContinentAutoSwitch();
+        this.startShopAutoSwitch();
+        this.startShopBannerAutoSwitch();
+      });
     },
 
     onSearchInput() {
@@ -272,14 +515,102 @@ const HomePage = {
     },
     goSearch(type) {
       this.$router.push('/search?type=' + type);
+    },
+
+    startContinentAutoSwitch() {
+      if (this.continentTimer) clearInterval(this.continentTimer);
+      if (this.continentGroups.length <= 1) return;
+      this.continentTimer = setInterval(() => {
+        this.currentContinentIndex = (this.currentContinentIndex + 1) % this.continentGroups.length;
+      }, 5000);
+    },
+    switchContinent(idx) {
+      this.currentContinentIndex = idx;
+      this.startContinentAutoSwitch();
+    },
+
+    // Guide category auto-switch (5s, same as Flutter _guideAutoScrollTimer)
+    startGuideAutoSwitch() {
+      this.stopGuideAutoSwitch();
+      if (this.guideCategories.length <= 1) return;
+      this.guideAutoTimer = setInterval(() => {
+        this.guideCatIndex = (this.guideCatIndex + 1) % this.guideCategories.length;
+      }, 5000);
+    },
+    stopGuideAutoSwitch() {
+      if (this.guideAutoTimer) clearInterval(this.guideAutoTimer);
+      this.guideAutoTimer = null;
+    },
+    onGuideCatTap(idx) {
+      this.guideCatIndex = idx;
+      this.startGuideAutoSwitch(); // Reset timer on manual tap
+    },
+
+    // --- Shop category auto-switch (driven by banner completion) ---
+    startShopAutoSwitch() {
+      this.stopShopAutoSwitch();
+      if (this.shopCategories.length <= 1) return;
+      this.startShopBannerAutoSwitch();
+    },
+    stopShopAutoSwitch() {
+      this.stopShopBannerAutoSwitch();
+    },
+    advanceShopCategory() {
+      this.stopShopBannerAutoSwitch();
+      if (this.shopCategories.length <= 1) return;
+      this.shopCatIndex = (this.shopCatIndex + 1) % this.shopCategories.length;
+      this.shopBannerIndex = 0;
+      this.$nextTick(() => this.startShopBannerAutoSwitch());
+    },
+    onShopCatTap(idx) {
+      this.shopCatIndex = idx;
+      this.shopBannerIndex = 0;
+      this.startShopAutoSwitch(); // Reset: restart banner-driven cycle
+    },
+
+    // Shop banner auto-rotate: show all slides, then advance category
+    startShopBannerAutoSwitch() {
+      this.stopShopBannerAutoSwitch();
+      const bannerCount = this.currentShopBanner.length;
+      if (bannerCount <= 0) {
+        // No banner — show list for 8s before switching
+        this.shopBannerTimer = setTimeout(() => this.advanceShopCategory(), 8000);
+        return;
+      }
+      if (bannerCount === 1) {
+        // Single banner — show for 5s then switch
+        this.shopBannerTimer = setTimeout(() => this.advanceShopCategory(), 5000);
+        return;
+      }
+      // Multiple banners — show each for 4s, then advance
+      this.shopBannerTimer = setInterval(() => {
+        if (this.shopBannerIndex < bannerCount - 1) {
+          this.shopBannerIndex++;
+        } else {
+          this.advanceShopCategory();
+        }
+      }, 4000);
+    },
+    stopShopBannerAutoSwitch() {
+      if (this.shopBannerTimer) {
+        clearInterval(this.shopBannerTimer);
+        this.shopBannerTimer = null;
+      }
+    },
+    goBannerSlide(idx) {
+      this.shopBannerIndex = idx;
+      this.startShopBannerAutoSwitch(); // Reset timer
     }
   },
 
   mounted() {
-    this.fetchHomeData();
+    this.initData();
   },
 
   beforeUnmount() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    if (this.continentTimer) clearInterval(this.continentTimer);
+    if (this.guideAutoTimer) clearInterval(this.guideAutoTimer);
+    if (this.shopBannerTimer) clearInterval(this.shopBannerTimer);
   }
 };

@@ -34,6 +34,9 @@ const Storage = {
   get homeData() { return localStorage.getItem('home_data') || ''; },
   set homeData(v) { localStorage.setItem('home_data', v); },
 
+  get cityAreaMap() { return localStorage.getItem('city_area_map') || ''; },
+  set cityAreaMap(v) { localStorage.setItem('city_area_map', v); },
+
   // --- Language ---
   get locale() { return localStorage.getItem('locale') || ''; },
   set locale(v) { localStorage.setItem('locale', v); },
@@ -45,7 +48,7 @@ const Storage = {
   // --- Clear ---
   logout() {
     ['token', 'user_info', 'user_number', 'user_sig', 'expire_time',
-     'account', 'password', 'remember_me', 'home_data',
+     'account', 'password', 'remember_me', 'home_data', 'city_area_map',
      'last_login_record_date'].forEach(k => localStorage.removeItem(k));
   },
 

@@ -5,60 +5,78 @@
 const RegisterPage = {
   template: `
     <div class="auth-page">
-      <app-header :title="t('註冊')" :show-back="true"></app-header>
-      <div class="auth-content">
-        <h1 class="auth-title">{{ t('註冊') }}</h1>
-        <p class="auth-subtitle">{{ t('還沒有賬號？註冊') }}</p>
+      <div class="auth-card">
+        <!-- Logo -->
+        <div class="auth-logo">
+          <img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="auth-logo-img" />
+        </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('郵箱') }}</label>
-          <input class="form-input" v-model="email" type="email"
+        <!-- Title -->
+        <div class="auth-heading">
+          <div class="auth-heading-title">{{ t('註冊') }}</div>
+          <div class="auth-heading-bar"></div>
+        </div>
+
+        <!-- Invite Code -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">🎫</span>
+          <input class="auth-input" v-model="inviteCode"
+            :placeholder="t('請輸入邀請碼')" />
+        </div>
+
+        <!-- Email -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">📧</span>
+          <input class="auth-input" v-model="email" type="email"
             :placeholder="t('請輸入郵箱')" autocomplete="email" />
         </div>
 
-        <div class="form-group flex gap-sm">
-          <input class="form-input" v-model="code" style="flex:1;"
-            :placeholder="t('請輸入驗證碼')" />
-          <button class="btn-outline" :disabled="countdown > 0" @click="sendCode" style="flex-shrink:0;">
-            <span v-if="countdown > 0">{{ countdown }}{{ t('秒後重新發送') }}</span>
+        <!-- Verify Code + Send button -->
+        <div style="display:flex;gap:10px;">
+          <div class="auth-input-group" style="flex:1;">
+            <span class="auth-input-icon">✉️</span>
+            <input class="auth-input" v-model="code"
+              :placeholder="t('請輸入驗證碼')" />
+          </div>
+          <button class="auth-btn" :disabled="countdown > 0" @click="sendCode"
+            style="width:auto;flex-shrink:0;padding:0 20px;font-size:13px;font-weight:500;">
+            <span v-if="countdown > 0">{{ countdown }}s</span>
             <span v-else>{{ t('發送驗證碼') }}</span>
           </button>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('密碼') }}</label>
-          <input class="form-input" v-model="password" type="password"
+        <!-- Password -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">🔒</span>
+          <input class="auth-input" v-model="password" :type="showPw ? 'text' : 'password'"
             :placeholder="t('請輸入密碼')" />
+          <button class="auth-pw-toggle" type="button" @click="showPw = !showPw">
+            {{ showPw ? '🙈' : '👁' }}
+          </button>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('確認密碼') }} </label>
-          <input class="form-input" v-model="confirmPassword" type="password"
+        <!-- Confirm Password -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">🔒</span>
+          <input class="auth-input" v-model="confirmPassword" type="password"
             :placeholder="t('請確認新密碼')" />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('邀請碼') }} </label>
-          <input class="form-input" v-model="inviteCode"
-            :placeholder="t('請輸入邀請碼')" />
-        </div>
-      </div>
-
-      <div class="bottom-actions">
-        <div class="agreement-row mb-sm">
-          <input type="checkbox" v-model="agreed" />
-          <span>{{ t('我巳閱讀並同意') }}<a href="#" @click.prevent>{{ t('用戶協議') }}</a>{{ t('和') }}<a href="#" @click.prevent>{{ t('隱私政策') }}</a></span>
-        </div>
-
-        <button class="btn-primary" :disabled="loading" @click="doRegister">
+        <!-- Register button -->
+        <button class="auth-btn" :disabled="loading" @click="doRegister">
           <span v-if="loading">{{ t('加載中...') }}</span>
           <span v-else>{{ t('註冊') }}</span>
         </button>
 
-        <div style="text-align:center;">
-          <a href="#" @click.prevent="$router.push('/login')" style="font-size:14px;color:var(--color-primary);">
-            {{ t('已有賬號？登錄') }}
-          </a>
+        <!-- Agreement -->
+        <div class="auth-agreement">
+          <input type="checkbox" v-model="agreed" />
+          <span>{{ t('我巳閱讀並同意') }}<a href="#" @click.prevent>{{ t('用戶協議') }}</a>{{ t('和') }}<a href="#" @click.prevent>{{ t('隱私政策') }}</a></span>
+        </div>
+
+        <!-- Switch to login -->
+        <div class="auth-switch">
+          <a href="#" @click.prevent="$router.push('/login')">{{ t('已有賬號？登錄') }}</a>
         </div>
       </div>
     </div>
@@ -74,7 +92,8 @@ const RegisterPage = {
       agreed: true,
       loading: false,
       countdown: 0,
-      timer: null
+      timer: null,
+      showPw: false
     };
   },
 
@@ -117,7 +136,6 @@ const RegisterPage = {
         return;
       }
 
-      // Auto-login after register
       if (res.data && res.data.token) {
         await UserStore.login(res.data);
       }

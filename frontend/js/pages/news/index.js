@@ -5,7 +5,7 @@
 
 const NewsPage = {
   template: `
-    <div class="page-content">
+    <div class="page-content"><div class="ds-page-wrapper">
       <!-- Category Filter -->
       <div class="filter-pills" style="margin-top:8px;" v-if="categories.length > 0">
         <button v-for="(cat, idx) in categories" :key="'ncat-'+idx"
@@ -40,6 +40,7 @@ const NewsPage = {
       </div>
 
       <empty-state v-if="!newsList.length && !loading" :text="t('暫無記錄')" />
+    </div>
     </div>
   `,
 

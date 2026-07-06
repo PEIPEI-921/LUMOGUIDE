@@ -5,7 +5,7 @@
 
 const MinePage = {
   template: `
-    <div class="page-content">
+    <div class="page-content"><div class="ds-page-wrapper">
       <!-- Not logged in -->
       <div v-if="!UserStore.isLogin" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;">
         <div style="font-size:64px;">👤</div>
@@ -26,9 +26,9 @@ const MinePage = {
             <div>
               <div class="flex items-center gap-sm">
                 <span style="font-size:16px;font-weight:600;">{{ profile.nickname || profile.email || '' }}</span>
-                <span v-if="profile.identity === 2" class="tag tag-primary">{{ t('導遊') }}</span>
-                <span v-if="profile.identity === 3" class="tag tag-orange">{{ t('企業') }}</span>
-                <span v-if="profile.vip_name" class="tag tag-orange">{{ profile.vip_name }}</span>
+                <span v-if="profile.identity === 2" class="identity-badge guide">{{ t('认证导游') }}</span>
+                <span v-if="profile.identity === 3" class="identity-badge enterprise">{{ t('认证企业') }}</span>
+                <span v-if="profile.vip_name" class="identity-badge vip">{{ profile.vip_name }}</span>
               </div>
               <div style="font-size:12px;color:var(--color-assistant-text);margin-top:4px;">
                 {{ t('ID') }}: {{ profile.number || profile.id || '' }}
@@ -54,15 +54,15 @@ const MinePage = {
         </div>
 
         <!-- VIP Status -->
-        <div v-if="UserStore.isVip" class="card" style="margin:12px;background:linear-gradient(135deg,#FFF8E1,#FFF3CD);border:1px solid var(--color-orange);">
+        <div v-if="UserStore.isVip" class="card" style="margin:12px 16px;background:linear-gradient(135deg,#FFFBF0,#FFF7E0);border:1px solid rgba(245,184,66,0.25);border-radius:12px;">
           <div class="flex items-center justify-between">
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--color-orange);">{{ t('會員') }}</div>
+              <div style="font-size:14px;font-weight:600;color:#D4A017;">{{ t('會員') }}</div>
               <div style="font-size:12px;color:var(--color-secondary-text);">
                 {{ t('會員有效期') }}: {{ UserStore.profile.vip_expiration_time ? formatDate(new Date(UserStore.profile.vip_expiration_time * 1000)) : '' }}
               </div>
             </div>
-            <a href="#/vip" class="tag tag-orange" style="padding:6px 12px;">{{ t('延長會籍') }}</a>
+            <a href="#/vip" class="identity-badge vip" style="padding:5px 12px;cursor:pointer;">{{ t('延長會籍') }}</a>
           </div>
         </div>
 
@@ -104,6 +104,7 @@ const MinePage = {
       </template>
 
       <div style="height:20px;"></div>
+    </div>
     </div>
   `,
 

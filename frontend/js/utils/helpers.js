@@ -126,3 +126,114 @@ function truncate(text, maxLen = 50) {
   if (!text || text.length <= maxLen) return text || '';
   return text.slice(0, maxLen) + '...';
 }
+
+/* ============================================
+   ListPageHelper — reusable pagination logic
+   Usage:
+     data() {
+       return { ...ListPageHelper.state() };
+     },
+     methods: {
+       async fetchData(reset) {
+         await ListPageHelper.fetch(this, ApiUrl.someList, { per_page: 10 }, reset);
+       }
+     }
+   ============================================ */
+
+const ListPageHelper = {
+  /**
+   * Create reactive state for a list page
+   */
+  state() {
+    return {
+      list: [],
+      page: 1,
+      hasMore: true,
+      loading: false,
+      loaded: false,
+      refreshing: false
+    };
+  },
+
+  /**
+   * Fetch list data with pagination support
+   *
+   * @param {Object} vm        - Vue component instance (this)
+   * @param {string} apiUrl    - API endpoint URL
+   * @param {Object} params    - Query params (excluding page)
+   * @param {boolean} reset    - Whether to reset the list (true = refresh from page 1)
+   * @param {string} listKey   - Optional: key to extract list from response data (default: 'data')
+   * @returns {Promise<boolean>} - true if data was loaded
+   */
+  async fetch(vm, apiUrl, params = {}, reset = false, listKey = 'data') {
+    if (vm.loading || vm.refreshing) return false;
+
+    if (reset) {
+      vm.page = 1;
+      vm.hasMore = true;
+      vm.refreshing = true;
+    }
+
+    if (!vm.hasMore && !reset) return false;
+
+    vm.loading = true;
+    const res = await ApiProvider.get(apiUrl, { ...params, page: vm.page });
+    vm.loading = false;
+    vm.refreshing = false;
+    vm.loaded = true;
+
+    if (res.success && res.data) {
+      const list = Array.isArray(res.data)
+        ? res.data
+        : (res.data[listKey] || res.data.data || []);
+      vm.list = reset ? list : [...vm.list, ...list];
+      vm.hasMore = list.length >= (params.per_page || 10);
+      if (list.length > 0) vm.page++;
+      return true;
+    }
+
+    return false;
+  }
+};
+
+/* ============================================
+   setupInfiniteScroll — IntersectionObserver helper
+   Usage:
+     mounted() {
+       this._scrollObserver = setupInfiniteScroll(
+         this.$el.querySelector('.list-container'),
+         this.$el.querySelector('.scroll-sentinel'),
+         () => { if (this.hasMore) this.fetchData(false); }
+       );
+     },
+     beforeUnmount() {
+       if (this._scrollObserver) this._scrollObserver.disconnect();
+     }
+   ============================================ */
+
+/**
+ * Set up infinite scroll using IntersectionObserver
+ *
+ * @param {HTMLElement} containerEl - The scrollable container (null = viewport)
+ * @param {HTMLElement} sentinelEl  - The sentinel element at bottom of list
+ * @param {Function}    callback    - Called when sentinel becomes visible
+ * @returns {IntersectionObserver}
+ */
+function setupInfiniteScroll(containerEl, sentinelEl, callback) {
+  if (!sentinelEl) return null;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        callback();
+      }
+    },
+    {
+      root: containerEl || null,
+      threshold: 0.1
+    }
+  );
+
+  observer.observe(sentinelEl);
+  return observer;
+}

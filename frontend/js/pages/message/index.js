@@ -5,7 +5,7 @@
 
 const MessagePage = {
   template: `
-    <div class="page-content">
+    <div class="page-content"><div class="ds-page-wrapper">
       <loading-spinner v-if="!messageData && loading" />
 
       <template v-if="messageData">
@@ -30,6 +30,7 @@ const MessagePage = {
       </template>
 
       <empty-state v-if="!messageData && !loading" :text="t('請登錄查看消息')" />
+    </div>
     </div>
   `,
 

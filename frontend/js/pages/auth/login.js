@@ -5,49 +5,60 @@
 const LoginPage = {
   template: `
     <div class="auth-page">
-      <app-header :title="t('登錄')" :show-back="true"></app-header>
-      <div class="auth-content">
-        <h1 class="auth-title">{{ t('登錄') }}</h1>
-        <p class="auth-subtitle">{{ t('歡迎來到 LUMOGUIDE') }}</p>
+      <div class="auth-card">
+        <!-- Logo -->
+        <div class="auth-logo">
+          <img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="auth-logo-img" />
+        </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('郵箱') }}</label>
-          <input class="form-input" v-model="email" type="email"
+        <!-- Title -->
+        <div class="auth-heading">
+          <div class="auth-heading-title">{{ t('登錄') }}</div>
+          <div class="auth-heading-bar"></div>
+        </div>
+
+        <!-- Email -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">📧</span>
+          <input class="auth-input" v-model="email" type="email"
             :placeholder="t('請輸入郵箱')" autocomplete="email" />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">{{ t('請輸入密碼') }}</label>
-          <input class="form-input" v-model="password" type="password"
+        <!-- Password -->
+        <div class="auth-input-group">
+          <span class="auth-input-icon">🔒</span>
+          <input class="auth-input" v-model="password" :type="showPw ? 'text' : 'password'"
             :placeholder="t('請輸入密碼')" autocomplete="current-password" />
+          <button class="auth-pw-toggle" type="button" @click="showPw = !showPw">
+            {{ showPw ? '🙈' : '👁' }}
+          </button>
         </div>
 
-        <div class="form-group flex items-center justify-between">
-          <label class="flex items-center gap-sm" style="font-size:12px;color:var(--color-assistant-text);">
-            <input type="checkbox" v-model="remember" style="accent-color:var(--color-primary);" />
-            {{ t('記住密碼') }}
-          </label>
-          <a href="#" @click.prevent="$router.push('/forget-password')" style="font-size:12px;color:var(--color-primary);">
-            {{ t('忘記密碼') }}
-          </a>
-        </div>
-      </div>
-
-      <div class="bottom-actions">
-        <div class="agreement-row mb-sm">
-          <input type="checkbox" v-model="agreed" />
-          <span>{{ t('我巳閱讀並同意') }}<a href="#" @click.prevent="showProtocol('user')">{{ t('用戶協議') }}</a>{{ t('和') }}<a href="#" @click.prevent="showProtocol('privacy')">{{ t('隱私政策') }}</a></span>
-        </div>
-
-        <button class="btn-primary" :disabled="loading" @click="doLogin">
+        <!-- Login button -->
+        <button class="auth-btn" :disabled="loading" @click="doLogin">
           <span v-if="loading">{{ t('加載中...') }}</span>
-          <span v-else>{{ t('登錄') }}</span>
+          <span v-else>登 录</span>
         </button>
 
-        <div style="text-align:center;">
-          <a href="#" @click.prevent="$router.push('/register')" style="font-size:14px;color:var(--color-primary);">
-            {{ t('還沒有賬號？註冊') }}
-          </a>
+        <!-- Remember + Forgot -->
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label class="auth-remember">
+            <input type="checkbox" v-model="remember" />
+            {{ t('記住密碼') }}
+          </label>
+          <a class="auth-link" href="#" @click.prevent="$router.push('/forget-password')">{{ t('忘記密碼') }}</a>
+        </div>
+
+        <!-- Footer links -->
+        <div class="auth-footer">
+          <a href="#" @click.prevent="$router.push('/forget-password')">{{ t('忘記密碼') }}</a>
+          <a href="#" @click.prevent="$router.push('/register')">{{ t('還沒有賬號？去註冊') }}</a>
+        </div>
+
+        <!-- Agreement -->
+        <div class="auth-agreement">
+          <input type="checkbox" v-model="agreed" />
+          <span>{{ t('我巳閱讀並同意') }}<a href="#" @click.prevent="showProtocol('user')">{{ t('用戶協議') }}</a>{{ t('和') }}<a href="#" @click.prevent="showProtocol('privacy')">{{ t('隱私政策') }}</a></span>
         </div>
       </div>
     </div>
@@ -60,7 +71,8 @@ const LoginPage = {
       password: creds.password,
       remember: creds.remember,
       agreed: true,
-      loading: false
+      loading: false,
+      showPw: false
     };
   },
 
@@ -88,7 +100,6 @@ const LoginPage = {
     },
 
     showProtocol(type) {
-      // Open protocol page in new tab
       window.open('/protocol/' + (type === 'user' ? 'user_protocol' : 'privacy_protocol'), '_blank');
     }
   }

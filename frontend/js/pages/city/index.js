@@ -12,6 +12,7 @@ const CityPage = {
           @keyup.enter="goSearch" />
       </div>
 
+      <div class="ds-page-wrapper">
       <loading-spinner v-if="!continents.length && loading" />
 
       <template v-if="continents.length">
@@ -41,6 +42,7 @@ const CityPage = {
       </template>
 
       <div style="height:20px;"></div>
+    </div>
     </div>
   `,
 
