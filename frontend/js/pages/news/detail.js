@@ -26,14 +26,25 @@ const NewsDetailPage = {
 
         <!-- Author Row -->
         <div v-if="news.user" style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-border)">
-          <div style="width:44px;height:44px;border-radius:50%;background:var(--color-accent-soft);overflow:hidden;flex-shrink:0">
+          <a v-if="news.user.guide_id" :href="'#/guide/' + news.user.guide_id"
+            style="width:44px;height:44px;border-radius:50%;background:var(--color-accent-soft);overflow:hidden;flex-shrink:0;display:block;text-decoration:none">
+            <img v-if="news.user.photo" :src="news.user.photo" style="width:100%;height:100%;object-fit:cover">
+            <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px">👤</div>
+          </a>
+          <div v-else style="width:44px;height:44px;border-radius:50%;background:var(--color-accent-soft);overflow:hidden;flex-shrink:0">
             <img v-if="news.user.photo" :src="news.user.photo" style="width:100%;height:100%;object-fit:cover">
             <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px">👤</div>
           </div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:650">{{ news.user.name }}</div>
+            <div style="font-size:14px;font-weight:650">
+              <a v-if="news.user.guide_id" :href="'#/guide/' + news.user.guide_id"
+                style="color:var(--color-primary-text);text-decoration:none">{{ news.user.name }}</a>
+              <span v-else>{{ news.user.name }}</span>
+            </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
-              <span v-if="news.user.city_name" style="font-size:12px;color:var(--color-assistant-text)">{{ news.user.city_name }}</span>
+              <a v-if="news.user.city_name && news.user.city_id" :href="'#/city/detail?id=' + news.user.city_id"
+                style="font-size:12px;color:var(--color-primary);text-decoration:none;font-weight:500">{{ news.user.city_name }}</a>
+              <span v-else-if="news.user.city_name" style="font-size:12px;color:var(--color-assistant-text)">{{ news.user.city_name }}</span>
               <span v-if="news.created_at" style="font-size:12px;color:var(--color-assistant-text)">{{ formatDate(news.created_at) }}</span>
               <span v-if="news.view" style="font-size:12px;color:var(--color-assistant-text)">👁 {{ news.view }}</span>
             </div>

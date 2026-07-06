@@ -25,7 +25,9 @@ const GuideDetailPage = {
                 <span v-if="guide.identity_type_name" class="ds-badge guide">{{ guide.identity_type_name }}</span>
               </div>
               <div class="ds-meta">
-                <span v-if="guide.city_name">📍 {{ guide.city_name }}</span>
+                <a v-if="guide.city_name && guide.city_id" :href="'#/city/detail?id=' + guide.city_id"
+                  style="color:var(--color-primary);text-decoration:none;font-weight:500">📍 {{ guide.city_name }}</a>
+                <span v-else-if="guide.city_name">📍 {{ guide.city_name }}</span>
                 <span v-if="guide.have_vehicle">{{ guide.have_vehicle === 1 ? '🚗 有車' : '' }}</span>
               </div>
             </div>
@@ -156,7 +158,7 @@ const CommonDetailPage = {
         <!-- Info Card -->
         <div class="card" style="padding:16px;margin-bottom:14px">
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:14px">
-            <div v-if="item.city_name"><span style="font-size:12px;color:var(--color-assistant-text)">{{ $t('城市') }}</span><p style="font-weight:500;margin-top:2px">📍 {{ item.city_name }}</p></div>
+            <div v-if="item.city_name"><span style="font-size:12px;color:var(--color-assistant-text)">{{ $t('城市') }}</span><p style="font-weight:500;margin-top:2px"><a :href="'#/city/detail?id=' + (item.city_id || $route.query.city_id)" style="color:var(--color-primary);text-decoration:none">📍 {{ item.city_name }}</a></p></div>
             <div v-if="item.address"><span style="font-size:12px;color:var(--color-assistant-text)">{{ $t('地址') }}</span><p style="font-weight:500;margin-top:2px">{{ item.address }}</p></div>
             <div v-if="item.phone"><span style="font-size:12px;color:var(--color-assistant-text)">{{ $t('電話') }}</span><p style="font-weight:500;margin-top:2px">{{ item.phone }}</p></div>
             <div v-if="item.email"><span style="font-size:12px;color:var(--color-assistant-text)">{{ $t('郵箱') }}</span><p style="font-weight:500;margin-top:2px">{{ item.email }}</p></div>
@@ -298,7 +300,9 @@ const CompanyDetailPage = {
                 <span class="ds-badge company">{{ $t('商家') }}</span>
               </div>
               <div class="ds-meta">
-                <span v-if="company.city_name">📍 {{ company.city_name }}</span>
+                <a v-if="company.city_name && company.city_id" :href="'#/city/detail?id=' + company.city_id"
+                  style="color:var(--color-primary);text-decoration:none;font-weight:500">📍 {{ company.city_name }}</a>
+                <span v-else-if="company.city_name">📍 {{ company.city_name }}</span>
               </div>
             </div>
           </div>

@@ -1,117 +1,122 @@
 /* ============================================
    MinePage — User profile center
-   Mirrors Flutter MinePage
+   Redesigned 2026-07-06: clean card layout, web-friendly
    ============================================ */
 
 const MinePage = {
   template: `
-    <div class="page-content"><div class="ds-page-wrapper">
+    <div class="page-content"><div class="ds-container-640" style="padding-top:12px;padding-bottom:40px">
       <!-- Not logged in -->
-      <div v-if="!UserStore.isLogin" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;">
-        <div style="font-size:64px;">👤</div>
-        <p style="font-size:16px;color:var(--color-secondary-text);">{{ t('請登錄以查看個人中心') }}</p>
-        <button class="btn-primary" style="width:200px;" @click="$router.push('/login')">{{ t('登錄') }}</button>
+      <div v-if="!UserStore.isLogin" style="text-align:center;padding:80px 0">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px">👤</div>
+        <p style="font-size:15px;color:var(--color-secondary-text);margin-bottom:20px;">{{ t('請登錄以查看個人中心') }}</p>
+        <a href="#/login" class="ds-btn ds-btn-primary" style="display:inline-flex;border-radius:100px;padding:10px 36px">
+          {{ t('登錄') }}
+        </a>
       </div>
 
       <!-- Logged in -->
       <template v-if="UserStore.isLogin && profile">
-        <!-- Profile Header -->
-        <div class="profile-header">
-          <div class="profile-actions">
-            <button @click="$router.push('/profile')" style="font-size:20px;">✏️</button>
-            <button @click="$router.push('/settings')" style="font-size:20px;">⚙️</button>
-          </div>
-          <div class="profile-info">
-            <img :src="imageUrl(profile.avatar)" class="avatar avatar-xl" />
-            <div>
-              <div class="flex items-center gap-sm">
-                <span style="font-size:16px;font-weight:600;">{{ profile.nickname || profile.email || '' }}</span>
-                <span v-if="profile.identity === 2" class="identity-badge guide">{{ t('认证导游') }}</span>
-                <span v-if="profile.identity === 3" class="identity-badge enterprise">{{ t('认证企业') }}</span>
-                <span v-if="profile.vip_name" class="identity-badge vip">{{ profile.vip_name }}</span>
+        <!-- Profile Header Card -->
+        <div class="ds-profile-card" style="margin-top:8px">
+          <div class="ds-profile-top">
+            <a href="#/profile" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:16px;flex:1;min-width:0">
+              <div class="ds-avatar" style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0">
+                <img v-if="profile.avatar" :src="profile.avatar" style="width:100%;height:100%;object-fit:cover">
+                <div v-else style="width:100%;height:100%;background:linear-gradient(135deg,var(--color-primary),#9B9FFF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600">
+                  {{ (profile.nickname || profile.email || '?')[0] }}
+                </div>
               </div>
-              <div style="font-size:12px;color:var(--color-assistant-text);margin-top:4px;">
-                {{ t('ID') }}: {{ profile.number || profile.id || '' }}
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:17px;font-weight:600;color:var(--color-primary-text)">{{ profile.nickname || profile.email || '' }}</span>
+                  <span v-if="profile.identity === 2" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#EEF2FF;color:var(--color-primary);font-weight:600">{{ t('认证导游') }}</span>
+                  <span v-if="profile.identity === 3" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#FFF7ED;color:var(--color-amber);font-weight:600">{{ t('认证企业') }}</span>
+                  <span v-if="profile.vip_name" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#FFFBF0,#FFF7E0);color:#D4A017;font-weight:600;border:1px solid rgba(212,160,23,.3)">{{ profile.vip_name }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--color-assistant-text);margin-top:4px">
+                  ID: {{ (profile.number || '').slice(0, 10) }}
+                </div>
               </div>
-            </div>
+            </a>
+            <a href="#/settings" style="font-size:20px;text-decoration:none;padding:8px;color:var(--color-assistant-text)">⚙️</a>
           </div>
 
-          <!-- Stats -->
-          <div class="stats-row" style="margin-top:12px;">
-            <div class="stat-item" style="cursor:pointer;" @click="$router.push('/message/follow')">
-              <span class="stat-value">{{ profile.follow_count || 0 }}</span>
-              <span class="stat-label">{{ t('關注') }}</span>
-            </div>
-            <div class="stat-item" style="cursor:pointer;" @click="$router.push('/message/follow')">
-              <span class="stat-value">{{ profile.fan_count || 0 }}</span>
-              <span class="stat-label">{{ t('粉絲') }}</span>
-            </div>
-            <div class="stat-item" style="cursor:pointer;" @click="$router.push('/integral')">
-              <span class="stat-value">{{ profile.integral || 0 }}</span>
-              <span class="stat-label">{{ t('積分') }}</span>
-            </div>
+          <!-- Stats Row -->
+          <div class="ds-stats" style="margin-top:20px">
+            <a href="#/message/follow" class="ds-stat" style="text-decoration:none">
+              <div class="ds-stat-value">{{ profile.follow_count || 0 }}</div>
+              <div class="ds-stat-label">{{ $t('關注') }}</div>
+            </a>
+            <a href="#/message/follow" class="ds-stat" style="text-decoration:none">
+              <div class="ds-stat-value">{{ profile.fan_count || 0 }}</div>
+              <div class="ds-stat-label">{{ $t('粉絲') }}</div>
+            </a>
+            <a href="#/integral" class="ds-stat" style="text-decoration:none">
+              <div class="ds-stat-value">{{ profile.integral || 0 }}</div>
+              <div class="ds-stat-label">{{ $t('積分') }}</div>
+            </a>
           </div>
         </div>
 
         <!-- VIP Status -->
-        <div v-if="UserStore.isVip" class="card" style="margin:12px 16px;background:linear-gradient(135deg,#FFFBF0,#FFF7E0);border:1px solid rgba(245,184,66,0.25);border-radius:12px;">
-          <div class="flex items-center justify-between">
+        <a v-if="UserStore.isVip" href="#/vip" class="ds-card"
+          style="display:block;text-decoration:none;color:inherit;margin-top:14px;padding:16px 18px;background:linear-gradient(135deg,#FFFDF5,#FFF9E6);border:1px solid rgba(245,184,66,.2)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
-              <div style="font-size:14px;font-weight:600;color:#D4A017;">{{ t('會員') }}</div>
-              <div style="font-size:12px;color:var(--color-secondary-text);">
-                {{ t('會員有效期') }}: {{ UserStore.profile.vip_expiration_time ? formatDate(new Date(UserStore.profile.vip_expiration_time * 1000)) : '' }}
+              <div style="font-size:14px;font-weight:600;color:#D4A017">👑 {{ $t('VIP會員') }}</div>
+              <div style="font-size:12px;color:var(--color-secondary-text);margin-top:2px">
+                {{ $t('有效期至') }} {{ profile.vip_expiration_time ? formatDate(new Date(profile.vip_expiration_time * 1000)) : '' }}
               </div>
             </div>
-            <a href="#/vip" class="identity-badge vip" style="padding:5px 12px;cursor:pointer;">{{ t('延長會籍') }}</a>
+            <span style="font-size:12px;color:#D4A017;font-weight:500">{{ $t('延長') }} ›</span>
           </div>
-        </div>
+        </a>
 
-        <!-- Auth/Promotion Cards (for regular users) -->
-        <div v-if="UserStore.showGuideAuth || UserStore.showEnterpriseAuth" style="display:flex;gap:8px;padding:0 12px;margin-bottom:12px;">
-          <div v-if="UserStore.showGuideAuth" class="card" style="flex:1;background:linear-gradient(135deg,#EEF0FF,#E8EAFF);cursor:pointer;" @click="$router.push('/guide/certify')">
-            <div style="font-size:13px;font-weight:600;color:var(--color-primary);">{{ t('成為LuMo導遊') }}</div>
-            <div style="font-size:11px;color:var(--color-secondary-text);margin-top:4px;">{{ t('了解更多') }} ›</div>
-          </div>
-          <div v-if="UserStore.showEnterpriseAuth" class="card" style="flex:1;background:linear-gradient(135deg,#FFF0E8,#FFE8D6);cursor:pointer;" @click="$router.push('/merchant/entry')">
-            <div style="font-size:13px;font-weight:600;color:var(--color-orange);">{{ t('成為合作商家') }}</div>
-            <div style="font-size:11px;color:var(--color-secondary-text);margin-top:4px;">{{ t('了解更多') }} ›</div>
-          </div>
+        <!-- Auth/Promotion Cards -->
+        <div v-if="UserStore.showGuideAuth || UserStore.showEnterpriseAuth" style="display:flex;gap:10px;margin-top:14px">
+          <a v-if="UserStore.showGuideAuth" href="#/guide/certify"
+            class="ds-card ds-card-hover" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#EEF0FF,#E6E8FF);border:1px solid rgba(102,111,255,.15)">
+            <div style="font-size:14px;font-weight:600;color:var(--color-primary)">🧭 {{ $t('成為導遊') }}</div>
+            <div style="font-size:12px;color:var(--color-secondary-text);margin-top:4px">{{ $t('發布城市內容') }}</div>
+          </a>
+          <a v-if="UserStore.showEnterpriseAuth" href="#/merchant/entry"
+            class="ds-card ds-card-hover" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#FFF4ED,#FFECE0);border:1px solid rgba(249,115,22,.15)">
+            <div style="font-size:14px;font-weight:600;color:var(--color-orange)">🏪 {{ $t('成為商家') }}</div>
+            <div style="font-size:12px;color:var(--color-secondary-text);margin-top:4px">{{ $t('管理店鋪預約') }}</div>
+          </a>
         </div>
 
         <!-- My Services Menu -->
-        <div class="card" style="margin:12px;">
-          <div style="font-size:14px;font-weight:600;margin-bottom:12px;">{{ t('我的服務') }}</div>
-          <div class="menu-grid" style="padding:0;gap:16px;">
-            <div v-for="menu in myMenus" :key="menu.key"
-              class="menu-item" style="cursor:pointer;" @click="$router.push(menu.route)">
-              <div class="menu-icon">{{ menu.icon }}</div>
-              <span class="menu-label">{{ t(menu.label) }}</span>
-              <span v-if="menu.badge > 0" class="menu-badge">{{ menu.badge > 99 ? '99+' : menu.badge }}</span>
-            </div>
-          </div>
+        <div class="ds-menu-group" style="margin-top:14px">
+          <div class="ds-menu-group-title">{{ $t('我的服務') }}</div>
+          <a v-for="menu in myMenus" :key="menu.key"
+            :href="'#' + menu.route"
+            class="ds-menu-item" style="position:relative">
+            <span>{{ menu.icon }} {{ $t(menu.label) }}</span>
+            <span v-if="menu.badge > 0" style="position:absolute;right:30px;min-width:20px;height:20px;border-radius:10px;background:var(--color-red);color:#fff;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 6px">{{ menu.badge > 99 ? '99+' : menu.badge }}</span>
+            <span class="ds-menu-arrow">›</span>
+          </a>
         </div>
 
         <!-- Invite -->
-        <div class="card" style="margin:12px;cursor:pointer;" @click="$router.push('/invite')">
-          <div class="flex items-center gap-md">
-            <span style="font-size:28px;">🎁</span>
-            <div>
-              <div style="font-size:14px;font-weight:500;">{{ t('邀請好友') }}</div>
-              <div style="font-size:12px;color:var(--color-assistant-text);">{{ t('邀請碼') }}: {{ profile.inviter_code || '' }}</div>
+        <a href="#/invite" class="ds-card ds-card-hover" style="display:block;text-decoration:none;color:inherit;margin-top:14px;padding:16px 18px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎁</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:550">{{ $t('邀請好友') }}</div>
+              <div style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ $t('邀請碼') }}: {{ profile.inviter_code || '' }}</div>
             </div>
+            <span style="color:var(--color-assistant-text)">›</span>
           </div>
-        </div>
+        </a>
       </template>
-
-      <div style="height:20px;"></div>
     </div>
     </div>
   `,
 
   data() {
-    return {
-      // UserStore is global, accessed directly
-    };
+    return {};
   },
 
   computed: {
@@ -126,26 +131,22 @@ const MinePage = {
       const isEnterprise = info.identity === 3;
 
       if (isGuide) {
-        menus.push({ key: 'city_pub', icon: '🏙️', label: '城市', route: '/guide/publish-city', badge: 0 });
+        menus.push({ key: 'city_pub', icon: '🏙️', label: '城市管理', route: '/guide/publish-city', badge: 0 });
+        menus.push({ key: 'publish', icon: '📝', label: '我的發佈', route: '/guide/publish', badge: 0 });
         menus.push({ key: 'my_book', icon: '📋', label: '我的預約', route: '/my-bookings', badge: 0 });
         menus.push({ key: 'reserve_me', icon: '📅', label: '預約我的', route: '/guide/bookings', badge: 0 });
-        menus.push({ key: 'publish', icon: '📝', label: '我的發佈', route: '/guide/publish', badge: 0 });
       } else if (isEnterprise) {
-        menus.push({ key: 'reserve_me', icon: '📅', label: '預約我的', route: '/merchant/bookings', badge: 0 });
         menus.push({ key: 'shop', icon: '🏪', label: '商家管理', route: '/merchant/manage', badge: 0 });
+        menus.push({ key: 'reserve_me', icon: '📅', label: '預約我的', route: '/merchant/bookings', badge: 0 });
+        menus.push({ key: 'my_book', icon: '📋', label: '我的預約', route: '/my-bookings', badge: 0 });
       } else {
         menus.push({ key: 'my_book', icon: '📋', label: '我的預約', route: '/my-bookings', badge: 0 });
       }
 
-      // Common menus
       menus.push({ key: 'integral', icon: '💰', label: '我的積分', route: '/integral', badge: 0 });
       menus.push({ key: 'mall', icon: '🛒', label: '積分商城', route: '/integral/mall', badge: 0 });
-      menus.push({ key: 'invite', icon: '🎁', label: '我的邀請', route: '/invite', badge: 0 });
+      menus.push({ key: 'invite', icon: '🤝', label: '我的邀請', route: '/invite', badge: 0 });
       menus.push({ key: 'vip', icon: '👑', label: '會員中心', route: '/vip', badge: 0 });
-
-      if (isGuide || isEnterprise) {
-        menus.push({ key: 'funshop', icon: '🎪', label: '趣店', route: '/integral/mall', badge: 0 });
-      }
 
       return menus;
     },
