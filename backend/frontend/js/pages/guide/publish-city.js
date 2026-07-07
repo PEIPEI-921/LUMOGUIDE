@@ -25,9 +25,12 @@ const GuidePublishCityPage = {
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h2 class="ds-page-head" style="margin:0">{{ $t('我的城市') }}</h2>
-          <button @click="showAdd=!showAdd" style="font-size:13px;color:var(--color-primary);font-weight:500;background:none;border:none;cursor:pointer">
-            {{ showAdd ? $t('取消') : '+ ' + $t('新增城市') }}
-          </button>
+          <div style="display:flex;gap:8px">
+            <a href="#/guide/publish-city-form" style="font-size:13px;color:var(--color-primary);font-weight:500;text-decoration:none">+ {{ $t('新建城市') }}</a>
+            <button @click="showAdd=!showAdd" style="font-size:13px;color:var(--color-assistant-text);font-weight:500;background:none;border:none;cursor:pointer">
+              {{ showAdd ? $t('取消') : $t('申請已有城市') }}
+            </button>
+          </div>
         </div>
 
         <!-- Add city panel -->
@@ -46,7 +49,7 @@ const GuidePublishCityPage = {
               </div>
               <span style="font-size:13px;flex:1">{{ city.name }}</span>
               <button @click="handleAddCity(city.id)" :disabled="addingId===city.id"
-                class="ds-btn ds-btn-outline" style="font-size:11px;padding:4px 14px;border-radius:20px;opacity:addingId===city.id?.5:1">
+                class="ds-btn ds-btn-outline" style="font-size:11px;padding:4px 14px;border-radius:20px;opacity:addingId===city.id?0.5:1">
                 {{ addingId===city.id ? $t('申請中...') : $t('申請') }}
               </button>
             </div>
@@ -87,7 +90,10 @@ const GuidePublishCityPage = {
                   {{ city.status===1 ? $t('已通過') : $t('審核中') }}
                 </span>
               </div>
-              <button @click="handleDeleteCity(city.id, city.city_name||city.name)" style="font-size:12px;color:var(--color-red);background:none;border:none;cursor:pointer;flex-shrink:0">{{ $t('刪除') }}</button>
+              <div style="display:flex;gap:8px;flex-shrink:0">
+                <a :href="'#/guide/publish-city-form?id=' + city.id" style="font-size:12px;color:var(--color-primary);text-decoration:none">{{ $t('編輯') }}</a>
+                <button @click="handleDeleteCity(city.id, city.city_name||city.name)" style="font-size:12px;color:var(--color-red);background:none;border:none;cursor:pointer">{{ $t('刪除') }}</button>
+              </div>
             </div>
           </div>
         </div>

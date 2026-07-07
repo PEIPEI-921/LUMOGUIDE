@@ -13,7 +13,7 @@ const AppNav = {
         :class="{ active: currentTab === tab.key }"
         @click="onTabClick(tab)"
       >
-        <span class="tab-icon" v-html="currentTab === tab.key ? tab.iconActive : tab.icon"></span>
+        <span class="tab-icon">{{ currentTab === tab.key ? tab.iconActive : tab.icon }}</span>
         <span>{{ $t(tab.label) }}</span>
         <span v-if="tab.key === 'message' && unreadCount > 0" class="tab-badge">
           {{ unreadCount > 99 ? '99+' : unreadCount }}

@@ -137,7 +137,13 @@ const ModifyPhonePage = {
     async sendSms() {
       if (!this.phone) return;
       const res = await ApiProvider.post(ApiUrl.sendPhoneCode, { phone: this.phone });
-      if (res.success) { this.countdown = 60; const t = setInterval(() => { this.countdown--; if (this.countdown <= 0) clearInterval(t); }, 1000); }
+      if (res.success) {
+        this.countdown = 60;
+        this._timer = setInterval(() => {
+          this.countdown--;
+          if (this.countdown <= 0) { clearInterval(this._timer); this._timer = null; }
+        }, 1000);
+      }
     },
     async submit() {
       this.submitting = true;
@@ -147,6 +153,9 @@ const ModifyPhonePage = {
       this.msgColor = res.success ? 'var(--color-green)' : 'var(--color-red)';
       this.submitting = false;
     }
+  },
+  beforeUnmount() {
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
   }
 };
 
@@ -336,7 +345,7 @@ const FollowingPage = {
   },
   methods: {
     async unfollow(item) {
-      const res = await ApiProvider.post(ApiUrl.messageUnFollowShop, { user_id: item.user_id || item.id });
+      const res = await ApiProvider.post(ApiUrl.messageFollow, { user_id: item.user_id || item.id });
       if (res.success) { this.list = this.list.filter(i => i.id !== item.id); }
     }
   }

@@ -308,7 +308,7 @@ const GuideBookingDetailPage = {
       if (!confirm('確定標記為已完成？')) return;
       this.submitting = true;
       try {
-        const result = await ApiProvider.post(ApiUrl.guideRejectReserve, { id: this.detail.id, status: 3 });
+        const result = await ApiProvider.post(ApiUrl.guideConfirmReserve, { id: this.detail.id, status: 3 });
         if (result.success) this.fetchDetail();
       } catch (e) { /* silent */ }
       this.submitting = false;

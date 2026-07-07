@@ -146,18 +146,28 @@ const VipPage = {
         const res = await ApiProvider.post(url, { id: planId });
         if (res.success && res.data?.pay_url) {
           window.open(res.data.pay_url, '_blank');
-        }
-        // Check status
-        const statusRes = await ApiProvider.get(ApiUrl.vipPayStatus, { id: planId });
-        if (statusRes.success && Number(statusRes.data?.status) === 1) {
-          alert('訂閱成功！');
-          await UserStore.fetchProfile();
-          this.user = UserStore.profile || UserStore.userInfo;
+          // Poll for payment completion
+          let attempts = 0;
+          this._pollTimer = setInterval(async () => {
+            attempts++;
+            const statusRes = await ApiProvider.get(ApiUrl.vipPayStatus, { id: planId });
+            if (statusRes.success && Number(statusRes.data?.status) === 1) {
+              clearInterval(this._pollTimer);
+              this._pollTimer = null;
+              alert('訂閱成功！');
+              await UserStore.fetchProfile();
+              this.user = UserStore.profile || UserStore.userInfo;
+            }
+            if (attempts >= 60) { clearInterval(this._pollTimer); this._pollTimer = null; }
+          }, 5000);
         }
       } catch (e) {
         alert(e.message || '訂閱失敗');
       }
       this.subscribing = null;
     }
+  },
+  beforeUnmount() {
+    if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
   }
 };

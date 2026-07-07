@@ -20,15 +20,17 @@ Route::get('/', function () {
 
 // Protocol pages (Blade views) — must be before SPA catch-all
 Route::get('/protocol/{type}', function ($type) {
+    $content = systemConfig($type);
+    if (!$content) abort(404);
     return view('protocol', [
-        'content' => systemConfig($type)
+        'content' => $content
     ]);
 });
 
 // SPA catch-all: serve index.html for all non-API, non-admin frontend routes.
 // The Vue SPA handles routing via hash fragments (#/path).
 // /api/* → mobile app endpoints (unchanged)
-// /manage* → Dcat Admin panel (unchanged)
+// /manage* or /admin* → Dcat Admin panel (unchanged)
 Route::get('/{any}', function () {
     return response()->file(base_path('frontend/index.html'));
-})->where('any', '^(?!api|manage)[^.]*$');
+})->where('any', '^(?!api|' . config('admin.route.prefix', 'admin') . ')[^.]*$');

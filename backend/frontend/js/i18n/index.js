@@ -2,7 +2,7 @@
    i18n Translation Service — mirrors Flutter TranslationService
    ============================================ */
 
-const I18n = {
+const I18n = Vue.reactive({
   // Supported locales
   locales: ['zh-CN', 'zh-TW', 'en'],
 
@@ -13,7 +13,7 @@ const I18n = {
     'en': typeof en !== 'undefined' ? en : {},
   },
 
-  // Current locale (reactive via Vue)
+  // Current locale (reactive)
   _locale: 'zh-CN',
 
   get locale() {
@@ -76,4 +76,4 @@ const I18n = {
       Storage.locale = locale;
     }
   }
-};
+});

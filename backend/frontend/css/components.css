@@ -15,7 +15,7 @@
   align-items: center;
   height: 52px;
   padding: 0 var(--spacing-lg);
-  background: #7C5CFF;
+  background: var(--color-topbar-bg);
   gap: var(--spacing-sm);
 }
 
@@ -162,7 +162,7 @@
   width: 18px;
   height: 3px;
   border-radius: 2px;
-  background: #7C5CFF;
+  background: var(--color-topbar-bg);
   margin-left: 6px;
   align-self: flex-end;
   margin-bottom: 3px;
@@ -360,7 +360,7 @@
   padding: 8px 18px;
   border-radius: 10px;
   font-size: 13.5px;
-  font-weight: 530;
+  font-weight: 500;
   color: var(--color-secondary-text);
   text-decoration: none;
   transition: all 0.15s;
@@ -424,7 +424,7 @@
 .ds-tab {
   padding: 10px 20px;
   font-size: 13.5px;
-  font-weight: 530;
+  font-weight: 500;
   color: var(--color-assistant-text);
   border: none;
   background: transparent;
@@ -476,7 +476,7 @@
   padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 530;
+  font-weight: 500;
   border: 1px solid var(--color-border);
   background: var(--color-bg-white);
   color: var(--color-secondary-text);
@@ -833,7 +833,7 @@
 
 .ds-msg-body { flex: 1; min-width: 0; }
 .ds-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-.ds-msg-name { font-size: 14px; font-weight: 650; }
+.ds-msg-name { font-size: 14px; font-weight: 600; }
 .ds-msg-tag {
   font-size: 10px;
   padding: 2px 8px;
@@ -1133,7 +1133,7 @@
   object-fit: cover;
 }
 .ds-list-body { flex: 1; min-width: 0; }
-.ds-list-title { font-size: 14px; font-weight: 650; }
+.ds-list-title { font-size: 14px; font-weight: 600; }
 .ds-list-sub { font-size: 12px; color: var(--color-assistant-text); margin-top: 2px; }
 
 /* ============================================
@@ -1416,24 +1416,36 @@
 
 .city-card .city-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0;
-  padding: var(--spacing-md);
+  bottom: 0; left: 0; right: 0;
+  padding: 30px var(--spacing-md) var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
+
+.city-card .city-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .city-card .city-name {
   color: #fff;
   font-size: var(--font-sm);
-  font-weight: 600;
+  font-weight: 700;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .city-card .city-name-en {
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.6);
   font-size: var(--font-xs);
+  font-weight: 600;
   text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
@@ -1443,9 +1455,10 @@
   background: var(--color-primary);
   color: #fff;
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
-  width: fit-content;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .city-card .capital-badge {
@@ -1809,6 +1822,7 @@
    ============================================ */
 
 .search-bar {
+  position: relative;
   display: flex;
   align-items: center;
   max-width: 640px;
@@ -1865,7 +1879,7 @@
 }
 
 .btn-primary:disabled {
-  background: #C4C6E8;
+  opacity: 0.5;
   box-shadow: none;
   opacity: 1;
   transform: none;
@@ -2836,7 +2850,7 @@ textarea.form-input {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-primary-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2854,7 +2868,7 @@ textarea.form-input {
   flex: 1;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-primary-text);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;

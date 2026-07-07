@@ -19,7 +19,7 @@ html {
 body {
   font-family: var(--font-sans);
   color: var(--color-primary-text);
-  background: linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px);
+  background: linear-gradient(180deg, var(--color-topbar-bg) 0%, var(--color-topbar-bg) 52px, #F9F9F6 400px);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -257,7 +257,7 @@ ul, ol { list-style: none; }
 }
 .ds-area-title {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--color-primary-text);
   letter-spacing: -0.1px;
 }

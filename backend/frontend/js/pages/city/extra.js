@@ -36,6 +36,15 @@ const CityStrategyPage = {
         </div>
       </div>
 
+      <!-- Guide Sub-Category Filter Pills (only when guide type is selected) -->
+      <div class="filter-pills" v-if="showGuideSubFilter" style="margin-bottom:12px">
+        <button class="filter-pill" :class="{ active: activeGuideType === null }"
+          @click="filterGuideType(null)">{{ $t('全部') }}</button>
+        <button v-for="t in guideTypes" :key="t.id"
+          class="filter-pill" :class="{ active: activeGuideType === t.id }"
+          @click="filterGuideType(t.id)">{{ t.name }}</button>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
 
@@ -79,6 +88,8 @@ const CityStrategyPage = {
       currentCity: null,
       cities: [],
       showCityPicker: false,
+      cityClass: null,
+      activeGuideType: null,
       strategyTypes: [
         { key: 'guide', label: '導遊', endpoint: 'cityGuide',
           bg: '#EDEAF6', bgActive: '#DFDAF0',
@@ -124,18 +135,26 @@ const CityStrategyPage = {
     typeName() {
       const t = this.strategyTypes.find(s => s.key === this.activeType);
       return t ? t.label : '';
+    },
+    guideTypes() {
+      return (this.cityClass && this.cityClass.guide_type) ? this.cityClass.guide_type : [];
+    },
+    showGuideSubFilter() {
+      return this.activeType === 'guide' && this.guideTypes.length > 0;
     }
   },
 
   methods: {
     switchType(t) {
       this.activeType = t.key;
+      this.activeGuideType = null;
       this.loadContent();
     },
 
     selectCity(city) {
       this.currentCity = city;
       this.showCityPicker = false;
+      this.activeGuideType = null;
       this.loadContent();
     },
 
@@ -156,6 +175,17 @@ const CityStrategyPage = {
         params.city_id = this.currentCity.id;
       }
 
+      // Fetch cityClass for guide sub-category filtering
+      if (this.activeType === 'guide' && this.currentCity && this.currentCity.id) {
+        const classRes = await ApiProvider.get(ApiUrl.cityClass, { city_id: this.currentCity.id }).catch(() => null);
+        this.cityClass = classRes?.data || null;
+      }
+
+      // Pass guide_type when a sub-category is selected
+      if (this.activeType === 'guide' && this.activeGuideType !== null) {
+        params.guide_type = this.activeGuideType;
+      }
+
       const res = await ApiProvider.get(ApiUrl[epKey], params);
       if (res.success) {
         const list = res.data?.list || res.data || [];
@@ -164,6 +194,11 @@ const CityStrategyPage = {
         this.error = res.message || '載入失敗';
       }
       this.loading = false;
+    },
+
+    filterGuideType(typeId) {
+      this.activeGuideType = typeId;
+      this.loadContent();
     },
 
     async fetchLocation() {
@@ -233,6 +268,15 @@ const CityGuideListPage = {
         <h1>{{ $t('導遊列表') }}<span v-if="cityName"> · {{ cityName }}</span></h1>
       </div>
 
+      <!-- Guide Type Filter Pills -->
+      <div class="filter-pills" v-if="guideTypes.length > 0" style="margin-bottom:12px">
+        <button class="filter-pill" :class="{ active: activeGuideType === null }"
+          @click="filterGuideType(null)">{{ $t('全部') }}</button>
+        <button v-for="t in guideTypes" :key="t.id"
+          class="filter-pill" :class="{ active: activeGuideType === t.id }"
+          @click="filterGuideType(t.id)">{{ t.name }}</button>
+      </div>
+
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
       <div v-else-if="error" class="ds-empty">
         <p style="margin-bottom:12px">{{ error }}</p>
@@ -261,7 +305,13 @@ const CityGuideListPage = {
   `,
 
   data() {
-    return { guides: [], loading: true, error: null, cityName: '' };
+    return { guides: [], loading: true, error: null, cityName: '', cityClass: null, activeGuideType: null };
+  },
+
+  computed: {
+    guideTypes() {
+      return (this.cityClass && this.cityClass.guide_type) ? this.cityClass.guide_type : [];
+    }
   },
 
   methods: {
@@ -274,7 +324,17 @@ const CityGuideListPage = {
       }
       this.loading = true;
       this.error = null;
-      const res = await ApiProvider.get(ApiUrl.cityGuide, { city_id: cityId, page: 1, limit: 100 });
+
+      const params = { city_id: cityId, page: 1, limit: 100 };
+      if (this.activeGuideType !== null) params.guide_type = this.activeGuideType;
+
+      const [classRes, res] = await Promise.all([
+        ApiProvider.get(ApiUrl.cityClass, { city_id: cityId }).catch(() => null),
+        ApiProvider.get(ApiUrl.cityGuide, params)
+      ]);
+
+      this.cityClass = classRes?.data || null;
+
       if (res.success) {
         const list = res.data?.list || res.data || [];
         this.guides = Array.isArray(list) ? list : [];
@@ -283,6 +343,11 @@ const CityGuideListPage = {
         this.error = res.message || '載入失敗';
       }
       this.loading = false;
+    },
+
+    filterGuideType(typeId) {
+      this.activeGuideType = typeId;
+      this.load();
     }
   },
 

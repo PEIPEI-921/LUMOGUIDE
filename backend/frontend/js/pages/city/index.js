@@ -1,118 +1,200 @@
 /* ============================================
    CityPage — City list browser
-   Mirrors Flutter CityPage
+   Premium minimal design, server-driven
    ============================================ */
 
 const CityPage = {
   template: `
-    <div class="page-content">
-      <div class="search-bar" style="margin-top:12px;">
-        <span>🔍</span>
-        <input v-model="searchKeyword" :placeholder="t('請輸入城市/導遊/內容')"
-          @keyup.enter="goSearch" />
+    <div class="page-content" style="padding:0">
+      <!-- Minimal Search Bar -->
+      <div style="max-width:480px;margin:0 auto;padding:20px 32px 0">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.08);transition:border-color .25s"
+          :style="{ borderBottomColor: searchFocused ? 'rgba(0,0,0,.2)' : '' }">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input v-model="searchKeyword" :placeholder="$t('搜索城市...')"
+            @keyup.enter="goSearch" @focus="searchFocused=true" @blur="searchFocused=false"
+            style="flex:1;background:none;font-size:15px;color:#162539;outline:none;border:none;font-family:inherit" />
+        </div>
       </div>
 
-      <div class="ds-page-wrapper">
-      <loading-spinner v-if="!continents.length && loading" />
+      <div class="ds-page-wrapper" style="padding-top:16px">
+      <!-- Guide Toolbar -->
+      <div v-if="isGuide" style="display:flex;justify-content:flex-end;padding:0 var(--spacing-lg);margin-bottom:6px">
+        <a href="#" @click.prevent="onPublishCity"
+          style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#fff;font-weight:500;text-decoration:none;background:#666FFF;padding:8px 20px;border-radius:8px;transition:background .2s,transform .15s;letter-spacing:.01em"
+          @mouseenter="$event.currentTarget.style.background='#5A5FE8';$event.currentTarget.style.transform='translateY(-1px)'"
+          @mouseleave="$event.currentTarget.style.background='#666FFF';$event.currentTarget.style.transform=''">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          發布城市
+        </a>
+      </div>
 
-      <!-- Fallback empty: no continents loaded at all -->
-      <div v-if="!continents.length && !loading" style="text-align:center;padding:60px 0">
-        <div style="font-size:48px;margin-bottom:12px;opacity:.3">🌍</div>
-        <p style="color:var(--color-secondary-text);font-size:14px;margin-bottom:16px">{{ t('暫無城市數據') }}</p>
-        <button @click="fetchCities" class="ds-btn ds-btn-outline" style="border-radius:100px">{{ t('重新載入') }}</button>
+      <!-- Loading -->
+      <div v-if="!continents.length && loading" style="text-align:center;padding:80px 0">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Empty -->
+      <div v-if="!continents.length && !loading" style="text-align:center;padding:80px 0">
+        <p style="color:#9CA3AF;font-size:14px;margin-bottom:20px">{{ $t('暫無城市數據') }}</p>
+        <button @click="fetchContinents" style="font-size:13px;color:#666FFF;background:none;border:none;cursor:pointer;font-weight:500">{{ $t('重新載入') }}</button>
       </div>
 
       <template v-if="continents.length">
-        <!-- Continent Tabs -->
-        <div class="filter-pills" style="margin-top:8px">
-          <button v-for="(c, idx) in continents" :key="'ct-'+idx"
-            class="filter-pill" :class="{ active: continentIndex === idx }"
-            @click="selectContinent(idx)">
-            {{ c.name || t('全部') }}
+        <!-- Continent Tabs — minimal underline style -->
+        <div style="display:flex;gap:28px;padding:4px var(--spacing-lg) 12px;overflow-x:auto">
+          <button v-for="(c, idx) in continents" :key="'ct-'+c.id"
+            @click="selectContinent(idx)"
+            style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;transition:all .2s;position:relative;letter-spacing:.01em"
+            :style="{ color: continentIndex === idx ? '#162539' : '#9CA3AF' }">
+            {{ c.name }}
+            <span v-if="continentIndex === idx" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#162539;border-radius:1px"></span>
           </button>
         </div>
 
-        <!-- Cities Grid -->
-        <div class="card-grid-2" style="margin-top:12px">
+        <!-- Area pills — subtle chips -->
+        <div v-if="currentAreas.length > 1" style="display:flex;gap:6px;padding:0 var(--spacing-lg) 16px;overflow-x:auto">
+          <button v-for="(area, idx) in currentAreas" :key="'ar-'+area.id"
+            @click="selectArea(idx)"
+            style="font-size:11px;font-weight:400;white-space:nowrap;padding:4px 12px;border-radius:100px;cursor:pointer;transition:all .2s;letter-spacing:.02em"
+            :style="{ background: areaIndex === idx ? '#162539' : 'transparent', color: areaIndex === idx ? '#fff' : '#6B7280', border: areaIndex === idx ? '1px solid #162539' : '1px solid rgba(0,0,0,.08)' }">
+            {{ area.name }}
+          </button>
+        </div>
+
+        <!-- Cities Grid — 4 columns, clean cards -->
+        <div class="card-grid-4" style="margin-top:0;gap:20px">
           <div v-for="city in currentCities" :key="'city-'+city.id"
-            class="city-card" style="cursor:pointer;" @click="goCityDetail(city.id)">
-            <img class="city-img" :src="imageUrl(city.first_picture)" />
-            <div class="city-overlay">
-              <span class="city-name">{{ city.name }}</span>
-              <span v-if="city.name_en" class="city-name-en">{{ city.name_en }}</span>
-              <span v-if="city.area_name" class="city-badge">{{ city.area_name }}</span>
+            @click="goCityDetail(city.id)"
+            style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;background:#E5E7EB;transition:transform .25s"
+            @mouseenter="$event.currentTarget.style.transform='translateY(-2px)'"
+            @mouseleave="$event.currentTarget.style.transform=''">
+            <img :src="imageUrl(city.first_picture)" alt=""
+              style="width:100%;height:100%;object-fit:cover;transition:transform .5s"
+              @mouseenter="$event.currentTarget.style.transform='scale(1.04)'"
+              @mouseleave="$event.currentTarget.style.transform=''" />
+            <!-- Bottom gradient + text -->
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:32px 12px 10px;background:linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 100%)">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+                <span style="color:#fff;font-size:13px;font-weight:500;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ city.name }}</span>
+                <span v-if="city.area_name" style="color:rgba(255,255,255,.75);font-size:9px;font-weight:400;padding:1px 6px;border:1px solid rgba(255,255,255,.3);border-radius:100px;white-space:nowrap;flex-shrink:0">{{ city.area_name }}</span>
+              </div>
+              <span v-if="city.name_en" style="color:rgba(255,255,255,.5);font-size:10px;font-weight:400">{{ city.name_en }}</span>
             </div>
           </div>
         </div>
 
-        <div v-if="!currentCities.length && !loading" style="text-align:center;padding:30px 0;color:var(--color-assistant-text);font-size:13px">
-          {{ t('此分類暫無城市') }}
+        <div v-if="!currentCities.length && !tabLoading" style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:13px">
+          {{ $t('此分類暫無城市') }}
         </div>
       </template>
 
-      <div style="height:20px;"></div>
+      <div style="height:60px;"></div>
     </div>
     </div>
   `,
 
   data() {
     return {
-      continents: [],
+      continents: [],       // [{id, name, areas: [{id, name}]}]
       continentIndex: 0,
+      areaIndex: 0,         // index within current continent's areas
+      cities: [],           // currently displayed cities
       loading: false,
-      searchKeyword: ''
+      tabLoading: false,
+      searchKeyword: '',
+      searchFocused: false
     };
   },
 
   computed: {
+    currentAreas() {
+      const c = this.continents[this.continentIndex];
+      return c ? (c.areas || []) : [];
+    },
     currentCities() {
-      return this.continents[this.continentIndex]?.city || [];
+      return this.cities;
+    },
+    isGuide() {
+      const profile = UserStore.profile || UserStore.userInfo;
+      return profile && Number(profile.identity) === 2;
     }
   },
 
   methods: {
-    t(key) { return I18n.t(key); },
     imageUrl,
 
-    async fetchCities() {
+    async fetchContinents() {
       this.loading = true;
-      const res = await ApiProvider.get(ApiUrl.cityList, { limit: 1000, page: 1 });
-      this.loading = false;
-      if (res.success && res.data) {
-        const list = res.data.list || res.data || [];
-        const cities = Array.isArray(list) ? list : [];
+      try {
+        // 1. Fetch continents (parent_id=0)
+        const res = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: 0 });
+        if (!res.success) {
+          this.loading = false;
+          return;
+        }
+        const continentList = res.data?.list || res.data || [];
 
-        // Group cities by continent (reuse home page's AREA_TO_CONTINENT mapping)
-        const continentMap = {};
-        cities.forEach(city => {
-          const areaName = city.area_name || '';
-          const continent = (typeof AREA_TO_CONTINENT !== 'undefined' && AREA_TO_CONTINENT[areaName])
-            || areaName || this.t('其他');
-          if (!continentMap[continent]) {
-            continentMap[continent] = { name: continent, city: [] };
+        // 2. Fetch sub-areas for each continent in parallel
+        const withAreas = await Promise.all(continentList.map(async (c) => {
+          try {
+            const areaRes = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: c.id });
+            const areas = areaRes.success ? (areaRes.data?.list || areaRes.data || []) : [];
+            return { id: c.id, name: c.name, areas };
+          } catch (e) {
+            return { id: c.id, name: c.name, areas: [] };
           }
-          continentMap[continent].city.push(city);
-        });
+        }));
 
-        // Sort continents in a consistent order
-        const order = ['亚洲', '亞洲', '欧洲', '歐洲', '北美洲', '南美洲', '非洲', '大洋洲'];
-        const result = [];
-        order.forEach(name => {
-          const match = Object.keys(continentMap).find(k => k === name);
-          if (match) {
-            result.push(continentMap[match]);
-            delete continentMap[match];
-          }
-        });
-        // Append any remaining continents not in the order list
-        Object.values(continentMap).forEach(g => result.push(g));
+        this.continents = withAreas;
+        this.continentIndex = 0;
+        this.areaIndex = 0;
 
-        this.continents = result;
+        // 3. Load cities for first continent + first area
+        if (withAreas.length > 0) {
+          await this.fetchCities();
+        }
+      } catch (e) {
+        // silent
       }
+      this.loading = false;
     },
 
     selectContinent(idx) {
       this.continentIndex = idx;
+      this.areaIndex = 0;
+      this.cities = [];
+      this.fetchCities();
+    },
+
+    selectArea(idx) {
+      this.areaIndex = idx;
+      this.cities = [];
+      this.fetchCities();
+    },
+
+    async fetchCities() {
+      const c = this.continents[this.continentIndex];
+      if (!c) return;
+      const area = c.areas[this.areaIndex];
+
+      this.tabLoading = true;
+      try {
+        const params = { page: 1, limit: 100 };
+        if (c.id) params.continents_id = c.id;
+        if (area && area.id) params.area_id = area.id;
+
+        const res = await ApiProvider.get(ApiUrl.cityList, params);
+        if (res.success) {
+          const list = res.data?.list || res.data || [];
+          this.cities = Array.isArray(list) ? list : [];
+        } else {
+          this.cities = [];
+        }
+      } catch (e) {
+        this.cities = [];
+      }
+      this.tabLoading = false;
     },
 
     goCityDetail(id) {
@@ -123,10 +205,19 @@ const CityPage = {
       if (this.searchKeyword.trim()) {
         this.$router.push('/search?keyword=' + encodeURIComponent(this.searchKeyword.trim()));
       }
+    },
+
+    // Publish city — VIP gate on click (matching Flutter VIPCheckUtils.check())
+    onPublishCity() {
+      if (!UserStore.isVip) {
+        this.$router.push('/vip');
+        return;
+      }
+      this.$router.push('/guide/publish-city-form');
     }
   },
 
   mounted() {
-    this.fetchCities();
+    this.fetchContinents();
   }
 };

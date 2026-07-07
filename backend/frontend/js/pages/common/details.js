@@ -253,7 +253,7 @@ const CommonDetailPage = {
     },
 
     async toggleFollow() {
-      const ep = this.item.is_follow ? ApiUrl.followShop : ApiUrl.followShop;
+      const ep = this.item.is_follow ? ApiUrl.unfollowShop : ApiUrl.followShop;
       const res = await ApiProvider.post(ep, { shop_id: this.itemId });
       if (res.success) this.item.is_follow = this.item.is_follow ? 0 : 1;
     },

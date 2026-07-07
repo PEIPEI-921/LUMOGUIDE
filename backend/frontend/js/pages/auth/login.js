@@ -93,7 +93,7 @@ const LoginPage = {
         return;
       }
 
-      UserStore.saveCredentials(this.email, this.password, this.remember);
+      UserStore.saveCredentials(this.email, this.remember);
       await UserStore.login(res.data);
       showToast(I18n.t('登錄成功'));
       this.$router.replace('/home');

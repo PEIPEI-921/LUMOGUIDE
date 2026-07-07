@@ -24,9 +24,6 @@ const Storage = {
   get account() { return localStorage.getItem('account') || ''; },
   set account(v) { localStorage.setItem('account', v); },
 
-  get password() { return localStorage.getItem('password') || ''; },
-  set password(v) { localStorage.setItem('password', v); },
-
   get rememberMe() { return localStorage.getItem('remember_me') === '1'; },
   set rememberMe(v) { localStorage.setItem('remember_me', v ? '1' : '0'); },
 
@@ -48,11 +45,12 @@ const Storage = {
   // --- Clear ---
   logout() {
     ['token', 'user_info', 'user_number', 'user_sig', 'expire_time',
-     'account', 'password', 'remember_me', 'home_data', 'city_area_map',
+     'account', 'remember_me', 'home_data', 'city_area_map',
      'last_login_record_date'].forEach(k => localStorage.removeItem(k));
   },
 
   clearAll() {
-    localStorage.clear();
+    this.logout();
+    ['locale', 'account', 'rememberMe', 'cityAreaMap'].forEach(k => localStorage.removeItem(k));
   }
 };

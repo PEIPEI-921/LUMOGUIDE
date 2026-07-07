@@ -70,6 +70,9 @@ const HomePage = {
           {{ t('查看全部') }}
         </div>
       </div>
+      <div v-else-if="searchDone && searchQuery.trim()" class="card" style="margin:0 12px; padding:24px; text-align:center; position:absolute; z-index:200; left:0; right:0; box-shadow:var(--shadow-popup); color:var(--color-assistant-text); font-size:13px">
+        {{ $t('暫無搜索結果') }}
+      </div>
 
       <!-- Loading -->
       <loading-spinner v-if="!homeData && loading" :text="t('加載中...')" />
@@ -266,7 +269,7 @@ const HomePage = {
       homeData: null,
       loading: false,
       searchQuery: '',
-      searchResults: [],
+      searchResults: [], searchDone: false,
       guideCatIndex: 0,
       shopCatIndex: 0,
       infoCatIndex: 0,
@@ -477,6 +480,7 @@ const HomePage = {
       const q = this.searchQuery.trim();
       if (!q) {
         this.searchResults = [];
+        this.searchDone = false;
         return;
       }
       this.searchDebounce = setTimeout(() => this.doSearch(q), 500);
@@ -487,12 +491,14 @@ const HomePage = {
       if (res.success) {
         this.searchResults = Array.isArray(res.data) ? res.data : [];
       }
+      this.searchDone = true;
     },
 
     onSearchEnter() {
       if (this.searchQuery.trim()) {
         this.$router.push('/search?keyword=' + encodeURIComponent(this.searchQuery.trim()));
         this.searchResults = [];
+        this.searchDone = false;
       }
     },
 

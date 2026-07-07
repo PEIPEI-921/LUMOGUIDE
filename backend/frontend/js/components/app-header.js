@@ -23,7 +23,11 @@ const AppHeader = {
 
   methods: {
     goBack() {
-      window.history.back();
+      if (window.history.length > 1) {
+        this.$router.back();
+      } else {
+        this.$router.push('/home');
+      }
     }
   }
 };

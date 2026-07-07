@@ -205,7 +205,7 @@ const en = {
   '預約狀態': 'Status',
   '待確認': 'Pending',
   '已確認': 'Confirmed',
-  '巳拒絕': 'Rejected',
+  '已拒絕': 'Rejected',
   '已取消': 'Cancelled',
   '確認預約': 'Confirm Booking',
   '拒絕預約': 'Reject Booking',
@@ -258,8 +258,6 @@ const en = {
   // --- Search ---
   '搜索': 'Search',
   '請輸入關鍵詞': 'Enter keywords',
-  '城市': 'City',
-  '內容': 'Content',
 
   // --- Evaluation ---
   '評價': 'Review',

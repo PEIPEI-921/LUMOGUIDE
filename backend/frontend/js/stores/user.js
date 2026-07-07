@@ -20,15 +20,15 @@ const UserStore = Vue.reactive({
   },
 
   get isGuide() {
-    return this.userInfo?.identity === 2;
+    return Number(this.userInfo?.identity) === 2;
   },
 
   get isEnterprise() {
-    return this.userInfo?.identity === 3;
+    return Number(this.userInfo?.identity) === 3;
   },
 
   get isUser() {
-    return this.userInfo?.identity === 1;
+    return Number(this.userInfo?.identity) === 1;
   },
 
   get isVip() {
@@ -143,15 +143,13 @@ const UserStore = Vue.reactive({
     }
   },
 
-  /** Remember login credentials */
-  saveCredentials(email, password, remember) {
+  /** Remember login credentials (email only — never store password) */
+  saveCredentials(email, remember) {
     if (remember) {
       Storage.account = email;
-      Storage.password = password;
       Storage.rememberMe = true;
     } else {
       Storage.account = '';
-      Storage.password = '';
       Storage.rememberMe = false;
     }
   },
@@ -161,7 +159,7 @@ const UserStore = Vue.reactive({
     if (Storage.rememberMe) {
       return {
         email: Storage.account,
-        password: Storage.password,
+        password: '',
         remember: true
       };
     }
