@@ -111,12 +111,33 @@ const ProfilePage = {
             <span>📝 {{ $t('發布管理') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
-          <a v-if="isGuide" href="#/guide/certify" class="ds-menu-item">
+          <a v-if="isGuide" href="#/guide/publish-city" class="ds-menu-item">
             <span>🏙️ {{ $t('我的城市') }}</span>
+            <span class="ds-menu-arrow">›</span>
+          </a>
+          <a v-if="isGuide" href="#/guide/certify" class="ds-menu-item">
+            <span>🎫 {{ $t('導遊認證') }}</span>
+            <span class="ds-menu-arrow">›</span>
+          </a>
+          <a v-if="isGuide" href="#/guide/change-city" class="ds-menu-item">
+            <span>🔄 {{ $t('切換城市') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isCompany" href="#/merchant/manage" class="ds-menu-item">
             <span>🏪 {{ $t('店鋪管理') }}</span>
+            <span class="ds-menu-arrow">›</span>
+          </a>
+        </div>
+
+        <!-- Menu: Apply (for non-guide/non-company users) -->
+        <div v-if="!isGuide && !isCompany" class="ds-menu-group">
+          <div class="ds-menu-group-title">{{ $t('申請') }}</div>
+          <a href="#/guide/certify" class="ds-menu-item">
+            <span>🎫 {{ $t('導遊認證') }}</span>
+            <span class="ds-menu-arrow">›</span>
+          </a>
+          <a href="#/merchant/entry" class="ds-menu-item">
+            <span>🏪 {{ $t('商家入駐') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -165,7 +186,6 @@ const ProfilePage = {
         </button>
       </div>
     </div>
-    </div>
   `,
 
   data() {
@@ -183,9 +203,9 @@ const ProfilePage = {
       return (this.user?.identity || 1) === 3;
     },
     identityLabel() {
-      if (this.isGuide) return this.$t ? this.$t('導遊') : '導遊';
-      if (this.isCompany) return this.$t ? this.$t('企業') : '企業';
-      return this.$t ? this.$t('用戶') : '用戶';
+      if (this.isGuide) return this.$t('導遊');
+      if (this.isCompany) return this.$t('企業');
+      return this.$t('用戶');
     },
     identityClass() {
       if (this.isGuide) return 'guide';

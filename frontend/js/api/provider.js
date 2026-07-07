@@ -42,11 +42,16 @@ const ApiProvider = {
    * Core request method
    */
   async request(method, path, { params, data, headers } = {}) {
+    // AbortController for 15s timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     try {
       const url = this._buildUrl(path, params);
       const opts = {
         method,
         headers: this._buildHeaders(headers),
+        signal: controller.signal,
       };
 
       if (data && method !== 'GET') {
@@ -63,12 +68,14 @@ const ApiProvider = {
       const json = await response.json();
 
       // Map snake_case to a consistent code/message/data envelope
-      const code = json.code !== undefined ? parseInt(json.code, 10) : response.status;
+      const parsed = parseInt(json.code, 10);
+      const code = !isNaN(parsed) ? parsed : response.status;
       const message = json.message || json.msg || '';
       const resData = json.data !== undefined ? json.data : json;
 
-      // Handle 401 — redirect to login
-      if (code === 401 || response.status === 401) {
+      // Handle 401 — redirect to login (with re-entrancy guard)
+      if ((code === 401 || response.status === 401) && !this._redirecting) {
+        this._redirecting = true;
         Storage.logout();
         // Use Vue router if available
         const app = document.querySelector('#app').__vue_app__;
@@ -86,6 +93,10 @@ const ApiProvider = {
         raw: json
       };
     } catch (err) {
+      if (err.name === 'AbortError') {
+        console.error('API Timeout:', method, path);
+        return { success: false, code: -1, message: 'Request timeout', data: null, raw: null };
+      }
       console.error('API Error:', method, path, err);
       return {
         success: false,
@@ -94,6 +105,8 @@ const ApiProvider = {
         data: null,
         raw: null
       };
+    } finally {
+      clearTimeout(timeout);
     }
   },
 

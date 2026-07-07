@@ -80,8 +80,6 @@ const EvaluationSubmitPage = {
   },
 
   methods: {
-    tPlaceholder: '', // overridden in computed
-
     addImage() {
       const input = document.createElement('input');
       input.type = 'file';

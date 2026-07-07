@@ -212,7 +212,7 @@ const BookingMerchantPage = {
     async loadShop() {
       const id = this.$route.params.id;
       try {
-        const result = await ApiProvider.get(ApiUrl.companyInfo, { id: Number(id) });
+        const result = await ApiProvider.get(ApiUrl.companyShopInfo, { id: Number(id) });
         if (result.success && result.data) {
           this.shop = result.data;
         }

@@ -184,7 +184,7 @@ const GuideCertifyPage = {
               <label class="ds-label">{{ $t('車輛圖片') }}</label>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
                 <div v-for="(p, i) in carPics" :key="i" style="position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;background:var(--color-bg-page)">
-                  <img :src="p" alt="" style="width:100%;height:100%;object-fit:cover">
+                  <img :src="p.preview || p" alt="" style="width:100%;height:100%;object-fit:cover">
                   <button v-if="!readOnly" @click="carPics.splice(i,1)" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border:none;cursor:pointer">✕</button>
                 </div>
                 <button v-if="!readOnly" @click="$refs.carPicInput.click()" style="width:80px;height:60px;border-radius:8px;border:2px dashed var(--color-border);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--color-assistant-text);cursor:pointer;background:transparent">+</button>
@@ -234,7 +234,7 @@ const GuideCertifyPage = {
         photo: '', year: '', identity_type: '', introduction: '', business_contact: '',
         have_vehicle: 0, vehicle_rent: 0, vehicle_info: '',
         certificate_picture: '', passport_picture: '', driver_license_front: '', driver_license_back: '',
-        car_pictures: [], language: [], industry_type: [],
+        car_pictures: [],
       },
       photoFile: null, photoPreview: '',
       docFiles: { certificate: null, passport: null, licenseFront: null, licenseBack: null },
@@ -299,7 +299,7 @@ const GuideCertifyPage = {
     },
     onCarPicAdd(e) {
       const file = e.target.files?.[0];
-      if (file) this.carPics.push(URL.createObjectURL(file));
+      if (file) this.carPics.push({ file, preview: URL.createObjectURL(file) });
     },
     onDocChange(e, key) {
       const file = e.target.files?.[0];
@@ -360,14 +360,17 @@ const GuideCertifyPage = {
         // Upload car pics
         const carUrls = [];
         for (const pic of this.carPics) {
-          if (pic.startsWith('blob:')) {
-            // Skip blob URLs — they can't be uploaded without a File reference
-            carUrls.push('');
-          } else {
+          if (pic.file) {
+            // New upload — upload File then collect server URL
+            const url = await this.uploadFile(pic.file, null);
+            if (url) carUrls.push(url);
+          } else if (typeof pic === 'string') {
+            // Existing server URL
             carUrls.push(pic);
+          } else if (pic.preview && !pic.file) {
+            // Legacy blob-only entry — skip
           }
         }
-        const validCarUrls = carUrls.filter(Boolean);
 
         const result = await ApiProvider.post(ApiUrl.applyGuide, {
           ...this.form,
@@ -378,7 +381,7 @@ const GuideCertifyPage = {
           passport_picture: passportUrl,
           driver_license_front: licFrontUrl,
           driver_license_back: licBackUrl,
-          car_pictures: validCarUrls,
+          car_pictures: carUrls,
         });
         if (result.success) {
           this.success = true;
@@ -390,5 +393,12 @@ const GuideCertifyPage = {
       }
       this.submitting = false;
     }
+  },
+
+  beforeUnmount() {
+    // Revoke blob URLs to prevent memory leaks
+    if (this.photoPreview && this.photoPreview.startsWith('blob:')) URL.revokeObjectURL(this.photoPreview);
+    this.carPics.forEach(p => { if (p.preview && p.preview.startsWith('blob:')) URL.revokeObjectURL(p.preview); });
+    Object.values(this.docFiles).forEach(f => { if (f instanceof File) { /* File objects don't need revoking */ } });
   }
 };

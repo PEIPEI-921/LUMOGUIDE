@@ -51,22 +51,12 @@ if (!function_exists('generateUniqueInviteCode')) {
      */
     function generateUniqueInviteCode(): string
     {
-        // 获取当前时间戳的微秒部分
-        $microtime = microtime(true);
-        // 将时间戳转换为字符串
-        $microtimeStr = str_replace('.', '', (string)$microtime);
-
-        // 获取一个随机数
-        $randomNumber = rand(1000, 9999);
-
-        // 将时间戳字符串和随机数拼接在一起
-        $combinedStr = $microtimeStr . $randomNumber;
-
-        // 使用base36编码（包含数字和字母）来缩短长度
-        $inviteCode = strtoupper(base_convert($combinedStr, 10, 36));
-
-        // 截取最后6位作为邀请码
-        return substr($inviteCode, -7);
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 排除易混淆字符 (0/O, 1/I)
+        $code = '';
+        for ($i = 0; $i < 7; $i++) {
+            $code .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+        return $code;
     }
 }
 
@@ -79,19 +69,24 @@ if (!function_exists('systemConfig')) {
      */
     function systemConfig(string $mark)
     {
-        $res = Redis::hGet('system_config', $mark);
-
-        if (!$res) {
-            $system_config = SystemConfig::all(['type', 'mark', 'value'])->toArray();
-            foreach ($system_config as $k => $v) {
-                Redis::hSet('system_config', $v['mark'], $v['value']);
-
-                if ($v['mark'] == $mark) {
-                    $res = $v['value'];
-                }
+        try {
+            if (Redis::hExists('system_config', $mark)) {
+                return Redis::hGet('system_config', $mark);
             }
+        } catch (\Exception $e) {
+            // Redis unavailable, fall through to database
         }
-        return $res;
+
+        $config = SystemConfig::where('mark', $mark)->first(['value']);
+        if ($config) {
+            try {
+                Redis::hSet('system_config', $mark, $config->value);
+            } catch (\Exception $e) {
+                // Silent — cache write failure should not block reads
+            }
+            return $config->value;
+        }
+        return null;
     }
 }
 
@@ -301,6 +296,18 @@ if (!function_exists('handleIsRead')) {
             $model->save();
         }
     }
+
+    /**
+     * Batch mark items as read (avoids N+1 in loops)
+     * @param string $modelClass
+     * @param array $ids
+     * @return void
+     */
+    function handleIsReadBatch(string $modelClass, array $ids)
+    {
+        if (empty($ids)) return;
+        $modelClass::whereIn('id', $ids)->where('is_read', 0)->update(['is_read' => 1]);
+    }
 }
 
 if (!function_exists('isWithinDays')) {
@@ -397,34 +404,73 @@ if (!function_exists('compressImage')) {
      */
     function compressImage($source_url, $destination_url, $quality)
     {
-        $info = getimagesize($source_url);
-        if ($info['mime'] == 'image/jpeg') {
-            $image = imagecreatefromjpeg($source_url);
-        } elseif ($info['mime'] == 'image/gif') {
-            $image = imagecreatefromgif($source_url);
-        } elseif ($info['mime'] == 'image/png') {
-            $image = imagecreatefrompng($source_url);
-        } else {
+        // Download remote files to temp path (bypass allow_url_fopen dependency)
+        $localPath = $source_url;
+        $isRemote = preg_match('/^https?:\/\//', $source_url);
+        if ($isRemote) {
+            $tmpPath = tempnam(sys_get_temp_dir(), 'img_');
+            $ch = curl_init($source_url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 15,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $data = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($httpCode !== 200 || empty($data)) return false;
+            file_put_contents($tmpPath, $data);
+            $localPath = $tmpPath;
+        }
+
+        $info = getimagesize($localPath);
+        if (!$info) {
+            if ($isRemote && isset($tmpPath)) @unlink($tmpPath);
             return false;
         }
 
-        // Rotate image based on EXIF data
-        $exif = @exif_read_data($source_url);
-        if (!empty($exif['Orientation'])) {
-            switch ($exif['Orientation']) {
-                case 8:
-                    $image = imagerotate($image, 90, 0);
-                    break;
-                case 3:
-                    $image = imagerotate($image, 180, 0);
-                    break;
-                case 6:
-                    $image = imagerotate($image, -90, 0);
-                    break;
+        if ($info['mime'] == 'image/jpeg') {
+            $image = imagecreatefromjpeg($localPath);
+        } elseif ($info['mime'] == 'image/gif') {
+            $image = imagecreatefromgif($localPath);
+        } elseif ($info['mime'] == 'image/png') {
+            $image = imagecreatefrompng($localPath);
+        } else {
+            if ($isRemote && isset($tmpPath)) @unlink($tmpPath);
+            return false;
+        }
+
+        // Rotate image based on EXIF data (JPEG only)
+        if ($info['mime'] == 'image/jpeg') {
+            $exif = @exif_read_data($localPath);
+            if (!empty($exif['Orientation'])) {
+                switch ($exif['Orientation']) {
+                    case 8:
+                        $image = imagerotate($image, 90, 0);
+                        break;
+                    case 3:
+                        $image = imagerotate($image, 180, 0);
+                        break;
+                    case 6:
+                        $image = imagerotate($image, -90, 0);
+                        break;
+                }
             }
         }
 
-        imagejpeg($image, $destination_url, $quality);
+        // Output in original format
+        if ($info['mime'] == 'image/png') {
+            imagesavealpha($image, true);
+            imagepng($image, $destination_url, round(9 - $quality / 11.11));
+        } elseif ($info['mime'] == 'image/gif') {
+            imagegif($image, $destination_url);
+        } else {
+            imagejpeg($image, $destination_url, $quality);
+        }
+
+        imagedestroy($image);
+        if ($isRemote && isset($tmpPath)) @unlink($tmpPath);
         return $destination_url;
     }
 }

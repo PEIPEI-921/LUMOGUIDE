@@ -9,14 +9,19 @@ const MinePage = {
       <!-- Not logged in -->
       <div v-if="!UserStore.isLogin" style="text-align:center;padding:80px 0">
         <div style="width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px">👤</div>
-        <p style="font-size:15px;color:var(--color-secondary-text);margin-bottom:20px;">{{ t('請登錄以查看個人中心') }}</p>
+        <p style="font-size:15px;color:var(--color-secondary-text);margin-bottom:20px;">{{ $t('請登錄以查看個人中心') }}</p>
         <a href="#/login" class="ds-btn ds-btn-primary" style="display:inline-flex;border-radius:100px;padding:10px 36px">
-          {{ t('登錄') }}
+          {{ $t('登錄') }}
         </a>
       </div>
 
+      <!-- Loading -->
+      <div v-else-if="!profile" style="text-align:center;padding:80px 0">
+        <div class="spinner"></div>
+      </div>
+
       <!-- Logged in -->
-      <template v-if="UserStore.isLogin && profile">
+      <template v-else>
         <!-- Profile Header Card -->
         <div class="ds-profile-card" style="margin-top:8px">
           <div class="ds-profile-top">
@@ -30,8 +35,8 @@ const MinePage = {
               <div style="min-width:0">
                 <div style="display:flex;align-items:center;gap:8px">
                   <span style="font-size:17px;font-weight:600;color:var(--color-primary-text)">{{ profile.nickname || profile.email || '' }}</span>
-                  <span v-if="profile.identity === 2" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#EEF2FF;color:var(--color-primary);font-weight:600">{{ t('认证导游') }}</span>
-                  <span v-if="profile.identity === 3" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#FFF7ED;color:var(--color-amber);font-weight:600">{{ t('认证企业') }}</span>
+                  <span v-if="profile.identity === 2" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#EEF2FF;color:var(--color-primary);font-weight:600">{{ $t('认证导游') }}</span>
+                  <span v-if="profile.identity === 3" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#FFF7ED;color:var(--color-amber);font-weight:600">{{ $t('认证企业') }}</span>
                   <span v-if="profile.vip_name" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#FFFBF0,#FFF7E0);color:#D4A017;font-weight:600;border:1px solid rgba(212,160,23,.3)">{{ profile.vip_name }}</span>
                 </div>
                 <div style="font-size:12px;color:var(--color-assistant-text);margin-top:4px">
@@ -104,7 +109,7 @@ const MinePage = {
           <div style="display:flex;align-items:center;gap:14px">
             <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎁</div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:550">{{ $t('邀請好友') }}</div>
+              <div style="font-size:14px;font-weight:500">{{ $t('邀請好友') }}</div>
               <div style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ $t('邀請碼') }}: {{ profile.inviter_code || '' }}</div>
             </div>
             <span style="color:var(--color-assistant-text)">›</span>
@@ -153,14 +158,13 @@ const MinePage = {
   },
 
   methods: {
-    t(key) { return I18n.t(key); },
     imageUrl,
     formatDate,
   },
 
   mounted() {
     if (UserStore.isLogin) {
-      UserStore.getProfile();
+      (UserStore.fetchProfile || UserStore.init || (() => {})).call(UserStore);
     }
   }
 };

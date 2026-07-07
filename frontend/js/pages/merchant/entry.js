@@ -145,7 +145,7 @@ const MerchantEntryPage = {
             <label class="ds-label">{{ $t('店鋪照片') }}</label>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
               <div v-for="(p, i) in storePics" :key="i" style="position:relative;width:80px;height:60px;border-radius:8px;overflow:hidden;background:var(--color-bg-page)">
-                <img :src="p" alt="" style="width:100%;height:100%;object-fit:cover">
+                <img :src="p.preview || p" alt="" style="width:100%;height:100%;object-fit:cover">
                 <button v-if="!readOnly" @click="storePics.splice(i,1)" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:10px;border:none;cursor:pointer">✕</button>
               </div>
               <button v-if="!readOnly" @click="$refs.storePicInput.click()" style="width:80px;height:60px;border-radius:8px;border:2px dashed var(--color-border);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--color-assistant-text);cursor:pointer;background:transparent">+</button>
@@ -217,7 +217,7 @@ const MerchantEntryPage = {
     },
     onStorePicAdd(e) {
       const file = e.target.files?.[0];
-      if (file) this.storePics.push(URL.createObjectURL(file));
+      if (file) this.storePics.push({ file, preview: URL.createObjectURL(file) });
     },
     docPreview(key) {
       const f = this.docFiles[key];
@@ -260,7 +260,18 @@ const MerchantEntryPage = {
         const licenseUrl = await this.uploadFile(this.docFiles.license, this.form.license);
         const idFrontUrl = await this.uploadFile(this.docFiles.idCardFront, this.form.id_card_front);
         const idBackUrl = await this.uploadFile(this.docFiles.idCardBack, this.form.id_card_back);
-        const storeUrls = this.storePics.filter(p => !p.startsWith('blob:'));
+        // Upload store pics
+        const storeUrls = [];
+        for (const pic of this.storePics) {
+          if (pic.file) {
+            const url = await this.uploadFile(pic.file, null);
+            if (url) storeUrls.push(url);
+          } else if (typeof pic === 'string') {
+            storeUrls.push(pic);
+          } else if (pic.preview && !pic.file) {
+            // Legacy blob-only entry — skip
+          }
+        }
 
         const result = await ApiProvider.post(ApiUrl.applyCompany, {
           ...this.form,

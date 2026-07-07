@@ -11,7 +11,7 @@ const CityDetailPage = {
       <div style="position:relative;height:250px;background:var(--color-bg-card);overflow:hidden">
         <!-- Slides -->
         <div v-if="banners.length > 0" style="width:100%;height:100%;position:relative">
-          <img v-for="(pic, idx) in banners" :key="idx" :src="pic" :alt="city.name"
+          <img v-for="(pic, idx) in banners" :key="'banner-' + idx + '-' + pic.substring(pic.lastIndexOf('/'))" :src="pic" :alt="city.name"
             style="width:100%;height:100%;object-fit:cover;object-position:center;position:absolute;inset:0;transition:opacity .4s"
             :style="{ opacity: idx === bannerIndex ? 1 : 0 }">
         </div>
@@ -151,6 +151,16 @@ const CityDetailPage = {
           <div class="spinner"></div>
         </div>
       </div>
+
+      <!-- Publish FAB (always visible for guides on specific tabs; VIP check on click, matching Flutter) -->
+      <a v-if="showPublishFab" href="#" @click.prevent="onPublishFabClick"
+        style="position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:100px;background:var(--color-primary);color:#fff;text-decoration:none;box-shadow:0 4px 16px rgba(102,111,255,.4);transition:transform .2s,box-shadow .2s"
+        @mouseenter="$event.currentTarget.style.transform='scale(1.05)';$event.currentTarget.style.boxShadow='0 6px 20px rgba(102,111,255,.5)'"
+        @mouseleave="$event.currentTarget.style.transform='scale(1)';$event.currentTarget.style.boxShadow='0 4px 16px rgba(102,111,255,.4)'"
+        :title="$t('發布') + contentTabs[activeTab].label">
+        <span style="font-size:20px;line-height:1;font-weight:300">+</span>
+        <span style="font-size:10px;line-height:1;margin-top:1px">{{ $t('發布') }}</span>
+      </a>
     </div>
   `,
 
@@ -189,6 +199,13 @@ const CityDetailPage = {
         6: 'cityFacility',
         7: 'cityActivity',
         8: 'cityTicket'
+      },
+      // Tab → publish route (only 4 types guides can publish)
+      publishRouteMap: {
+        2: '/publish/attraction',
+        7: '/publish/transportation',
+        8: '/publish/facility',
+        9: '/publish/activity'
       }
     };
   },
@@ -214,11 +231,21 @@ const CityDetailPage = {
       const tab = this.contentTabs[this.activeTab];
       if (!tab) return [];
       if (tab.key === 'guide') {
-        return (this.cityClass.guideType || []);
+        return (this.cityClass.guide_type || []);
       }
       if (tab.typeId === 0) return [];
       const group = (this.cityClass.type || []).find(g => g.id === tab.typeId);
       return group ? (group.child || []) : [];
+    },
+
+    isGuide() {
+      const profile = UserStore.profile || UserStore.userInfo;
+      return profile && Number(profile.identity) === 2;
+    },
+
+    showPublishFab() {
+      // Visible for all guides on specific tabs; VIP check on click (matching Flutter)
+      return this.isGuide && this.publishRouteMap[this.activeTab] !== undefined;
     }
   },
 
@@ -235,7 +262,7 @@ const CityDetailPage = {
       this.error = null;
 
       const [cityRes, classRes] = await Promise.all([
-        ApiProvider.get(ApiUrl.cityInfo, { city_id: this.cityId }),
+        ApiProvider.get(ApiUrl.cityInfo, { city_id: this.cityId }).catch(e => ({ success: false, message: e.message, data: null })),
         ApiProvider.get(ApiUrl.cityClass, { city_id: this.cityId }).catch(() => null)
       ]);
 
@@ -283,6 +310,18 @@ const CityDetailPage = {
     goBanner(idx) {
       this.bannerIndex = idx;
       this.startBannerAuto(); // reset timer on manual interaction
+    },
+
+    // Publish FAB click — VIP gate (matching Flutter VIPCheckUtils.check())
+    onPublishFabClick() {
+      if (!UserStore.isVip) {
+        this.$router.push('/vip');
+        return;
+      }
+      const route = this.publishRouteMap[this.activeTab];
+      if (route) {
+        this.$router.push(route + '?city_id=' + this.cityId);
+      }
     },
 
     async loadTabContent(tabIdx, subIdx) {

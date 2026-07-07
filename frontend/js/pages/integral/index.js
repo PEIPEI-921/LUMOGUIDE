@@ -104,8 +104,8 @@ const IntegralPage = {
           }
         }
       } catch (e) { /* silent */ }
-      if (this.activeCategory) this.fetchGoods();
-      else this.loading = false;
+      if (!this.activeCategory) this.loading = false;
+      // fetchGoods() triggered by watch on activeCategory
     },
     async fetchGoods() {
       if (!this.activeCategory) return;

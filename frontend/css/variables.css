@@ -11,6 +11,7 @@
   --color-primary-light: rgba(102, 111, 255, 0.08);
   --color-primary-glow: rgba(102, 111, 255, 0.20);
   --color-accent-soft: #EEEDFF;          /* primary tint bg */
+  --color-topbar-bg: #7C5CFF;            /* top navigation bar */
 
   /* ── Text (PPCC palette) ── */
   --color-primary-text: #162539;         /* ink */
@@ -71,10 +72,16 @@
 
   /* ── Radius (PPCC: 20px / 12px) ── */
   --radius-sm: 12px;
-  --radius-md: 12px;
+  --radius-md: 16px;
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-full: 50px;
+
+  /* ── Z-Index ── */
+  --z-topbar: 100;
+  --z-overlay: 1000;
+  --z-toast: 9998;
+  --z-photo-viewer: 9999;
 
   /* ── Type Scale ── */
   --font-xs: 12px;

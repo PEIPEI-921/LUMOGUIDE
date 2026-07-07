@@ -43,7 +43,7 @@ const SearchPage = {
                 <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.3">🏙️</div>
               </div>
               <div style="padding:14px 16px">
-                <div style="font-size:14.5px;font-weight:650">{{ c.name }}</div>
+                <div style="font-size:14.5px;font-weight:600">{{ c.name }}</div>
                 <div v-if="c.name_en" style="font-size:11.5px;color:var(--color-assistant-text);margin-top:2px">{{ c.name_en }}</div>
                 <div v-if="c.area_name" style="margin-top:6px">
                   <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,.38);color:#fff;backdrop-filter:blur(6px)">{{ c.area_name }}</span>
@@ -64,7 +64,7 @@ const SearchPage = {
                 <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>
               </div>
               <div style="padding:10px">
-                <div style="font-size:12.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</div>
+                <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</div>
                 <div style="font-size:10px;color:var(--color-assistant-text);margin-top:2px">{{ g.city_name || '' }}</div>
               </div>
             </a>
@@ -84,7 +84,7 @@ const SearchPage = {
                 <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.3">📷</div>
               </div>
               <div style="padding:10px">
-                <div style="font-size:12.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.name }}</div>
+                <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.name }}</div>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
                   <span v-if="item.type_name" class="ds-badge-sm ds-badge-primary">{{ item.type_name }}</span>
                   <span v-if="item.city_name" style="font-size:10px;color:var(--color-assistant-text)">{{ item.city_name }}</span>
@@ -139,10 +139,12 @@ const SearchPage = {
 
       const res = await ApiProvider.get(ApiUrl.homeSearch, { name: text });
 
+      // API returns flat array with data_type: 1=city, 2=guide, 3=content
       if (res.success && res.data) {
-        this.results.city = Array.isArray(res.data.city) ? res.data.city : [];
-        this.results.guide = Array.isArray(res.data.guide) ? res.data.guide : [];
-        this.results.content = Array.isArray(res.data.content) ? res.data.content : [];
+        const list = Array.isArray(res.data) ? res.data : (res.data.list || []);
+        this.results.city = list.filter(item => Number(item.data_type) === 1);
+        this.results.guide = list.filter(item => Number(item.data_type) === 2);
+        this.results.content = list.filter(item => Number(item.data_type) === 3);
 
         // Update counts
         this.resultTabs[0].count = this.results.city.length;
@@ -164,10 +166,14 @@ const SearchPage = {
 
   mounted() {
     // If query param is present, pre-fill search
-    const q = this.$route.query.q;
+    const q = this.$route.query.keyword;
     if (q) {
       this.query = q;
       this.doSearch();
     }
+  },
+
+  beforeUnmount() {
+    if (this.searchTimer) { clearTimeout(this.searchTimer); this.searchTimer = null; }
   }
 };

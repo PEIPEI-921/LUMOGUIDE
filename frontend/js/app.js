@@ -72,7 +72,7 @@ const AppShell = {
 
   computed: {
     showTopBar() {
-      const hideOn = ['/welcome', '/login', '/register'];
+      const hideOn = ['/welcome', '/login', '/register', '/forget-password', '/verify-code', '/password-input'];
       return !hideOn.includes(this.$route.path);
     },
 
@@ -119,7 +119,6 @@ const AppShell = {
 // Create and mount Vue app
 const app = Vue.createApp({
   components: { AppShell, AppHeader, LoadingSpinner, EmptyState },
-  methods: { $t(key) { return I18n.t(key); } },
   template: '<app-shell />'
 });
 
@@ -128,8 +127,8 @@ app.use(router);
 app.config.globalProperties.$t = (key) => I18n.t(key);
 app.config.globalProperties.$router = router;
 
+I18n.init();
+UserStore.init();
 app.mount('#app');
 
-UserStore.init();
-I18n.init();
 ConfigStore.fetch();

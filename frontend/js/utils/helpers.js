@@ -11,6 +11,7 @@ function timeAgo(time) {
   if (!time) return '';
   const now = Date.now();
   const date = typeof time === 'string' ? new Date(time.replace(/-/g, '/')) : new Date(time);
+  if (isNaN(date.getTime())) return '';
   const diff = Math.floor((now - date.getTime()) / 1000);
 
   if (diff < 60) return '剛剛';
@@ -74,6 +75,8 @@ function safeList(obj, key, defaultVal = []) {
  * Show a simple toast message
  */
 function showToast(msg, duration = 2000) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = msg;
