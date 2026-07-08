@@ -39,6 +39,7 @@ const routes = [
   { path: '/guide/certify', component: GuideCertifyPage, meta: { title: '導遊認證', requiresAuth: true } },
   { path: '/guide/publish', component: GuidePublishPage, meta: { title: '我的發布', requiresAuth: true } },
   { path: '/guide/publish-city', component: GuidePublishCityPage, meta: { title: '發布城市', requiresAuth: true } },
+  { path: '/guide/publish-city-form', component: GuidePublishCityFormPage, meta: { title: '新建城市', requiresAuth: true } },
   { path: '/guide/bookings', component: GuideBookingsPage, meta: { title: '預約管理', requiresAuth: true } },
   { path: '/guide/booking-detail/:id', component: GuideBookingDetailPage, meta: { title: '預約詳情', requiresAuth: true } },
   { path: '/guide/change-city', component: GuideChangeCityPage, meta: { title: '切換城市', requiresAuth: true } },

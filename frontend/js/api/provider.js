@@ -74,9 +74,10 @@ const ApiProvider = {
       const resData = json.data !== undefined ? json.data : json;
 
       // Handle 401 — redirect to login (with re-entrancy guard)
+      // Use clearAuth() NOT logout() — preserve remember-me credentials
       if ((code === 401 || response.status === 401) && !this._redirecting) {
         this._redirecting = true;
-        Storage.logout();
+        Storage.clearAuth();
         // Use Vue router if available
         const app = document.querySelector('#app').__vue_app__;
         if (app) {

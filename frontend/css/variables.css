@@ -19,9 +19,9 @@
   --color-assistant-text: #9CA3AF;       /* faint */
 
   /* ── Surfaces ── */
-  --color-bg-white: #FFFFFF;             /* surface */
+  --color-bg-white: #FCFCFA;             /* surface — Airy: slightly warmer white */
   --color-bg-page: #F9F9F6;             /* warm paper-white */
-  --color-bg-card: #F8F8F8;
+  --color-bg-card: #F5F5F2;
   --color-bg-elevated: #FFFFFF;
 
   /* ── Accent (Tailwind palette) ── */
@@ -34,8 +34,8 @@
   --color-cyan: #45CEE6;
 
   /* ── Border ── */
-  --color-border: rgba(0, 0, 0, 0.06);
-  --color-border-light: rgba(0, 0, 0, 0.04);
+  --color-border: rgba(0, 0, 0, 0.04);
+  --color-border-light: rgba(0, 0, 0, 0.03);
 
   /* ── Category Colors (keep recognizable from mobile) ── */
   --cat-guide: #666FFF;
@@ -61,20 +61,20 @@
   --header-height: 48px;
   --topbar-height: 52px;
   --tab-height: 56px;
-  --max-content-width: 480px;
+  --max-content-width: 860px;
 
   /* ── Container Widths ── */
   --container-1280: 1280px;
   --container-960: 960px;
-  --container-760: 760px;
-  --container-640: 640px;
-  --container-600: 600px;
+  --container-760: 860px;
+  --container-640: 720px;
+  --container-600: 640px;
 
-  /* ── Radius (PPCC: 20px / 12px) ── */
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
+  /* ── Radius (PPCC: 20px / 12px → Airy: larger) ── */
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
   --radius-full: 50px;
 
   /* ── Z-Index ── */

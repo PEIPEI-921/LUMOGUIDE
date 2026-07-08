@@ -49,7 +49,7 @@ const HomePage = {
     <div class="page-content">
       <!-- Search Bar -->
       <div class="search-bar">
-        <span>🔍</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.35"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <input
           v-model="searchQuery"
           :placeholder="t('請輸入城市/導遊/內容')"

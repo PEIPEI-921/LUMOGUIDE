@@ -41,14 +41,6 @@ const GuideBookingsPage = {
             style="padding:6px 18px;font-size:13px;border-radius:100px">{{ f.label }}</button>
         </div>
 
-        <!-- Status filter -->
-        <div class="ds-type-tabs" style="margin-bottom:16px">
-          <div class="ds-type-tabs-row">
-            <button v-for="(s, k) in statusFilters" :key="k" @click="statusFilter=Number(k);fetchBookings()"
-              :class="['ds-type-tab', { active: statusFilter===Number(k) }]">{{ s }}</button>
-          </div>
-        </div>
-
         <!-- Loading -->
         <div v-if="loading" style="text-align:center;padding:80px 0">
           <div class="spinner"></div>
@@ -99,11 +91,6 @@ const GuideBookingsPage = {
               </div>
               <span style="font-size:13px;font-weight:500">{{ b.user?.nickname || b.contact || '—' }}</span>
             </div>
-            <!-- Quick actions for new bookings -->
-            <div v-if="b.status===1" style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)">
-              <button @click.stop="handleConfirm(b.id)" class="ds-btn ds-btn-primary" style="flex:1;padding:8px 0;font-size:13px;justify-content:center">{{ $t('確認預約') }}</button>
-              <button @click.stop="handleReject(b.id)" class="ds-btn ds-btn-outline" style="flex:1;padding:8px 0;font-size:13px;justify-content:center;border-color:var(--color-red);color:var(--color-red)">{{ $t('拒絕') }}</button>
-            </div>
           </div>
         </div>
       </div>
@@ -112,9 +99,8 @@ const GuideBookingsPage = {
   data() {
     return {
       bookings: [], loading: true, error: null,
-      dateFilter: 'today', statusFilter: 0,
+      dateFilter: 'today',
       dateFilters: [{ key: 'today', label: '今天' }, { key: 'all', label: '全部' }],
-      statusFilters: { 0: '全部', 1: '新預約', 2: '已確認', 3: '已完成', 4: '已取消', 5: '已拒絕', 6: '已過期' },
     };
   },
   computed: {
@@ -137,7 +123,6 @@ const GuideBookingsPage = {
           params.start_time = today;
           params.end_time = today;
         }
-        if (this.statusFilter > 0) params.status = this.statusFilter;
         const result = await ApiProvider.get(ApiUrl.guideReserve, params);
         if (result.success) {
           this.bookings = result.data?.list || result.data || [];
@@ -153,21 +138,6 @@ const GuideBookingsPage = {
     formatDate(d) {
       if (!d) return '—';
       return d.slice(0, 16).replace('T', ' ');
-    },
-    async handleConfirm(id) {
-      if (!confirm('確定確認此預約？')) return;
-      try {
-        const result = await ApiProvider.post(ApiUrl.guideConfirmReserve, { id });
-        if (result.success) this.fetchBookings();
-      } catch (e) { /* silent */ }
-    },
-    async handleReject(id) {
-      const reason = prompt('請輸入拒絕原因（可選）：');
-      if (reason === null) return; // cancelled
-      try {
-        const result = await ApiProvider.post(ApiUrl.guideRejectReserve, { id, reason });
-        if (result.success) this.fetchBookings();
-      } catch (e) { /* silent */ }
     },
   }
 };

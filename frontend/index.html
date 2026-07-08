@@ -13,92 +13,95 @@
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/components.css">
 
-  <!-- Fonts: Noto Serif TC/SC for brand display moments -->
+  <!-- Fonts: Noto Serif TC/SC for brand display, Ma Shan Zheng for welcome handwriting -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=ZCOOL+KuaiLe&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
 
   <!-- Vue 3 + Vue Router -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.js"
+  <script defer src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.js"
     integrity="sha384-WRCkrPcTVlHVnve6RlPL8tCU8PqAUXcxyIMIjpddtL45o+jJTBmFX2SJw88IOVo1" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vue-router@4.3.3/dist/vue-router.global.js"
+  <script defer src="https://cdn.jsdelivr.net/npm/vue-router@4.3.3/dist/vue-router.global.js"
     integrity="sha384-hfI5gRZfOvudG7M6zzZnVNneKHe4+M6QO9hSWwplvlkTf7d9RjYn4JJUz0tvQzJC" crossorigin="anonymous"></script>
 
-  <!-- Utils (load order matters) -->
-  <script src="/js/utils/storage.js"></script>
-  <script src="/js/utils/helpers.js"></script>
+  <!-- Utils (load order matters — defer preserves order) -->
+  <script defer src="/js/utils/storage.js"></script>
+  <script defer src="/js/utils/helpers.js"></script>
 
   <!-- i18n -->
-  <script src="/js/i18n/zh-CN.js"></script>
-  <script src="/js/i18n/zh-TW.js"></script>
-  <script src="/js/i18n/en.js"></script>
-  <script src="/js/i18n/index.js"></script>
+  <script defer src="/js/i18n/zh-CN.js"></script>
+  <script defer src="/js/i18n/zh-TW.js"></script>
+  <script defer src="/js/i18n/en.js"></script>
+  <script defer src="/js/i18n/index.js"></script>
 
   <!-- API -->
-  <script src="/js/api/urls.js"></script>
-  <script src="/js/api/provider.js"></script>
+  <script defer src="/js/api/urls.js"></script>
+  <script defer src="/js/api/provider.js"></script>
 
   <!-- Stores -->
-  <script src="/js/stores/config.js"></script>
-  <script src="/js/stores/user.js"></script>
+  <script defer src="/js/stores/config.js"></script>
+  <script defer src="/js/stores/user.js"></script>
 
   <!-- Components -->
-  <script src="/js/components/loading-spinner.js"></script>
-  <script src="/js/components/empty-state.js"></script>
-  <script src="/js/components/app-header.js"></script>
-  <script src="/js/components/app-topbar.js"></script>
+  <script defer src="/js/components/loading-spinner.js"></script>
+  <script defer src="/js/components/empty-state.js"></script>
+  <script defer src="/js/components/app-header.js"></script>
+  <script defer src="/js/components/app-topbar.js"></script>
 
   <!-- Pages — Auth -->
-  <script src="/js/pages/welcome.js"></script>
-  <script src="/js/pages/auth/login.js"></script>
-  <script src="/js/pages/auth/register.js"></script>
-  <script src="/js/pages/auth/extra.js"></script>
+  <script defer src="/js/pages/welcome.js"></script>
+  <script defer src="/js/pages/auth/login.js"></script>
+  <script defer src="/js/pages/auth/register.js"></script>
+  <script defer src="/js/pages/auth/extra.js"></script>
 
   <!-- Pages — Tab Content -->
-  <script src="/js/pages/home/index.js"></script>
-  <script src="/js/pages/city/index.js"></script>
-  <script src="/js/pages/city/detail.js"></script>
-  <script src="/js/pages/city/extra.js"></script>
-  <script src="/js/pages/common/details.js"></script>
-  <script src="/js/pages/news/index.js"></script>
-  <script src="/js/pages/news/detail.js"></script>
-  <script src="/js/pages/search/index.js"></script>
-  <script src="/js/pages/message/index.js"></script>
-  <script src="/js/pages/message/subpages.js"></script>
-  <script src="/js/pages/mine/index.js"></script>
-  <script src="/js/pages/mine/profile.js"></script>
-  <script src="/js/pages/mine/extra.js"></script>
-  <script src="/js/pages/address/list.js"></script>
+  <script defer src="/js/pages/home/index.js"></script>
+  <script defer src="/js/pages/city/index.js"></script>
+  <script defer src="/js/pages/city/detail.js"></script>
+  <script defer src="/js/pages/city/extra.js"></script>
+  <script defer src="/js/pages/common/details.js"></script>
+  <script defer src="/js/pages/news/index.js"></script>
+  <script defer src="/js/pages/news/detail.js"></script>
+  <script defer src="/js/pages/search/index.js"></script>
+  <script defer src="/js/pages/message/index.js"></script>
+  <script defer src="/js/pages/message/subpages.js"></script>
+  <script defer src="/js/pages/mine/index.js"></script>
+  <script defer src="/js/pages/mine/profile.js"></script>
+  <script defer src="/js/pages/mine/extra.js"></script>
+  <script defer src="/js/pages/address/list.js"></script>
 
   <!-- Pages — Guide / Publish / Merchant -->
-  <script src="/js/pages/guide/certify.js"></script>
-  <script src="/js/pages/guide/publish.js"></script>
-  <script src="/js/pages/guide/publish-city.js"></script>
-  <script src="/js/pages/guide/publish-city-form.js"></script>
-  <script src="/js/pages/guide/bookings.js"></script>
-  <script src="/js/pages/guide/change-city.js"></script>
-  <script src="/js/pages/publish/form.js"></script>
-  <script src="/js/pages/merchant/entry.js"></script>
-  <script src="/js/pages/merchant/manage.js"></script>
-  <script src="/js/pages/merchant/bookings.js"></script>
+  <script defer src="/js/pages/guide/certify.js"></script>
+  <script defer src="/js/pages/guide/publish.js"></script>
+  <script defer src="/js/pages/guide/publish-city.js"></script>
+  <script defer src="/js/pages/guide/publish-city-form.js"></script>
+  <script defer src="/js/pages/guide/bookings.js"></script>
+  <script defer src="/js/pages/guide/change-city.js"></script>
+  <script defer src="/js/pages/publish/form.js"></script>
+  <script defer src="/js/pages/merchant/entry.js"></script>
+  <script defer src="/js/pages/merchant/manage.js"></script>
+  <script defer src="/js/pages/merchant/bookings.js"></script>
 
   <!-- Pages — Integral / VIP / Booking -->
-  <script src="/js/pages/integral/index.js"></script>
-  <script src="/js/pages/integral/goods.js"></script>
-  <script src="/js/pages/integral/exchange.js"></script>
-  <script src="/js/pages/integral/records.js"></script>
-  <script src="/js/pages/vip/index.js"></script>
-  <script src="/js/pages/booking/form.js"></script>
+  <script defer src="/js/pages/integral/index.js"></script>
+  <script defer src="/js/pages/integral/goods.js"></script>
+  <script defer src="/js/pages/integral/exchange.js"></script>
+  <script defer src="/js/pages/integral/records.js"></script>
+  <script defer src="/js/pages/vip/index.js"></script>
+  <script defer src="/js/pages/booking/form.js"></script>
 
   <!-- Pages — Evaluation -->
-  <script src="/js/pages/evaluation.js"></script>
+  <script defer src="/js/pages/evaluation.js"></script>
 
-  <!-- Pages — Misc (Phase 6) -->
-  <script src="/js/pages/misc/photo.js"></script>
-  <script src="/js/pages/misc/web.js"></script>
+  <!-- Pages — Misc -->
+  <script defer src="/js/pages/misc/photo.js"></script>
+  <script defer src="/js/pages/misc/web.js"></script>
 
   <!-- Router -->
-  <script src="/js/router.js"></script>
+  <script defer src="/js/router.js"></script>
+
+  <!-- App Entry -->
+  <script defer src="/js/app.js"></script>
 </head>
 <body>
   <div id="app">
@@ -114,8 +117,5 @@
       <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </div>
   </div>
-
-  <!-- App Entry (MUST be at end of body so #app exists) -->
-  <script src="/js/app.js"></script>
 </body>
 </html>
