@@ -87,11 +87,6 @@ const MerchantBookingsPage = {
               </div>
               <span style="font-size:13px;font-weight:500">{{ b.user?.nickname || b.contact || '—' }}</span>
             </div>
-            <!-- Quick actions -->
-            <div v-if="b.status===1" style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)">
-              <button @click.stop="handleConfirm(b.id)" class="ds-btn ds-btn-primary" style="flex:1;padding:8px 0;font-size:13px;justify-content:center">{{ $t('確認預約') }}</button>
-              <button @click.stop="handleReject(b.id)" class="ds-btn ds-btn-outline" style="flex:1;padding:8px 0;font-size:13px;justify-content:center;border-color:var(--color-red);color:var(--color-red)">{{ $t('拒絕') }}</button>
-            </div>
           </div>
         </div>
       </div>
@@ -139,21 +134,6 @@ const MerchantBookingsPage = {
     formatDate(d) {
       if (!d) return '—';
       return d.slice(0, 16).replace('T', ' ');
-    },
-    async handleConfirm(id) {
-      if (!confirm('確定確認此預約？')) return;
-      try {
-        const result = await ApiProvider.post(ApiUrl.companyConfirmReserve, { id });
-        if (result.success) this.fetchBookings();
-      } catch (e) { /* silent */ }
-    },
-    async handleReject(id) {
-      const reason = prompt('請輸入拒絕原因（可選）：');
-      if (reason === null) return;
-      try {
-        const result = await ApiProvider.post(ApiUrl.companyRejectReserve, { id, reason });
-        if (result.success) this.fetchBookings();
-      } catch (e) { /* silent */ }
     },
   }
 };

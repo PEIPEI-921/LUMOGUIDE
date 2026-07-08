@@ -1,6 +1,6 @@
 /* ============================================
    Guide Publish City Page — 发布/管理我的城市
-   Reference: PPCC guide-panel/cities/page.tsx
+   Reference: Flutter my_publish_city/controller.dart
    ============================================ */
 
 const GuidePublishCityPage = {
@@ -25,35 +25,10 @@ const GuidePublishCityPage = {
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h2 class="ds-page-head" style="margin:0">{{ $t('我的城市') }}</h2>
-          <div style="display:flex;gap:8px">
-            <a href="#/guide/publish-city-form" style="font-size:13px;color:var(--color-primary);font-weight:500;text-decoration:none">+ {{ $t('新建城市') }}</a>
-            <button @click="showAdd=!showAdd" style="font-size:13px;color:var(--color-assistant-text);font-weight:500;background:none;border:none;cursor:pointer">
-              {{ showAdd ? $t('取消') : $t('申請已有城市') }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Add city panel -->
-        <div v-if="showAdd" class="ds-card" style="padding:16px;margin-bottom:16px">
-          <h3 style="font-weight:600;font-size:14px;margin-bottom:12px">{{ $t('選擇要申請服務的城市') }}</h3>
-          <div v-if="addError" style="background:#FEF2F2;color:var(--color-red);font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:12px">{{ addError }}</div>
-          <div v-if="availableCities.length===0" style="font-size:13px;color:var(--color-assistant-text)">
-            {{ $t('你已申請所有可用城市') }}
-          </div>
-          <div v-else style="max-height:300px;overflow-y:auto">
-            <div v-for="city in availableCities" :key="city.id" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:8px"
-              @mouseenter="$event.currentTarget.style.background='var(--color-bg-page)'" @mouseleave="$event.currentTarget.style.background='transparent'">
-              <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;background:var(--color-bg-page);flex-shrink:0">
-                <img v-if="city.first_picture" :src="city.first_picture" alt="" style="width:100%;height:100%;object-fit:cover">
-                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px">🏙️</div>
-              </div>
-              <span style="font-size:13px;flex:1">{{ city.name }}</span>
-              <button @click="handleAddCity(city.id)" :disabled="addingId===city.id"
-                class="ds-btn ds-btn-outline" style="font-size:11px;padding:4px 14px;border-radius:20px;opacity:addingId===city.id?0.5:1">
-                {{ addingId===city.id ? $t('申請中...') : $t('申請') }}
-              </button>
-            </div>
-          </div>
+          <button @click="onAddCity" class="ds-btn ds-btn-primary"
+            style="font-size:12px;padding:7px 18px;border-radius:8px">
+            + {{ $t('新建城市') }}
+          </button>
         </div>
 
         <!-- Loading -->
@@ -72,7 +47,7 @@ const GuidePublishCityPage = {
         <div v-else-if="myCities.length===0" class="ds-empty">
           <div style="font-size:40px;margin-bottom:12px">🌍</div>
           <p style="color:var(--color-secondary-text);margin-bottom:12px">{{ $t('你還沒有服務的城市') }}</p>
-          <button @click="showAdd=true" class="ds-btn ds-btn-primary">{{ $t('新增城市') }}</button>
+          <button @click="onAddCity" class="ds-btn ds-btn-primary">{{ $t('新增城市') }}</button>
         </div>
 
         <!-- My cities list -->
@@ -91,8 +66,8 @@ const GuidePublishCityPage = {
                 </span>
               </div>
               <div style="display:flex;gap:8px;flex-shrink:0">
-                <a :href="'#/guide/publish-city-form?id=' + city.id" style="font-size:12px;color:var(--color-primary);text-decoration:none">{{ $t('編輯') }}</a>
-                <button @click="handleDeleteCity(city.id, city.city_name||city.name)" style="font-size:12px;color:var(--color-red);background:none;border:none;cursor:pointer">{{ $t('刪除') }}</button>
+                <button @click="onEditCity(city)" style="font-size:12px;color:var(--color-primary);background:none;border:none;cursor:pointer;padding:4px 8px">{{ $t('編輯') }}</button>
+                <button @click="onDeleteCity(city)" style="font-size:12px;color:var(--color-red);background:none;border:none;cursor:pointer;padding:4px 8px">{{ $t('刪除') }}</button>
               </div>
             </div>
           </div>
@@ -102,8 +77,9 @@ const GuidePublishCityPage = {
   `,
   data() {
     return {
-      myCities: [], allCities: [], loading: true, error: null,
-      showAdd: false, addingId: null, addError: ''
+      myCities: [],
+      loading: true,
+      error: null
     };
   },
   computed: {
@@ -111,49 +87,62 @@ const GuidePublishCityPage = {
       const profile = UserStore.profile || UserStore.userInfo;
       return profile && Number(profile.identity) === 2;
     },
-    myCityIds() { return new Set(this.myCities.map(c => c.city_id)); },
-    availableCities() { return this.allCities.filter(c => !this.myCityIds.has(c.id)); },
   },
   mounted() {
     if (!UserStore.isLogin || !this.isGuide) { this.loading = false; return; }
     this.fetchData();
   },
   methods: {
+    // --- Data fetching (matching Flutter fetchData) ---
+
     async fetchData() {
       this.loading = true; this.error = null;
       try {
-        const [myRes, allRes] = await Promise.all([
-          ApiProvider.get(ApiUrl.guideCityList, { page: 1, limit: 100 }),
-          ApiProvider.get(ApiUrl.cityList, { limit: 1000, page: 1 }),
-        ]);
-        this.myCities = (myRes.success && myRes.data?.list) ? myRes.data.list : [];
-        this.allCities = (allRes.success && allRes.data?.list) ? allRes.data.list : [];
+        const res = await ApiProvider.get(ApiUrl.guideCityList, { page: 1, limit: 100 });
+        // guideCityList returns data as flat array (same as Flutter: res.dataJson['data'] as List)
+        this.myCities = Array.isArray(res.data?.list) ? res.data.list
+          : (res.success && Array.isArray(res.data) ? res.data : []);
       } catch (e) {
+        console.error('[PublishCity] fetchData error:', e);
         this.error = e.message || '載入失敗';
       }
       this.loading = false;
     },
-    async handleAddCity(cityId) {
-      this.addingId = cityId; this.addError = '';
+
+    // --- Add city (matching Flutter onAddCity) ---
+
+    onAddCity() {
+      // VIP gate (matching Flutter VIPCheckUtils.check())
+      if (!UserStore.isVip) {
+        this.$router.push('/vip');
+        return;
+      }
+      // Navigate to publish city form (matching Flutter Get.toNamed(AppRoutes.PUBLISH_CITY))
+      this.$router.push('/guide/publish-city-form');
+    },
+
+    // --- Edit city (matching Flutter onEditCity — NO VIP check for editing) ---
+
+    onEditCity(city) {
+      // Navigate to form with city id (matching Flutter arguments: {'id': item.id})
+      this.$router.push('/guide/publish-city-form?id=' + city.id);
+    },
+
+    // --- Delete city (matching Flutter onDeleteCity) ---
+
+    async onDeleteCity(city) {
+      const name = city.city_name || city.name || '此城市';
+      if (!confirm('確定要刪除「' + name + '」的服務嗎？')) return;
       try {
-        const result = await ApiProvider.post(ApiUrl.guidePublishCity, { city_id: cityId });
+        const result = await ApiProvider.post(ApiUrl.guideDelCity, { id: city.id });
         if (result.success) {
-          this.showAdd = false;
           this.fetchData();
         } else {
-          this.addError = result.message || '申請失敗';
+          alert(result.message || '刪除失敗');
         }
       } catch (e) {
-        this.addError = e.message || '申請失敗';
+        console.error('[PublishCity] delete error:', e);
       }
-      this.addingId = null;
-    },
-    async handleDeleteCity(id, cityName) {
-      if (!confirm('確定要刪除「' + (cityName || '此城市') + '」的服務嗎？')) return;
-      try {
-        const result = await ApiProvider.post(ApiUrl.guideDelCity, { id });
-        if (result.success) this.fetchData();
-      } catch (e) { /* silent */ }
     },
   }
 };

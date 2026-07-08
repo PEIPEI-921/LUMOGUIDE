@@ -34,9 +34,10 @@ const CityPage = {
         <div class="spinner"></div>
       </div>
 
-      <!-- Empty -->
+      <!-- Error / Empty -->
       <div v-if="!continents.length && !loading" style="text-align:center;padding:80px 0">
-        <p style="color:#9CA3AF;font-size:14px;margin-bottom:20px">{{ $t('暫無城市數據') }}</p>
+        <p v-if="pageError" style="color:#EF4444;font-size:14px;margin-bottom:20px">{{ pageError }}</p>
+        <p v-else style="color:#9CA3AF;font-size:14px;margin-bottom:20px">{{ $t('暫無城市數據') }}</p>
         <button @click="fetchContinents" style="font-size:13px;color:#666FFF;background:none;border:none;cursor:pointer;font-weight:500">{{ $t('重新載入') }}</button>
       </div>
 
@@ -102,6 +103,7 @@ const CityPage = {
       cities: [],           // currently displayed cities
       loading: false,
       tabLoading: false,
+      pageError: '',
       searchKeyword: '',
       searchFocused: false
     };
@@ -126,11 +128,13 @@ const CityPage = {
 
     async fetchContinents() {
       this.loading = true;
+      this.pageError = '';
       try {
         // 1. Fetch continents (parent_id=0)
         const res = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: 0 });
         if (!res.success) {
           this.loading = false;
+          this.pageError = (res.message || '載入失敗');
           return;
         }
         const continentList = res.data?.list || res.data || [];
@@ -142,6 +146,7 @@ const CityPage = {
             const areas = areaRes.success ? (areaRes.data?.list || areaRes.data || []) : [];
             return { id: c.id, name: c.name, areas };
           } catch (e) {
+            console.error('[CityPage] fetch areas for continent', c.id, 'error:', e);
             return { id: c.id, name: c.name, areas: [] };
           }
         }));
@@ -155,7 +160,8 @@ const CityPage = {
           await this.fetchCities();
         }
       } catch (e) {
-        // silent
+        console.error('[CityPage] fetchContinents error:', e);
+        this.pageError = e.message || '網絡錯誤';
       }
       this.loading = false;
     },
@@ -192,6 +198,7 @@ const CityPage = {
           this.cities = [];
         }
       } catch (e) {
+        console.error('[CityPage] fetchCities error:', e);
         this.cities = [];
       }
       this.tabLoading = false;

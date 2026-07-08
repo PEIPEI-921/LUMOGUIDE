@@ -143,14 +143,15 @@ const UserStore = Vue.reactive({
     }
   },
 
-  /** Remember login credentials (email only — never store password) */
-  saveCredentials(email, remember) {
+  /** Remember login credentials (email + password when user opts in) */
+  saveCredentials(email, password, remember) {
+    Storage.account = email;
     if (remember) {
-      Storage.account = email;
       Storage.rememberMe = true;
+      Storage.password = password;
     } else {
-      Storage.account = '';
       Storage.rememberMe = false;
+      Storage.password = '';
     }
   },
 
@@ -159,10 +160,11 @@ const UserStore = Vue.reactive({
     if (Storage.rememberMe) {
       return {
         email: Storage.account,
-        password: '',
+        password: Storage.password,
         remember: true
       };
     }
     return { email: '', password: '', remember: false };
   }
 });
+window.UserStore = UserStore;

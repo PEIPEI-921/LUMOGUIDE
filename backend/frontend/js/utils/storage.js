@@ -27,6 +27,9 @@ const Storage = {
   get rememberMe() { return localStorage.getItem('remember_me') === '1'; },
   set rememberMe(v) { localStorage.setItem('remember_me', v ? '1' : '0'); },
 
+  get password() { return localStorage.getItem('saved_password') || ''; },
+  set password(v) { localStorage.setItem('saved_password', v); },
+
   // --- Home Data Cache ---
   get homeData() { return localStorage.getItem('home_data') || ''; },
   set homeData(v) { localStorage.setItem('home_data', v); },
@@ -43,14 +46,23 @@ const Storage = {
   set lastLoginRecordDate(v) { localStorage.setItem('last_login_record_date', v); },
 
   // --- Clear ---
-  logout() {
+
+  /** Clear auth session (token expiry / explicit logout) — preserve remember-me */
+  clearAuth() {
     ['token', 'user_info', 'user_number', 'user_sig', 'expire_time',
-     'account', 'remember_me', 'home_data', 'city_area_map',
      'last_login_record_date'].forEach(k => localStorage.removeItem(k));
   },
 
+  /** Full logout — clear auth session, keep remember-me credentials */
+  logout() {
+    this.clearAuth();
+    ['home_data', 'city_area_map'].forEach(k => localStorage.removeItem(k));
+  },
+
+  /** Clear everything including remember-me (for "uncheck remember + login" or full reset) */
   clearAll() {
     this.logout();
-    ['locale', 'account', 'rememberMe', 'cityAreaMap'].forEach(k => localStorage.removeItem(k));
+    ['locale', 'account', 'remember_me', 'saved_password', 'rememberMe', 'cityAreaMap']
+      .forEach(k => localStorage.removeItem(k));
   }
 };

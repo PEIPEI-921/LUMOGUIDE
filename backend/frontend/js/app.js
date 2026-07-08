@@ -44,6 +44,23 @@ const AppShell = {
               <path d="m21 21-4.35-4.35"/>
             </svg>
           </button>
+
+          <!-- Auth toggle: login / logout -->
+          <button v-if="!UserStore.isLogin" class="topbar-auth-btn" @click="onAuthClick" :title="$t('登錄')">
+            <svg class="topbar-svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+          </button>
+          <button v-else class="topbar-auth-btn topbar-auth-btn--logout" @click="onAuthClick" :title="$t('退出')">
+            <svg class="topbar-svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+
           <slot name="topbar-right"></slot>
         </div>
       </header>
@@ -101,6 +118,15 @@ const AppShell = {
 
     onSearchClick() {
       this.$router.push('/search');
+    },
+
+    async onAuthClick() {
+      if (UserStore.isLogin) {
+        await UserStore.logout();
+        this.$router.push('/login');
+      } else {
+        this.$router.push('/login');
+      }
     }
   },
 
@@ -126,6 +152,8 @@ app.use(router);
 
 app.config.globalProperties.$t = (key) => I18n.t(key);
 app.config.globalProperties.$router = router;
+app.config.globalProperties.UserStore = UserStore;
+app.config.globalProperties.I18n = I18n;
 
 I18n.init();
 UserStore.init();

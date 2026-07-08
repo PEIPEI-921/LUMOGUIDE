@@ -108,7 +108,8 @@
 }
 
 /* Search icon button */
-.topbar-search-btn {
+.topbar-search-btn,
+.topbar-auth-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -123,12 +124,14 @@
   flex-shrink: 0;
 }
 
-.topbar-search-btn:hover {
+.topbar-search-btn:hover,
+.topbar-auth-btn:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.12);
 }
 
-.topbar-search-btn .topbar-svg {
+.topbar-search-btn .topbar-svg,
+.topbar-auth-btn .topbar-svg {
   width: 19px;
   height: 19px;
 }
@@ -1152,9 +1155,10 @@
 
 .card {
   background: var(--color-bg-white);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
+  border: 1.5px solid var(--color-border);
 }
 
 /* ============================================
@@ -1826,13 +1830,13 @@
   display: flex;
   align-items: center;
   max-width: 640px;
-  margin: 24px auto;
+  margin: 20px auto;
   background: var(--color-bg-white);
   border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 12px var(--spacing-lg);
   gap: var(--spacing-sm);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border-light);
+  box-shadow: none;
+  border: 1.5px solid var(--color-border);
   transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 
@@ -2355,23 +2359,23 @@ textarea.form-input {
   object-fit: contain;
 }
 
-/* Title with small primary underline — matches Flutter */
-.auth-heading {
-  text-align: center;
+/* App icon — rounded square like iOS app icon */
+.auth-app-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.auth-heading-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--color-primary-text);
-}
-
-.auth-heading-bar {
-  width: 20px;
-  height: 3px;
+.auth-app-icon-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 22px;
+  object-fit: contain;
+  object-position: center 48%;
   background: var(--color-primary);
-  border-radius: 2px;
-  margin: 6px auto 0;
+  padding: 0;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* Full-rounded input — matches Flutter */
@@ -2385,9 +2389,24 @@ textarea.form-input {
 }
 
 .auth-input-icon {
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  opacity: 0.5;
+  color: rgba(22, 37, 57, 0.35);
+  width: 18px;
+  height: 18px;
+}
+
+/* Auth form — vertical spacing between fields */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-form .auth-btn {
+  margin-top: 8px;
 }
 
 .auth-input {
@@ -2428,6 +2447,7 @@ textarea.form-input {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
+  margin-top: 18px;
 }
 
 .auth-footer a {
@@ -2446,10 +2466,19 @@ textarea.form-input {
   gap: 6px;
   font-size: 11px;
   color: var(--color-assistant-text);
+  margin-top: 16px;
 }
 
 .auth-agreement input { accent-color: var(--color-primary); }
 .auth-agreement a { color: var(--color-primary); text-decoration: none; }
+
+/* Remember row — spaced from form above */
+.auth-remember-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
 
 /* Remember row */
 .auth-remember {
@@ -2464,13 +2493,20 @@ textarea.form-input {
 
 /* Password visibility toggle */
 .auth-pw-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  font-size: 18px;
   cursor: pointer;
   padding: 4px;
-  opacity: 0.4;
+  color: rgba(22, 37, 57, 0.35);
   flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.auth-pw-toggle:hover {
+  color: rgba(22, 37, 57, 0.6);
 }
 
 /* In-card link */
@@ -2497,142 +2533,65 @@ textarea.form-input {
    Welcome Page
    ============================================ */
 
+/* ============================================
+   Welcome — handwriting splash animation
+   ============================================ */
+
 .welcome-page {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: var(--spacing-2xl) var(--spacing-lg);
+  padding: 28vh var(--spacing-lg) 0;
   background: linear-gradient(160deg, #666FFF 0%, #4A52E0 100%);
   text-align: center;
-  position: relative;
-  overflow: hidden;
 }
 
-/* Subtle radial glow behind logo */
-.welcome-page::before {
-  content: '';
-  position: absolute;
-  top: 30%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%);
-  pointer-events: none;
+.welcome-handwrite {
+  width: 100%;
+  max-width: 480px;
 }
 
-.welcome-logo {
-  margin-bottom: 24px;
-  z-index: 1;
-}
-
-.welcome-logo-img {
-  height: 48px;
-  width: auto;
-  object-fit: contain;
-  filter: brightness(0) invert(1); /* make logo white on indigo bg */
-}
-
-.welcome-slogan {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.06em;
-  margin-bottom: 12px;
-  z-index: 1;
-}
-
-.welcome-desc {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
-  line-height: 1.8;
-  margin-bottom: 28px;
-  z-index: 1;
-}
-
-/* Role cards on welcome page */
-.welcome-roles {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 32px;
-  z-index: 1;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.welcome-role-card {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 14px 16px;
+.welcome-line1 {
   text-align: center;
-  min-width: 85px;
-  backdrop-filter: blur(8px);
+  margin-bottom: 28px;
 }
 
-.welcome-role-icon {
-  font-size: 26px;
-  margin-bottom: 4px;
+.welcome-line2 {
+  text-align: right;
 }
 
-.welcome-role-name {
-  font-size: 12px;
-  font-weight: 600;
+.welcome-char {
+  display: inline-block;
+  font-family: 'ZCOOL KuaiLe', 'Noto Serif SC', cursive;
+  font-size: 48px;
   color: #fff;
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+  animation: writeChar 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
-.welcome-role-desc {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+/* First line — 4px bigger than second */
+.welcome-char--big {
+  font-size: 52px;
 }
 
-/* CTA buttons */
-.welcome-btn-primary {
-  width: 260px;
-  height: 48px;
-  border: none;
-  border-radius: 100px;
-  background: #fff;
-  color: var(--color-primary);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 12px;
-  z-index: 1;
-  transition: opacity 0.2s;
+/* English font overrides */
+.welcome-char--en {
+  font-family: 'Caveat', 'Georgia', cursive;
+  font-size: 46px;
 }
 
-.welcome-btn-primary:hover { opacity: 0.9; }
-
-.welcome-btn-outline {
-  width: 260px;
-  height: 48px;
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  border-radius: 100px;
-  background: transparent;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 20px;
-  z-index: 1;
-  transition: all 0.2s;
+.welcome-char--en2 {
+  font-family: 'Caveat', 'Georgia', cursive;
+  font-size: 42px;
 }
 
-.welcome-btn-outline:hover {
-  border-color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.welcome-lock {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+@keyframes writeChar {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; transform: translateY(8px); }
+  15%  { opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; transform: translateY(0); }
 }
 
 /* Old badge — keep for compatibility but hide */

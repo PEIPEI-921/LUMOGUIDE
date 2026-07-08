@@ -12,14 +12,6 @@ const TAB_CONFIG = [
   { key: 'activity', label: '活動', endpoint: ApiUrl.guideActivity, addPath: '/publish/activity' },
 ];
 
-const DELETE_ENDPOINTS = {
-  attraction: ApiUrl.guideAttractionDel,
-  information: ApiUrl.guideInformationDel,
-  transportation: ApiUrl.guideTransportationDel,
-  facility: ApiUrl.guideFacilityDel,
-  activity: ApiUrl.guideActivityDel,
-};
-
 const AUDIT_MAP = {
   0: { label: '審核中', cls: 'ds-badge-sm ds-badge-warning' },
   1: { label: '已通過', cls: 'ds-badge-sm ds-badge-success' },
@@ -48,7 +40,7 @@ const GuidePublishPage = {
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h2 class="ds-page-head" style="margin:0">{{ $t('發布管理') }}</h2>
-          <a v-if="currentTab" :href="'#'+currentTab.addPath" style="font-size:13px;color:var(--color-primary);font-weight:500;text-decoration:none">+ {{ $t('新增') }}{{ currentTab.label }}</a>
+          <button v-if="currentTab" @click="onAddItem" style="font-size:13px;color:var(--color-primary);font-weight:500;background:none;border:none;cursor:pointer">+ {{ $t('新增') }}{{ currentTab.label }}</button>
         </div>
 
         <!-- Type tabs -->
@@ -90,7 +82,6 @@ const GuidePublishPage = {
             </div>
             <div style="display:flex;justify-content:flex-end;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)">
               <a :href="'#'+currentTab.addPath+'?id='+item.id" style="font-size:12px;color:var(--color-primary);text-decoration:none">{{ $t('編輯') }}</a>
-              <button @click="handleDelete(item.id)" style="font-size:12px;color:var(--color-red);background:none;border:none;cursor:pointer">{{ $t('刪除') }}</button>
             </div>
           </div>
         </div>
@@ -138,14 +129,15 @@ const GuidePublishPage = {
     auditStatus(s) {
       return AUDIT_MAP[Number(s)] || AUDIT_MAP[0];
     },
-    async handleDelete(id) {
-      if (!confirm('確定刪除？')) return;
-      const ep = DELETE_ENDPOINTS[TAB_CONFIG[this.activeTab]?.key];
-      if (!ep) return;
-      try {
-        const result = await ApiProvider.post(ep, { id });
-        if (result.success) this.fetchItems();
-      } catch (e) { /* silent */ }
+    // VIP gate (matching Flutter onPublishTap → VIPCheckUtils.check())
+    onAddItem() {
+      if (!UserStore.isVip) {
+        this.$router.push('/vip');
+        return;
+      }
+      const tab = TAB_CONFIG[this.activeTab];
+      if (tab) this.$router.push(tab.addPath);
     },
+
   }
 };

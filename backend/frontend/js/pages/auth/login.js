@@ -11,37 +11,58 @@ const LoginPage = {
           <img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="auth-logo-img" />
         </div>
 
-        <!-- Title -->
-        <div class="auth-heading">
-          <div class="auth-heading-title">{{ t('登錄') }}</div>
-          <div class="auth-heading-bar"></div>
+        <!-- App Icon -->
+        <div class="auth-app-icon">
+          <img src="/images/logo-app-icon.png" alt="LuMo Guide" class="auth-app-icon-img" />
         </div>
 
-        <!-- Email -->
-        <div class="auth-input-group">
-          <span class="auth-input-icon">📧</span>
-          <input class="auth-input" v-model="email" type="email"
-            :placeholder="t('請輸入郵箱')" autocomplete="email" />
-        </div>
+        <form class="auth-form" @submit.prevent="doLogin" autocomplete="on">
+          <!-- Email -->
+          <div class="auth-input-group">
+            <span class="auth-input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 4-10 8L2 4"/>
+              </svg>
+            </span>
+            <input class="auth-input" v-model="email" type="email" name="email"
+              :placeholder="t('請輸入郵箱')" autocomplete="email" />
+          </div>
 
-        <!-- Password -->
-        <div class="auth-input-group">
-          <span class="auth-input-icon">🔒</span>
-          <input class="auth-input" v-model="password" :type="showPw ? 'text' : 'password'"
-            :placeholder="t('請輸入密碼')" autocomplete="current-password" />
-          <button class="auth-pw-toggle" type="button" @click="showPw = !showPw">
-            {{ showPw ? '🙈' : '👁' }}
+          <!-- Password -->
+          <div class="auth-input-group">
+            <span class="auth-input-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <circle cx="12" cy="16" r="1"/>
+              </svg>
+            </span>
+            <input class="auth-input" v-model="password" :type="showPw ? 'text' : 'password'" name="password"
+              :placeholder="t('請輸入密碼')" autocomplete="current-password" />
+            <button class="auth-pw-toggle" type="button" @click="showPw = !showPw">
+              <svg v-if="showPw" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <path d="m14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Login button -->
+          <button class="auth-btn" type="submit" :disabled="loading">
+            <span v-if="loading">{{ t('加載中...') }}</span>
+            <span v-else>登 录</span>
           </button>
-        </div>
-
-        <!-- Login button -->
-        <button class="auth-btn" :disabled="loading" @click="doLogin">
-          <span v-if="loading">{{ t('加載中...') }}</span>
-          <span v-else>登 录</span>
-        </button>
+        </form>
 
         <!-- Remember + Forgot -->
-        <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="auth-remember-row">
           <label class="auth-remember">
             <input type="checkbox" v-model="remember" />
             {{ t('記住密碼') }}
@@ -93,7 +114,7 @@ const LoginPage = {
         return;
       }
 
-      UserStore.saveCredentials(this.email, this.remember);
+      UserStore.saveCredentials(this.email, this.password, this.remember);
       await UserStore.login(res.data);
       showToast(I18n.t('登錄成功'));
       this.$router.replace('/home');

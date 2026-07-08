@@ -105,7 +105,8 @@ const GuideChangeCityPage = {
           ApiProvider.get(ApiUrl.guideCityList, { page: 1, limit: 100 }),
           ApiProvider.get(ApiUrl.guideCityInfo).catch(() => ({ success: false })),
         ]);
-        this.cities = (citiesRes.success && citiesRes.data?.list) ? citiesRes.data.list : [];
+        this.cities = Array.isArray(citiesRes.data?.list) ? citiesRes.data.list
+          : (citiesRes.success && Array.isArray(citiesRes.data) ? citiesRes.data : []);
         if (infoRes.success && infoRes.data) {
           this.currentCity = infoRes.data;
         }
