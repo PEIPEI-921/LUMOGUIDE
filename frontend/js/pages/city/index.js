@@ -70,7 +70,7 @@ const CityPage = {
             style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;background:#E5E7EB;transition:transform .25s"
             @mouseenter="$event.currentTarget.style.transform='translateY(-2px)'"
             @mouseleave="$event.currentTarget.style.transform=''">
-            <img :src="imageUrl(city.first_picture)" alt=""
+            <img :src="imageUrl(city.first_picture)" alt="" loading="lazy"
               style="width:100%;height:100%;object-fit:cover;transition:transform .5s"
               @mouseenter="$event.currentTarget.style.transform='scale(1.04)'"
               @mouseleave="$event.currentTarget.style.transform=''" />
@@ -87,6 +87,9 @@ const CityPage = {
 
         <div v-if="!currentCities.length && !tabLoading" style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:13px">
           {{ $t('此分類暫無城市') }}
+        </div>
+        <div v-if="tabLoading" style="text-align:center;padding:40px 0">
+          <div class="spinner"></div>
         </div>
       </template>
 
@@ -130,7 +133,7 @@ const CityPage = {
       this.loading = true;
       this.pageError = '';
       try {
-        // 1. Fetch continents (parent_id=0)
+        // Step 1: Fetch continent list only (1 API call — fast)
         const res = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: 0 });
         if (!res.success) {
           this.loading = false;
@@ -139,24 +142,15 @@ const CityPage = {
         }
         const continentList = res.data?.list || res.data || [];
 
-        // 2. Fetch sub-areas for each continent in parallel
-        const withAreas = await Promise.all(continentList.map(async (c) => {
-          try {
-            const areaRes = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: c.id });
-            const areas = areaRes.success ? (areaRes.data?.list || areaRes.data || []) : [];
-            return { id: c.id, name: c.name, areas };
-          } catch (e) {
-            console.error('[CityPage] fetch areas for continent', c.id, 'error:', e);
-            return { id: c.id, name: c.name, areas: [] };
-          }
-        }));
-
-        this.continents = withAreas;
+        // Show tabs immediately — areas empty, will lazy-load
+        this.continents = continentList.map(c => ({ id: c.id, name: c.name, areas: [] }));
         this.continentIndex = 0;
         this.areaIndex = 0;
 
-        // 3. Load cities for first continent + first area
-        if (withAreas.length > 0) {
+        if (this.continents.length > 0) {
+          // Step 2: Fetch areas ONLY for first continent (1 API call — not all)
+          await this.loadAreasForContinent(0);
+          // Step 3: Fetch cities for first continent's first area (1 API call)
           await this.fetchCities();
         }
       } catch (e) {
@@ -166,10 +160,25 @@ const CityPage = {
       this.loading = false;
     },
 
-    selectContinent(idx) {
+    /** Lazy-load areas for a continent (only when needed) */
+    async loadAreasForContinent(idx) {
+      const c = this.continents[idx];
+      if (!c || c.areas.length > 0) return; // Already loaded
+      try {
+        const areaRes = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: c.id });
+        c.areas = areaRes.success ? (areaRes.data?.list || areaRes.data || []) : [];
+      } catch (e) {
+        console.error('[CityPage] loadAreasForContinent error:', e);
+        c.areas = [];
+      }
+    },
+
+    async selectContinent(idx) {
       this.continentIndex = idx;
       this.areaIndex = 0;
       this.cities = [];
+      // Lazy-load areas for this continent if not yet fetched
+      await this.loadAreasForContinent(idx);
       this.fetchCities();
     },
 

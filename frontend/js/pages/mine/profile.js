@@ -1,13 +1,14 @@
 /* ============================================
    Profile Page (Refactored) — 个人中心
    Reference: PPCC profile/page.tsx + design/05-profile.html
+   All icons: SVG line art (replaced emoji)
    ============================================ */
 
 const ProfilePage = {
   template: `
     <div class="page-content">
       <div v-if="!UserStore.isLogin" style="text-align:center;padding-top:80px">
-        <div style="font-size:48px;margin-bottom:16px">👤</div>
+        <div style="font-size:48px;margin-bottom:16px;color:var(--color-assistant-text)"><span v-html="I.user"></span></div>
         <p style="color:var(--color-secondary-text);margin-bottom:20px">{{ $t('登入後查看個人資訊與管理預約') }}</p>
         <button @click="$router.push('/login')" class="ds-btn ds-btn-primary" style="max-width:200px;margin:0 auto">
           {{ $t('立即登入') }}
@@ -57,15 +58,15 @@ const ProfilePage = {
         <div class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('帳號') }}</div>
           <a href="#/profile/edit" class="ds-menu-item">
-            <span>✏️ {{ $t('編輯資料') }}</span>
+            <span><span v-html="I.pencil" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('編輯資料') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/modify-password" class="ds-menu-item">
-            <span>🔒 {{ $t('修改密碼') }}</span>
+            <span><span v-html="I.lock" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('修改密碼') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/modify-phone" class="ds-menu-item">
-            <span>📱 {{ $t('綁定手機') }}</span>
+            <span><span v-html="I.phone" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('綁定手機') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -74,15 +75,15 @@ const ProfilePage = {
         <div class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('互動') }}</div>
           <a href="#/following" class="ds-menu-item">
-            <span>❤️ {{ $t('我的關注') }}</span>
+            <span><span v-html="I.heart" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('我的關注') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/followers" class="ds-menu-item">
-            <span>👥 {{ $t('我的粉絲') }}</span>
+            <span><span v-html="I.people" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('我的粉絲') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/evaluations" class="ds-menu-item">
-            <span>⭐ {{ $t('我的評價') }}</span>
+            <span><span v-html="I.star" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('我的評價') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -91,15 +92,15 @@ const ProfilePage = {
         <div class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('預約') }}</div>
           <a href="#/my-bookings" class="ds-menu-item">
-            <span>📋 {{ $t('我的預約') }}</span>
+            <span><span v-html="I.clipboard" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('我的預約') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isGuide" href="#/guide/bookings" class="ds-menu-item">
-            <span>📅 {{ $t('預約我的') }}</span>
+            <span><span v-html="I.calendar" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('預約我的') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isCompany" href="#/merchant/bookings" class="ds-menu-item">
-            <span>📅 {{ $t('預約我的') }}</span>
+            <span><span v-html="I.calendar" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('預約我的') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -108,23 +109,23 @@ const ProfilePage = {
         <div v-if="isGuide || isCompany" class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('管理') }}</div>
           <a v-if="isGuide" href="#/guide/publish" class="ds-menu-item">
-            <span>📝 {{ $t('發布管理') }}</span>
+            <span><span v-html="I.document" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('發布管理') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isGuide" href="#/guide/publish-city" class="ds-menu-item">
-            <span>🏙️ {{ $t('我的城市') }}</span>
+            <span><span v-html="I.building" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('我的城市') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isGuide" href="#/guide/certify" class="ds-menu-item">
-            <span>🎫 {{ $t('導遊認證') }}</span>
+            <span><span v-html="I.ticket" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('導遊認證') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isGuide" href="#/guide/change-city" class="ds-menu-item">
-            <span>🔄 {{ $t('切換城市') }}</span>
+            <span><span v-html="I.refresh" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('切換城市') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a v-if="isCompany" href="#/merchant/manage" class="ds-menu-item">
-            <span>🏪 {{ $t('店鋪管理') }}</span>
+            <span><span v-html="I.shop" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('店鋪管理') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -133,11 +134,11 @@ const ProfilePage = {
         <div v-if="!isGuide && !isCompany" class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('申請') }}</div>
           <a href="#/guide/certify" class="ds-menu-item">
-            <span>🎫 {{ $t('導遊認證') }}</span>
+            <span><span v-html="I.ticket" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('導遊認證') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/merchant/entry" class="ds-menu-item">
-            <span>🏪 {{ $t('商家入駐') }}</span>
+            <span><span v-html="I.shop" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('商家入駐') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -146,27 +147,27 @@ const ProfilePage = {
         <div class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('其他') }}</div>
           <a href="#/integral" class="ds-menu-item">
-            <span>🎁 {{ $t('積分商城') }}</span>
+            <span><span v-html="I.gift" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('積分商城') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/vip" class="ds-menu-item">
-            <span>💎 {{ $t('會員中心') }}</span>
+            <span><span v-html="I.diamond" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('會員中心') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/address" class="ds-menu-item">
-            <span>📦 {{ $t('收貨地址') }}</span>
+            <span><span v-html="I.box" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('收貨地址') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/invite" class="ds-menu-item">
-            <span>🤝 {{ $t('邀請好友') }}</span>
+            <span><span v-html="I.handshake" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('邀請好友') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/feedback" class="ds-menu-item">
-            <span>💬 {{ $t('意見反饋') }}</span>
+            <span><span v-html="I.chat" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('意見反饋') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
           <a href="#/contact" class="ds-menu-item">
-            <span>📞 {{ $t('聯絡我們') }}</span>
+            <span><span v-html="I.phoneCall" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('聯絡我們') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -175,7 +176,7 @@ const ProfilePage = {
         <div class="ds-menu-group">
           <div class="ds-menu-group-title">{{ $t('設定') }}</div>
           <a href="#/settings" class="ds-menu-item">
-            <span>⚙️ {{ $t('設置') }}</span>
+            <span><span v-html="I.settings" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('設置') }}</span>
             <span class="ds-menu-arrow">›</span>
           </a>
         </div>
@@ -189,7 +190,7 @@ const ProfilePage = {
   `,
 
   data() {
-    return { loading: false };
+    return { loading: false, I };
   },
 
   computed: {
