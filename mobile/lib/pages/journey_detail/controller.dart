@@ -3,6 +3,7 @@ import 'package:lumotrip/common/index.dart';
 
 class JourneyDetailController extends GetxController {
   final work = Rxn<JourneyWork>();
+  final activeTab = 0.obs;
 
   @override
   void onInit() {
@@ -12,13 +13,30 @@ class JourneyDetailController extends GetxController {
   }
 
   void _loadDetail(int? id) {
-    // TODO: 对接后端 API: GET /user/journeyDetail?id=$id
-    // 目前使用 mock 数据
+    // TODO: 对接后端 API
     final list = JourneyWork.mockData();
     work.value = list.firstWhere((w) => w.id == id, orElse: () => list.first);
   }
 
+  void onEdit() {
+    Get.toNamed(AppRoutes.JOURNEY_EDITOR, arguments: {
+      'work': work.value,
+    })?.then((_) => _loadDetail(work.value?.id));
+  }
+
+  void onSaveAsTemplate() {
+    // TODO: POST /user/journeyTemplate/create
+  }
+
+  void onGenerateClientItinerary() {
+    // TODO: 客户行程生成
+  }
+
   void onViewBooking() {
     Get.toNamed(AppRoutes.USER_BOOKING_MANAGER);
+  }
+
+  void onViewCity(String city) {
+    Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'city': city});
   }
 }

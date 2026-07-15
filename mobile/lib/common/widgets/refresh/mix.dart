@@ -43,15 +43,17 @@ mixin RefreshableMixin<T> {
   Future onRefresh() async {
     _completer = Completer();
     _page = _initPage;
+    final c = _completer;
     fetchData();
-    return _completer!.future;
+    return c!.future;
   }
 
   Future onLoadMore() async {
     _completer = Completer();
     _page++;
+    final c = _completer;
     fetchData();
-    return _completer!.future;
+    return c!.future;
   }
 
   void endLoad(List<T> lists) {
