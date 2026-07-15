@@ -101,8 +101,8 @@ const routes = [
   { path: '/integral/exchange/order/:id', component: IntegralExchangeOrderPage, meta: { title: '訂單詳情', requiresAuth: true } },
   { path: '/integral/records', component: IntegralRecordsPage, meta: { title: '積分記錄', requiresAuth: true } },
 
-  // === VIP ===
-  { path: '/vip', component: VipPage, meta: { title: 'VIP會員', requiresAuth: true } },
+  // === 會籍中心 (Membership Center) ===
+  { path: '/vip', component: VipPage, meta: { title: '會籍中心', requiresAuth: true } },
 
   // === Address ===
   { path: '/address', component: AddressListPage, meta: { title: '地址管理', requiresAuth: true } },

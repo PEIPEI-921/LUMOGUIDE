@@ -31,3 +31,4 @@ vite.config.js
 /start.sh
 /.claude/
 .DS_Store
+/storage/cache/

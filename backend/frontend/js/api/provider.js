@@ -6,6 +6,57 @@
 const ApiProvider = {
   baseUrl: API_URL,
 
+  // ── In-memory response cache ──
+  _cache: new Map(),
+  _cacheDefaultTTL: 60000, // 1 min default
+  _cacheTTL: {
+    '/common/config': 1800000,        // 30 min
+    '/common/getContinentsList': 600000, // 10 min
+    '/city/lists': 300000,            // 5 min
+    '/city/list': 300000,
+    '/common/homeData': 60000,        // 1 min
+  },
+
+  _cacheKey(path, params) {
+    const qs = params ? JSON.stringify(params) : '';
+    return path + '|' + qs;
+  },
+
+  _getTTL(path) {
+    for (const [pattern, ttl] of Object.entries(this._cacheTTL)) {
+      if (path.includes(pattern)) return ttl;
+    }
+    return this._cacheDefaultTTL;
+  },
+
+  _getCached(key) {
+    const entry = this._cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.time > entry.ttl) {
+      this._cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  },
+
+  _setCache(key, data, ttl) {
+    // Clean up old entries periodically (keep cache under 200 entries)
+    if (this._cache.size > 200) {
+      const now = Date.now();
+      for (const [k, v] of this._cache) {
+        if (now - v.time > v.ttl) this._cache.delete(k);
+      }
+    }
+    this._cache.set(key, { data, time: Date.now(), ttl });
+  },
+
+  /** Invalidate cache entries matching a path prefix */
+  invalidateCache(pathPrefix) {
+    for (const key of this._cache.keys()) {
+      if (key.startsWith(pathPrefix)) this._cache.delete(key);
+    }
+  },
+
   /**
    * Build full URL with query parameters
    */
@@ -41,7 +92,14 @@ const ApiProvider = {
   /**
    * Core request method
    */
-  async request(method, path, { params, data, headers } = {}) {
+  async request(method, path, { params, data, headers, cache } = {}) {
+    // ── Cache check for GET (skip if cache:false) ──
+    const cacheKey = this._cacheKey(path, params);
+    if (method === 'GET' && cache !== false) {
+      const cached = this._getCached(cacheKey);
+      if (cached) return cached;
+    }
+
     // AbortController for 15s timeout
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
@@ -86,13 +144,25 @@ const ApiProvider = {
         }
       }
 
-      return {
+      const result = {
         success: code === 200,
         code: code,
         message: message,
         data: resData,
         raw: json
       };
+
+      // ── Cache successful GET responses ──
+      if (method === 'GET' && result.success && cache !== false) {
+        this._setCache(cacheKey, result, this._getTTL(path));
+      }
+
+      // ── Invalidate cache on mutations ──
+      if (method !== 'GET' && result.success) {
+        this.invalidateCache(path);
+      }
+
+      return result;
     } catch (err) {
       if (err.name === 'AbortError') {
         console.error('API Timeout:', method, path);

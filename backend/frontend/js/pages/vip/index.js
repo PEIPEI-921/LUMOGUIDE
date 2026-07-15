@@ -1,56 +1,54 @@
 /* ============================================
-   VIP Page — VIP 会员中心
-   Reference: PPCC vip/page.tsx
+   會籍中心 (Membership Center) — 付费导游/商家会员订阅
+   Reference: Flutter member_center/page.dart + widgets/*
+   Aligned 2026-07-08
    ============================================ */
-
-const BENEFITS = [
-  { icon: '🔍', text: '優先曝光與推薦' },
-  { icon: '📊', text: '數據分析工具' },
-  { icon: '💬', text: '專屬客服通道' },
-  { icon: '🎯', text: '精準行銷推廣' },
-  { icon: '📋', text: '無限發布內容' },
-  { icon: '🏷️', text: 'VIP 身分標識' },
-];
 
 const VipPage = {
   template: `
     <div class="page-content">
+      <!-- Not logged in -->
       <div v-if="!UserStore.isLogin" style="text-align:center;padding-top:80px">
-        <div style="font-size:56px;margin-bottom:16px">💎</div>
         <p style="color:var(--color-secondary-text);margin-bottom:20px">{{ $t('登入後查看會員中心') }}</p>
         <button @click="$router.push('/login')" class="ds-btn ds-btn-primary">{{ $t('立即登入') }}</button>
       </div>
 
+      <!-- Loading -->
       <div v-else-if="loading" style="text-align:center;padding:80px 0">
         <div class="spinner"></div>
       </div>
 
+      <!-- Content -->
       <div v-else class="ds-container-600" style="padding-bottom:32px">
-        <!-- Status card -->
-        <div style="padding:32px;border-radius:var(--radius-lg);background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);color:#fff;text-align:center;margin-bottom:20px">
-          <div style="font-size:48px;margin-bottom:12px">💎</div>
-          <template v-if="isVip">
-            <h2 style="font-size:22px;font-weight:700;margin:0">{{ user?.vip_name || 'VIP 會員' }}</h2>
-            <p v-if="vipExpired" style="font-size:13px;opacity:.7;margin-top:6px">{{ $t('到期日') }}: {{ vipExpired }}</p>
-            <div style="display:inline-block;margin-top:16px;background:rgba(255,255,255,.1);border-radius:20px;padding:8px 20px;font-size:13px;font-weight:500">{{ $t('尊享會員權益') }}</div>
-          </template>
-          <template v-else>
-            <h2 style="font-size:22px;font-weight:700;margin:0">{{ $t('免費會員') }}</h2>
-            <p style="font-size:13px;opacity:.7;margin-top:6px">{{ $t('升級 VIP 解鎖更多權益') }}</p>
-            <div v-if="ability?.vip_free_day" style="display:inline-block;margin-top:16px;background:var(--color-primary);border-radius:20px;padding:8px 20px;font-size:13px;font-weight:500">
-              {{ $t('新用戶免費體驗') }} {{ ability.vip_free_day }} {{ $t('天') }}
+        <!-- Top: User info card -->
+        <div class="member-top-card" :class="isGuide ? 'member-top--guide' : 'member-top--company'">
+          <div class="member-top-row">
+            <div class="member-avatar" :style="avatarStyle">
+              <span v-if="!avatarUrl" class="member-avatar-fallback">{{ avatarFallback }}</span>
             </div>
-          </template>
-        </div>
-
-        <!-- Benefits -->
-        <div class="ds-card" style="padding:20px;margin-bottom:20px">
-          <h3 style="font-weight:600;font-size:14px;margin-bottom:14px">{{ $t('VIP 專屬權益') }}</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div v-for="b in BENEFITS" :key="b.text" style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;background:var(--color-bg-page)">
-              <span style="font-size:20px">{{ b.icon }}</span>
-              <span style="font-size:12px;font-weight:500">{{ b.text }}</span>
+            <div class="member-top-info">
+              <div class="member-nickname">{{ profile.nickname || profile.email || '' }}</div>
+              <div class="member-badges">
+                <span :class="['member-badge', isGuide ? 'member-badge--guide' : 'member-badge--company']">
+                  {{ isGuide ? $t('導遊') : isCompany ? $t('企業') : $t('普通用戶') }}
+                </span>
+                <span v-if="vipName" class="member-badge member-badge--vip">{{ vipName }}</span>
+              </div>
             </div>
+          </div>
+          <div class="member-expiry">
+            <template v-if="isPaidVip && isVipExpired">
+              <span style="color:#EF4444">{{ $t('會員已過期') }}</span>
+            </template>
+            <template v-else-if="isPaidVip">
+              {{ $t('會員有效期') }}: {{ vipExpiredDate }}
+            </template>
+            <template v-else-if="isFreeVip">
+              {{ $t('免費試用') }} {{ profile.vip_free_day || 0 }} {{ $t('天') }}
+            </template>
+            <template v-else>
+              {{ $t('非會員') }}
+            </template>
           </div>
         </div>
 
@@ -60,63 +58,163 @@ const VipPage = {
           <button @click="loadData" class="ds-btn ds-btn-primary">{{ $t('重新載入') }}</button>
         </div>
 
-        <!-- Plans (non-VIP only) -->
-        <template v-if="!isVip && plans.length>0">
-          <h3 style="font-weight:600;font-size:14px;margin-bottom:14px">{{ $t('訂閱方案') }}</h3>
-          <div v-for="plan in plans" :key="plan.id" class="ds-card" :style="{padding:'20px',marginBottom:'14px',border:plan.is_default?'2px solid var(--color-primary)':'1px solid transparent',position:'relative'}">
-            <span v-if="plan.is_default" style="position:absolute;top:-1px;right:20px;background:var(--color-primary);color:#fff;font-size:10px;font-weight:600;padding:3px 12px;border-radius:0 0 8px 8px">{{ $t('推薦') }}</span>
-            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px">
-              <div>
-                <h4 style="font-size:16px;font-weight:700;margin:0">{{ plan.name }}</h4>
-                <p v-if="plan.desc" style="font-size:12px;color:var(--color-assistant-text);margin-top:3px">{{ plan.desc }}</p>
-              </div>
-              <div style="text-align:right">
-                <p style="font-size:24px;font-weight:800;color:var(--color-primary);margin:0">&#36;{{ plan.price || '—' }}</p>
-                <p v-if="plan.original_price && plan.original_price>(plan.price||0)" style="font-size:12px;color:var(--color-assistant-text);text-decoration:line-through;margin:0">&#36;{{ plan.original_price }}</p>
+        <!-- Products + Abilities section -->
+        <template v-if="!error">
+          <div class="ds-card" style="padding:20px;margin-bottom:20px">
+            <!-- Section title -->
+            <h3 style="font-weight:700;font-size:16px;margin:0 0 12px;text-align:center">{{ $t('會籍中心') }}</h3>
+
+            <!-- Product grid -->
+            <div v-if="products.length > 0" :class="isGuide ? 'member-product-grid member-product-grid--guide' : 'member-product-grid member-product-grid--company'">
+              <div v-for="p in products" :key="p.id"
+                :class="['member-product-card', { 'member-product-card--selected': selectedProductId === p.id }]"
+                :style="selectedProductId === p.id ? { borderColor: accentColor, borderWidth: '3px' } : {}"
+                @click="selectProduct(p.id)">
+                <!-- Tag: 月/年 -->
+                <span class="member-product-tag" :style="selectedProductId === p.id ? { background: accentColor, color: '#fff' } : {}">
+                  {{ p.time_type === 1 ? $t('月') : $t('年') }}
+                </span>
+                <!-- Name -->
+                <div class="member-product-name" :style="selectedProductId === p.id ? { color: accentColor } : {}">
+                  {{ p.name || '' }}
+                </div>
+                <!-- Price -->
+                <div class="member-product-price-row">
+                  <template v-if="p.buy_type === 2">
+                    <img src="images/icon-integral.png" class="member-product-currency-icon" :style="selectedProductId === p.id ? {} : { opacity: 0.6 }" />
+                    <span class="member-product-price" :style="selectedProductId === p.id ? { color: accentColor } : {}">{{ p.price || '0' }}</span>
+                  </template>
+                  <template v-else>
+                    <span class="member-product-currency" :style="selectedProductId === p.id ? { color: accentColor } : {}">{{ p.icon || '$' }}</span>
+                    <span class="member-product-price" :style="selectedProductId === p.id ? { color: accentColor } : {}">{{ p.price || '0' }}</span>
+                  </template>
+                  <span class="member-product-unit">/{{ p.time_type_str || '' }}</span>
+                </div>
+                <!-- Points balance for points-based products -->
+                <div v-if="p.buy_type === 2" style="font-size:11px;color:var(--color-assistant-text);margin-top:6px">
+                  {{ $t('我的積分') }}: {{ profile.integral || 0 }}
+                </div>
               </div>
             </div>
-            <p v-if="plan.duration" style="font-size:12px;color:var(--color-assistant-text);margin-bottom:12px">{{ $t('有效期') }}: {{ plan.duration }} {{ plan.duration_unit || $t('天') }}</p>
-            <ul v-if="plan.features || plan.benefits" style="list-style:none;padding:0;margin:0 0 16px">
-              <li v-for="(f, i) in (plan.features || plan.benefits || [])" :key="i" style="font-size:12px;color:var(--color-secondary-text);padding:4px 0;display:flex;align-items:flex-start;gap:6px">
-                <span style="color:#22c55e;flex-shrink:0;margin-top:1px">✓</span>
-                <span>{{ f }}</span>
-              </li>
-            </ul>
-            <button @click="handleSubscribe(plan.id)" :disabled="subscribing===plan.id"
-              :class="['ds-btn', plan.is_default?'ds-btn-primary':'ds-btn-outline']"
-              style="width:100%;justify-content:center;padding:12px 0;font-size:14px;border-radius:100px">
-              {{ subscribing===plan.id ? $t('處理中...') : $t('訂閱') + ' ' + plan.name }}
+
+            <!-- Abilities -->
+            <div v-if="abilities.length > 0" style="margin-top:20px">
+              <div style="display:flex;align-items:center;margin-bottom:10px">
+                <span style="font-size:14px;font-weight:600;white-space:nowrap">{{ $t('會員權益') }}</span>
+                <span style="flex:1;height:1px;background:rgba(0,0,0,.1);margin-left:10px"></span>
+              </div>
+              <template v-if="isGuide">
+                <div v-for="(a, i) in abilities" :key="i" style="display:flex;align-items:flex-start;padding:4px 0;font-size:12px;color:var(--color-primary-text)">
+                  <span style="color:var(--color-primary);margin-right:6px;flex-shrink:0">▸</span>
+                  <span>{{ a }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <div :style="companyAbilityGridStyle">
+                  <div v-for="(col, ci) in abilities" :key="ci">
+                    <div v-for="(a, ai) in col" :key="ai" style="display:flex;align-items:flex-start;padding:4px 0;font-size:12px;color:var(--color-primary-text)">
+                      <span style="color:var(--color-primary);margin-right:6px;flex-shrink:0">▸</span>
+                      <span>{{ a }}</span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Submit area (always show if products exist) -->
+          <div v-if="products.length > 0" style="text-align:center;margin-bottom:20px">
+            <p style="font-size:12px;color:var(--color-secondary-text);margin-bottom:10px;line-height:1.6">
+              {{ $t('點擊按鈕即同意') }}<a href="javascript:void(0)" @click="openAgreement('subscribe')" style="color:var(--color-primary)">{{ $t('VIP會員訂閲服務協議') }}</a>{{ $t('、') }}<a href="javascript:void(0)" @click="openAgreement('member')" style="color:var(--color-primary)">{{ $t('VIP會員服務協議') }}</a>
+            </p>
+            <button @click="handleSubscribe"
+              :disabled="subscribing"
+              class="ds-btn"
+              style="width:100%;justify-content:center;padding:12px 0;font-size:14px;border-radius:100px;background:var(--color-primary-text);color:#fff;font-weight:600">
+              <template v-if="subscribing">
+                <span class="spinner" style="width:16px;height:16px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff;margin-right:8px"></span>
+                {{ $t('處理中...') }}
+              </template>
+              <template v-else>
+                <img v-if="selectedProduct && selectedProduct.buy_type === 2" src="images/icon-integral.png" style="width:14px;height:14px;margin-right:6px;filter:brightness(0) invert(1)" />
+                <span v-else-if="selectedProduct" style="margin-right:6px">{{ selectedProduct.icon || '$' }}</span>
+                <span style="margin-right:6px">{{ selectedProduct?.price || '0' }}</span>
+                <span>{{ $t('立即訂閱') }}</span>
+              </template>
             </button>
           </div>
         </template>
-
-        <!-- Already VIP message -->
-        <div v-if="isVip" class="ds-card" style="padding:16px;text-align:center">
-          <p style="font-size:13px;color:var(--color-secondary-text)">{{ $t('如需更改方案或取消訂閱，請聯繫客服') }}</p>
-        </div>
       </div>
     </div>
   `,
   data() {
     return {
-      ability: null, plans: [], loading: true, error: null, subscribing: null,
-      user: UserStore.profile || UserStore.userInfo,
-      BENEFITS
+      ability: null,
+      products: [],
+      selectedProductId: 0,
+      loading: true,
+      error: null,
+      subscribing: false,
     };
   },
   computed: {
-    isVip() {
-      return this.user && Number(this.user.vip_type || 0) > 0;
-    },
-    vipExpired() {
-      if (!this.user?.vip_expiration_time) return null;
-      return new Date(Number(this.user.vip_expiration_time) * 1000).toLocaleDateString('zh-TW');
+    profile() {
+      return UserStore.profile || {};
     },
     isGuide() {
-      return this.user && Number(this.user.identity) === 2;
+      return Number(this.profile.identity) === 2;
     },
     isCompany() {
-      return this.user && Number(this.user.identity) === 3;
+      return Number(this.profile.identity) === 3;
+    },
+    isPaidVip() {
+      return Number(this.profile.vip_type || 0) > 0 && Number(this.profile.vip_expiration_time || 0) > 0;
+    },
+    isFreeVip() {
+      return Number(this.profile.vip_free || 0) === 1 && Number(this.profile.vip_free_day || 0) > 0;
+    },
+    vipName() {
+      return this.profile.vip_name || '';
+    },
+    vipExpiredDate() {
+      const ts = Number(this.profile.vip_expiration_time || 0);
+      if (!ts) return null;
+      return new Date(ts * 1000).toLocaleDateString('zh-TW');
+    },
+    isVipExpired() {
+      const ts = Number(this.profile.vip_expiration_time || 0);
+      if (!ts) return false;
+      return ts < Math.floor(Date.now() / 1000);
+    },
+    avatarUrl() {
+      return this.profile.avatar || '';
+    },
+    avatarFallback() {
+      const name = this.profile.nickname || this.profile.email || '';
+      return name.charAt(0).toUpperCase();
+    },
+    avatarStyle() {
+      if (this.avatarUrl) {
+        return { backgroundImage: `url(${this.avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+      }
+      return { background: 'var(--color-primary)' };
+    },
+    accentColor() {
+      return this.isGuide ? 'var(--color-primary)' : '#FF9000';
+    },
+    selectedProduct() {
+      return this.products.find(p => p.id === this.selectedProductId) || this.products[0] || null;
+    },
+    abilities() {
+      if (!this.ability) return [];
+      if (this.isGuide) {
+        return Array.isArray(this.ability.guide) ? this.ability.guide : [];
+      }
+      return Array.isArray(this.ability.company) ? this.ability.company : [];
+    },
+    companyAbilityGridStyle() {
+      const cols = this.abilities.length || 1;
+      return { display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '8px' };
     },
   },
   mounted() { this.loadData(); },
@@ -124,48 +222,89 @@ const VipPage = {
     async loadData() {
       this.loading = true; this.error = null;
       try {
+        // Decide which product API to call based on identity
+        const planApi = this.isGuide ? ApiUrl.vipGuide
+                      : this.isCompany ? ApiUrl.vipCompany
+                      : null;
+
         const [abRes, planRes] = await Promise.all([
           ApiProvider.get(ApiUrl.vipAbility).catch(() => ({ success: false })),
-          this.isGuide
-            ? ApiProvider.get(ApiUrl.vipGuide).catch(() => ({ success: false }))
-            : this.isCompany
-              ? ApiProvider.get(ApiUrl.vipCompany).catch(() => ({ success: false }))
-              : Promise.resolve({ success: false }),
+          planApi
+            ? ApiProvider.get(planApi).catch(() => ({ success: false }))
+            : Promise.resolve({ success: false }),
         ]);
-        if (abRes.success) this.ability = abRes.data || {};
-        if (planRes.success) this.plans = planRes.data?.list || [];
+
+        // Parse ability — API returns { guide: [...], company: [[...], ...] }
+        if (abRes.success && abRes.data) {
+          this.ability = abRes.data;
+        } else {
+          this.ability = null;
+        }
+
+        // Parse products — API returns flat array [{id, name, ...}, ...]
+        // Defensive: also handle {list: [...], total: N} wrapped format
+        if (planRes.success && planRes.data) {
+          const d = planRes.data;
+          this.products = Array.isArray(d) ? d : (d.list || d.data || []);
+        } else {
+          this.products = [];
+        }
+
+        // Auto-select first product
+        if (this.products.length > 0) {
+          this.selectedProductId = this.products[0].id || 0;
+        }
       } catch (e) {
         this.error = e.message || '載入失敗';
       }
       this.loading = false;
     },
-    async handleSubscribe(planId) {
-      this.subscribing = planId;
+    selectProduct(id) {
+      this.selectedProductId = id;
+    },
+    async handleSubscribe() {
+      if (!this.selectedProduct) return;
+      if (this.subscribing) return;
+      this.subscribing = true;
       try {
         const url = this.isGuide ? ApiUrl.vipSubscribeGuide : ApiUrl.vipSubscribeCompany;
-        const res = await ApiProvider.post(url, { id: planId });
+        const res = await ApiProvider.post(url, { id: this.selectedProduct.id });
         if (res.success && res.data?.pay_url) {
           window.open(res.data.pay_url, '_blank');
-          // Poll for payment completion
           let attempts = 0;
           this._pollTimer = setInterval(async () => {
             attempts++;
-            const statusRes = await ApiProvider.get(ApiUrl.vipPayStatus, { id: planId });
+            const statusRes = await ApiProvider.get(ApiUrl.vipPayStatus, { id: this.selectedProduct.id });
             if (statusRes.success && Number(statusRes.data?.status) === 1) {
               clearInterval(this._pollTimer);
               this._pollTimer = null;
-              alert('訂閱成功！');
-              await UserStore.fetchProfile();
-              this.user = UserStore.profile || UserStore.userInfo;
+              await UserStore.getProfile();
+              this.subscribing = false;
+              alert(this.$t('訂閱成功'));
             }
-            if (attempts >= 60) { clearInterval(this._pollTimer); this._pollTimer = null; }
+            if (attempts >= 60) {
+              clearInterval(this._pollTimer);
+              this._pollTimer = null;
+              this.subscribing = false;
+            }
           }, 5000);
+        } else if (res.success) {
+          await UserStore.getProfile();
+          this.subscribing = false;
+          alert(this.$t('訂閱成功'));
+        } else {
+          this.subscribing = false;
+          alert(res.message || this.$t('訂閱失敗'));
         }
       } catch (e) {
-        alert(e.message || '訂閱失敗');
+        this.subscribing = false;
+        alert(e.message || this.$t('訂閱失敗'));
       }
-      this.subscribing = null;
-    }
+    },
+    openAgreement(type) {
+      const key = type === 'member' ? 'vipUserProtocol' : 'vipUserSubscribe';
+      this.$router.push(`/protocol/${key}`);
+    },
   },
   beforeUnmount() {
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }

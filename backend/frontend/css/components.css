@@ -3017,3 +3017,178 @@ textarea.form-input {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
+/* ============================================
+   會籍中心 (Membership Center) — 对齐 Flutter member_center
+   ============================================ */
+
+/* Top user info card */
+.member-top-card {
+  border-radius: var(--radius-lg);
+  padding: 20px 16px 14px;
+  margin-bottom: 20px;
+  color: var(--color-primary-text);
+  position: relative;
+  overflow: hidden;
+}
+.member-top--guide {
+  background: linear-gradient(135deg, #EEEDFF 0%, #E8E6FF 50%, #F0EEFF 100%);
+}
+.member-top--company {
+  background: linear-gradient(135deg, #FFF4E8 0%, #FFE8D0 50%, #FFF8F0 100%);
+}
+
+.member-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.member-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.member-avatar-fallback {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.member-top-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-nickname {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.member-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  border: 1px solid;
+  font-weight: 500;
+}
+.member-badge--guide {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.member-badge--company {
+  color: #FF9000;
+  border-color: #FF9000;
+}
+.member-badge--vip {
+  color: #FF9000;
+  border-color: #FF9000;
+}
+
+.member-expiry {
+  font-size: 12px;
+  color: var(--color-primary-text);
+  padding-top: 8px;
+  border-top: 1px solid rgba(0,0,0,.05);
+}
+
+/* Product grid */
+.member-product-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.member-product-grid--guide {
+  grid-template-columns: repeat(2, 1fr);
+}
+.member-product-grid--company {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.member-product-card {
+  position: relative;
+  border: 2px solid rgba(0,0,0,.1);
+  border-radius: 8px;
+  padding: 20px 10px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  background: #fff;
+}
+.member-product-card--selected {
+  background: rgba(102, 111, 255, .03);
+}
+
+.member-product-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 8px 0 8px 0;
+  background: #EAECFF;
+  color: var(--color-primary-text);
+  font-weight: 500;
+}
+
+.member-product-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary-text);
+  margin-bottom: 8px;
+}
+
+.member-product-price-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.member-product-currency {
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.member-product-currency-icon {
+  width: 13px;
+  height: 13px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.member-product-price {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.member-product-unit {
+  font-size: 10px;
+  color: var(--color-primary-text);
+  margin-left: 2px;
+  margin-bottom: 1px;
+}
+
+@media (max-width: 480px) {
+  .member-product-grid--company {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

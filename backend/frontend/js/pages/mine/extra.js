@@ -25,25 +25,25 @@ const SettingsPage = {
 
       <div class="ds-menu-group">
         <a href="#/contact" class="ds-menu-item">
-          <span>📞 {{ $t('聯繫客服') }}</span>
+          <span><span v-html="I.phoneCall" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('聯繫客服') }}</span>
           <span class="ds-menu-arrow">›</span>
         </a>
         <a href="#/feedback" class="ds-menu-item">
-          <span>💬 {{ $t('意見反饋') }}</span>
+          <span><span v-html="I.chat" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span> {{ $t('意見反饋') }}</span>
           <span class="ds-menu-arrow">›</span>
         </a>
       </div>
 
       <div class="ds-menu-group">
         <div class="ds-menu-item" style="cursor:pointer;color:var(--color-red)" @click="clearCache">
-          <span>🗑️ {{ $t('清除緩存') }}</span>
+          <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:2px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> {{ $t('清除緩存') }}</span>
         </div>
       </div>
     </div>
     </div>
   `,
   data() {
-    return { currentLang: I18n.locale || 'zh-TW' };
+    return { currentLang: I18n.locale || 'zh-TW', I };
   },
   methods: {
     switchLang(locale) {
@@ -236,7 +236,7 @@ const InvitePage = {
       <div v-else-if="records.length === 0" class="ds-empty">{{ $t('暫無邀請記錄') }}</div>
       <div v-else>
         <div v-for="r in records" :key="r.id" class="ds-list-item">
-          <div class="ds-list-avatar">👤</div>
+          <div class="ds-list-avatar" style="display:flex;align-items:center;justify-content:center;color:var(--color-assistant-text)"><span v-html="I.user" style="font-size:20px"></span></div>
           <div class="ds-list-body">
             <div class="ds-list-title">{{ r.name || r.nickname || '用戶' }}</div>
             <div class="ds-list-sub">{{ formatDate(r.created_at) }}</div>
@@ -249,7 +249,7 @@ const InvitePage = {
   data() {
     return {
       inviteCode: '', copied: false,
-      records: [], loading: false
+      records: [], loading: false, I
     };
   },
   methods: {
@@ -288,7 +288,7 @@ const FollowersPage = {
         <div v-for="item in list" :key="item.id" class="ds-list-item">
           <div class="ds-list-avatar">
             <img v-if="item.avatar" :src="item.avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
-            <span v-else>👤</span>
+            <span v-else style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--color-assistant-text)"><span v-html="I.user" style="font-size:20px"></span></span>
           </div>
           <div class="ds-list-body">
             <div class="ds-list-title">{{ item.nickname || item.name || '用戶' }}</div>
@@ -299,7 +299,7 @@ const FollowersPage = {
     </div>
     </div>
   `,
-  data() { return { list: [], loading: true }; },
+  data() { return { list: [], loading: true, I }; },
   async mounted() {
     const res = await ApiProvider.get(ApiUrl.messageFollowMe, { page: 1, limit: 100 });
     if (res.success) { const data = res.data?.list || res.data || []; this.list = Array.isArray(data) ? data : []; }
@@ -322,7 +322,7 @@ const FollowingPage = {
           <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
             <div class="ds-list-avatar">
               <img v-if="item.avatar" :src="item.avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
-              <span v-else>👤</span>
+              <span v-else style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--color-assistant-text)"><span v-html="I.user" style="font-size:20px"></span></span>
             </div>
             <div class="ds-list-body">
               <div class="ds-list-title">{{ item.nickname || item.name || '用戶' }}</div>
@@ -337,7 +337,7 @@ const FollowingPage = {
     </div>
     </div>
   `,
-  data() { return { list: [], loading: true }; },
+  data() { return { list: [], loading: true, I }; },
   async mounted() {
     const res = await ApiProvider.get(ApiUrl.messageMyFollow, { page: 1, limit: 100 });
     if (res.success) { const data = res.data?.list || res.data || []; this.list = Array.isArray(data) ? data : []; }
@@ -413,7 +413,7 @@ const MyBookingsPage = {
 
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
       <div v-else-if="bookings.length === 0" class="ds-empty">
-        <div style="font-size:40px;margin-bottom:12px">📋</div>
+        <div style="font-size:40px;margin-bottom:12px;color:var(--color-assistant-text)"><span v-html="I.clipboard"></span></div>
         <p>{{ $t('暫無預約記錄') }}</p>
       </div>
       <div v-else>
@@ -422,7 +422,7 @@ const MyBookingsPage = {
             <div style="flex:1;min-width:0">
               <div style="font-size:14px;font-weight:600">{{ b.guide?.name || b.content?.name || '—' }}</div>
               <div v-if="b.city_name" style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ b.city_name }}</div>
-              <div v-if="b.arrival_time" style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">🕐 {{ fmtTime(b.arrival_time) }}</div>
+              <div v-if="b.arrival_time" style="font-size:12px;color:var(--color-assistant-text);margin-top:2px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ fmtTime(b.arrival_time) }}</div>
               <div v-if="b.number" style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ b.number }} 人</div>
             </div>
             <span :class="statusCls(b.status)">{{ statusLabel(b.status) }}</span>
@@ -442,7 +442,7 @@ const MyBookingsPage = {
   data() {
     return {
       tab: 'guide', statusFilter: 0, bookings: [],
-      loading: true, cancelling: null,
+      loading: true, cancelling: null, I,
       statusOptions: [
         { value: 0, label: '全部' },
         { value: 1, label: '待確認' },
