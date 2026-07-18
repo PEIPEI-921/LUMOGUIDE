@@ -5,6 +5,7 @@ import 'package:lumotrip/common/index.dart';
 class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
   final _focusedMonth = DateTime.now().obs;
   DateTime get focusedMonth => _focusedMonth.value;
+  Rx<DateTime> get focusedMonthRx => _focusedMonth;
   final _selectedDay = Rxn<DateTime>();
   DateTime? get selectedDay => _selectedDay.value;
 

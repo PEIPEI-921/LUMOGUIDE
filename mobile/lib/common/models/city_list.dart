@@ -7,6 +7,7 @@ class CityList {
     this.nameEn,
     this.firstPicture,
     this.areaName,
+    this.country,
   });
 
   int? id;
@@ -14,6 +15,7 @@ class CityList {
   String? nameEn;
   String? firstPicture;
   String? areaName;
+  String? country;
 
   factory CityList.fromJson(Map<String, dynamic> json) => CityList(
         id: json.safeInt('id'),
@@ -21,6 +23,7 @@ class CityList {
         nameEn: json.safeString('name_en'),
         firstPicture: json.safeString('first_picture'),
         areaName: json.safeString('area_name'),
+        country: json.safeString('country'),
       );
 
   Map<String, dynamic> toJson() {
@@ -30,6 +33,7 @@ class CityList {
       'name_en': nameEn,
       'first_picture': firstPicture,
       'area_name': areaName,
+      'country': country,
     };
   }
 }

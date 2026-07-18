@@ -174,7 +174,7 @@ See [[calendar-redesign]], [[booking-color-coding]].
 | Route | Page | Purpose |
 |-------|------|---------|
 | `/journey` | `JourneyPage` | Work list with search, status/region filters, calendar, work cards |
-| `/journey_detail` | `JourneyDetailPage` | Work detail with route info, link to bookings |
+| `/journey_detail` | `JourneyDetailPage` | Work detail: 2 tabs (行程/详情), save as template, generate & share client itinerary |
 | `/journey_editor` | `JourneyEditorPage` | Create/edit work trip form with auto day-by-day content |
 
 **Data model:** `JourneyWork` (`lib/common/models/journey_work.dart`) with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Backend API `GET /user/journeyList` is TODO — `mockData()` provides 4 sample entries as fallback. Mock data loaded immediately (no API wait) to avoid blank screen.
@@ -185,18 +185,71 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - 已结束：endDate < today
 - Filtering and card display use `effectiveStatus`/`effectiveStatusValue`
 
-**Calendar date backgrounds:** Each date cell is color-coded by work status:
-- 进行中 → jadeGreen 25% background + green dot
-- 待出发 → primary 15% background + purple dot
-- 已结束 → assistantText 12% background + gray dot
-- Priority when overlapping: inProgress > pending > ended
-- `_JourneyCalendar` is StatefulWidget; only the header row uses `Obx`; `TableCalendar` has `ValueKey(focusedMonth)` to prevent `_dependents.isEmpty` assertion failures.
+**Calendar (iPhone-style event bars):** `_JourneyCalendar` redesigned (2026-07):
+- Events span **continuously across days** (no cell margins): `margin: EdgeInsets.zero` + `CalendarStyle(cellMargin: EdgeInsets.zero)`
+- Event titles **flow across cells**: `TextPainter` binary search measures actual character widths per cell, fills each cell completely before flowing to next cell
+- **Responsive**: cell content width computed from `MediaQuery.of(context).size.width`, recalculated when width changes >2px
+- `_DayEvent` data class: `work` + `dayIndex` + `totalDays` + `segments` (pre-computed text segments per cell)
+- `_JourneyCalendarState`: uses `ever(_ctrl.focusedMonthRx, setState)` to trigger rebuild on month change; `ValueKey(focusedMonth)` on `TableCalendar`
+- Title font: 9.sp, `rowHeight: 42.w`. Priority when overlapping: inProgress > pending > ended. See [[journey-feature]].
+- **Month switching fix:** `JourneyController` exposes `focusedMonthRx` getter; StatefulWidget listens via `ever` + `setState` (TableCalendar NOT wrapped in Obx to avoid `_dependents.isEmpty` crash).
 
 **Editor redesign (2026-07):** Simplified to natural trip-planning flow:
 - Departure: date (tap → system date picker) + city
 - Return: date + city
 - **Auto day-by-day content:** When both dates are filled, automatically generates content fields for each day (e.g., 「第1天 (7/3)」, 「第2天 (7/4)」…) with light purple background
 - Removed: arrival method/time/location, departure method, cities list, manual status selector (status is date-derived)
+
+**Editor redesign v2 (2026-07):** Further refined quick-create flow:
+- **Auto group name:** Derived from **all itinerary city countries** + days (e.g. "奥地利捷克匈牙利5日游"). Collects cities from `startCity` + `endCity` + all `itineraryDays[].cityName`, deduplicates, maps to countries, joins. Edit mode skips auto-generation.
+- **Date range picker:** `showDateRangePicker` replaces two separate `showDatePicker`. Single calendar, select start + end. Display: "7月3日 → 7月9日 共7天".
+- **Journey start/end cities:** Two independent `_CityPickerRow` widgets (游览起始城市 / 游览结束城市). Distinct from flight departure/arrival cities in the 大交通 section.
+- **Reactive totalPeople:** Changed from plain getter to `RxInt` with TextEditingController listeners. `Obx` wraps `.value` for live display.
+- **`daysCount` reactive:** `daysCount.obs` for UI binding, avoiding GetX "improper use" errors when Obx wraps non-reactive `TextEditingController.text`.
+- New model fields in `JourneyWork`: `departureCity`, `departureCityCountry`, `endCity`, `endCityCountry`.
+
+**Editor city recommendations (2026-07):** When a city is selected for a day, `_loadDayRecommendations` calls 4 real backend APIs to fetch content:
+| API | type field | Display name |
+|-----|-----------|--------------|
+| `/city/attraction` | `attraction` | 景点 |
+| `/city/activity` | `activity` | 活动 (expired filtered by `endTime < today`) |
+| `/city/restaurant` | `merchant` | 餐厅 |
+| `/city/shopping` | `shopping` | 购物 |
+- Fallback: 4 generic labels when all APIs fail. `CityResource` extended with `id`/`name`/`imageUrl`/`startTime`/`endTime`.
+- **Collapsible categories:** Recommendations grouped by type with tappable section headers (icon + name + count badge + expand arrow). Default collapsed. `_DayCard` converted to StatefulWidget, `_expandedCategories` Set tracks expand state. `_CategoryDef` helper class holds type/label/icon.
+- **Type badges on itinerary items:** Items added from recommendations show colored type icons: 🏔 green (`#44B89D`), 🎉 amber (`#F5A623`), 🍽 coral (`#E8734A`), 🛍 blue (`#5B8DEF`). `_typeMeta` Map + `_typeBadge()` method in `_DayCardState`.
+
+**Editor redesign v4 (2026-07):** Country-based titles via city→country mapping:
+- **Problem:** Backend `/city/lists` only returns `area_id`/`area_name` (region, e.g. "中歐"), not `country`. Titles fell back to areaName → "中歐几日游".
+- **Solution:** Call `https://api.lumoguide.com/manage/systemContinents` (full URL in `ApiUrl.systemContinents`) to get the continent→area→country→city hierarchy tree.
+- **`_cityCountryMap`:** `Map<int, String>` mapping city ID → country name, built by `_loadSystemContinents()` which is called after `_loadCityList()`.
+- **`_walkTree(node, parentName)`:** Recursive tree walker. **Leaf nodes = cities, parent nodes = countries.** Handles both 3-level (continent→country→city) and 4-level (continent→area→country→city) structures. Includes `debugPrint` logging for diagnostics.
+- **`cityCountry(CityList c)`:** Unified country lookup: `city.country` → `_cityCountryMap` → `areaName`.
+- **`_autoGenerateTitle()` rewritten:** Collects cities from `startCity` + `endCity` + all `itineraryDays[].cityName`, deduplicates, maps to countries, joins. e.g. "奥地利捷克匈牙利5日游". Falls back to city name concatenation if no country data.
+- **Labels renamed:** "出发城市"→"游览起始城市", "结束城市"→"游览结束城市" in both `page.dart` (`_CityPickerRow` labels) and `controller.dart` (picker sheet titles, comments).
+- City picker subtitles (3 pickers) now use `cityCountry(c)` instead of raw `c.country ?? c.areaName ?? ''`.
+
+**FAB create-options sheet (2026-07):** Journey list FAB replaced with `_showCreateOptions` bottom sheet:
+- 4 entries: 空白创建 → editor / 从模板创建 → `TemplatePickerSheet` / 拍照导入 (reserved) / 文件导入 (reserved)
+- Reserved entries show "即将上线" tag and `Loading.toast`
+
+**Template picker/viewer (2026-07):** `TemplatePickerSheet` (`lib/pages/journey/widgets/template_picker_sheet.dart`):
+- Bottom sheet (75% height) listing saved templates from SharedPreferences
+- Cards show: title, region/days/useCount tags, cities, creation date
+- Tap to select → returns `JourneyTemplate`; long-press → `Get.defaultDialog` confirm delete
+- `JourneyEditorController.loadFromTemplate()` pre-fills form: title, peopleCount, cities, itineraryDays (dates left empty)
+
+**Detail page redesign (2026-07):** Merged 3 tabs → 2 tabs:
+- Tab 0: **行程** (moved to first position, with 「保存为模板」&「生成客户行程」buttons at bottom)
+- Tab 1: **详情** (merged 概览 + 原详情: cities/description/personnel → flights/costs/emergency → action buttons)
+
+**Save as template (2026-07):** `onSaveAsTemplate()` → `TemplateSaveDialog` → builds `JourneyTemplate` → saves to SharedPreferences (`STORAGE_JOURNEY_TEMPLATES_KEY`). New files: `widgets/template_save_dialog.dart`.
+
+**Generate client itinerary (2026-07):** `onGenerateClientItinerary()` → `FormatPickerDialog` (image/PDF/Word) → preview dialog with `ClientItineraryPreview` watermark card → generate file → `Share.shareXFiles()`. See [[journey-feature]].
+- Three export formats: RepaintBoundary capture (PNG), `pdf: ^3.11.1` package (PDF), HTML string → `.doc` (Word)
+- Watermark: centered, 45° tilted **LUMO** text (36.sp, opacity 0.08) — applied across all 3 formats
+- New files: `widgets/client_itinerary_preview.dart`, `widgets/format_picker_dialog.dart`
+- Controller: `_shareAsImage`, `_shareAsPdf` (_buildPdfDocument), `_shareAsWord` (_buildHtmlDocument)
 
 **UI design spec:**
 - Search bar: white capsule input (38.h) + separate purple square search button (10.w border radius)
@@ -209,6 +262,7 @@ See [[calendar-redesign]], [[booking-color-coding]].
 1. **`Obx` wrapping `CustomScrollView` → `_dependents.isEmpty` crash:** `CustomScrollView` internally creates `Scrollable` (StatefulWidget). Fixed by removing outer `Obx` and using local `Obx` only for the sliver list/empty section (returns `SliverPadding` > `SliverList` or `SliverToBoxAdapter`, neither is StatefulWidget).
 2. **Nested ScrollView → RenderViewport error:** `EmptyListWidget` (contains `ListView`) inside `SliverToBoxAdapter` caused Viewport nesting. Fixed with `_JourneyEmptyWidget` (Center + Column, no ListView).
 3. **Page blank for 2-3 seconds:** `fetchData()` waited for API timeout before fallback. Fixed: mock data renders immediately, API request runs in background.
+4. **Calendar month switching not working:** `_focusedMonth` Rx updated but `TableCalendar` outside `Obx` so it didn't rebuild. Fixed: expose `focusedMonthRx` in controller, use `ever(focusedMonthRx, setState)` in `_JourneyCalendarState.initState`.
 
 ### IM (Tencent Cloud Chat)
 

@@ -32,9 +32,8 @@ class JourneyDetailPage extends StatelessWidget {
           Expanded(child: IndexedStack(
             index: ctrl.activeTab.value,
             children: [
-              _OverviewTab(work: w, ctrl: ctrl),
-              _ItineraryTab(work: w),
-              _InfoTab(work: w),
+              _ItineraryTab(work: w, ctrl: ctrl),
+              _MergedDetailTab(work: w, ctrl: ctrl),
             ],
           )),
         ]);
@@ -154,9 +153,8 @@ class _TabBar extends StatelessWidget {
       child: Obx(() {
         final active = ctrl.activeTab.value;
         return Row(children: [
-          _TabItem(0, Icons.info_outline, '概览', active == 0, () => ctrl.activeTab.value = 0),
-          _TabItem(1, Icons.view_day_outlined, '行程', active == 1, () => ctrl.activeTab.value = 1),
-          _TabItem(2, Icons.list_alt, '详情', active == 2, () => ctrl.activeTab.value = 2),
+          _TabItem(0, Icons.view_day_outlined, '行程', active == 0, () => ctrl.activeTab.value = 0),
+          _TabItem(1, Icons.info_outline, '详情', active == 1, () => ctrl.activeTab.value = 1),
         ]);
       }),
     );
@@ -197,26 +195,51 @@ class _TabItem extends StatelessWidget {
 }
 
 // ================================================================
-// Tab 1: 概览
+// Tab 1: 详情（概览 + 详情合并）
 // ================================================================
-class _OverviewTab extends StatelessWidget {
+class _MergedDetailTab extends StatelessWidget {
   final JourneyWork work;
   final JourneyDetailController ctrl;
-  const _OverviewTab({required this.work, required this.ctrl});
+  const _MergedDetailTab({required this.work, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
+    final hasOverview = work.cities.isNotEmpty ||
+        work.description?.isNotEmpty == true ||
+        work.leaderName?.isNotEmpty == true ||
+        work.driverName?.isNotEmpty == true;
+    final hasInfo = work.arrivalFlight != null ||
+        work.departureFlight != null ||
+        work.totalPrice?.isNotEmpty == true ||
+        work.cashAdvance?.isNotEmpty == true ||
+        work.agencyContact?.isNotEmpty == true ||
+        work.emergencyPhone?.isNotEmpty == true;
+
+    if (!hasOverview && !hasInfo) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.info_outline, size: 48.sp, color: AppColors.assistantText),
+        SizedBox(height: 10.w),
+        Text('暂无详细信息', style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
+        Text('点击右上角编辑添加', style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
+      ]));
+    }
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(14.w),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // 城市
-        if (work.cities.isNotEmpty) _InfoCard('涉及城市', work.cities.join('、'), Icons.location_on_outlined),
-        SizedBox(height: 8.w),
-        // 描述
-        if (work.description?.isNotEmpty == true)
+        // --- 概览部分 ---
+        if (work.cities.isNotEmpty) ...[
+          _SectionHeader('涉及城市'),
+          SizedBox(height: 6.w),
+          _InfoCard('涉及城市', work.cities.join('、'), Icons.location_on_outlined),
+          SizedBox(height: 10.w),
+        ],
+        if (work.description?.isNotEmpty == true) ...[
+          _SectionHeader('备注'),
+          SizedBox(height: 6.w),
           _InfoCard('备注', work.description!, Icons.notes),
-        SizedBox(height: 8.w),
-        // 人员摘要
+          SizedBox(height: 10.w),
+        ],
         if (work.leaderName?.isNotEmpty == true || work.driverName?.isNotEmpty == true) ...[
           _SectionHeader('人员信息'),
           SizedBox(height: 6.w),
@@ -228,9 +251,56 @@ class _OverviewTab extends StatelessWidget {
           SizedBox(height: 6.w),
           if (work.vehicleInfo?.isNotEmpty == true)
             _InfoCard('车辆', work.vehicleInfo!, Icons.directions_bus_outlined),
-          SizedBox(height: 8.w),
+          SizedBox(height: 10.w),
         ],
-        // 按钮区
+
+        // --- 详情部分 ---
+        if (work.arrivalFlight != null || work.departureFlight != null) ...[
+          _SectionHeader('航班信息'),
+          SizedBox(height: 6.w),
+          if (work.arrivalFlight != null) ...[
+            _InfoCard('抵达航班', work.arrivalFlight!.flightNumber ?? '--', Icons.flight),
+            SizedBox(height: 4.w),
+            _InfoCard('抵达时间', work.arrivalFlight!.dateTime ?? '--', Icons.schedule),
+            SizedBox(height: 4.w),
+            _InfoCard('抵达机场', work.arrivalFlight!.airport ?? '--', Icons.local_airport),
+            SizedBox(height: 10.w),
+          ],
+          if (work.departureFlight != null) ...[
+            _InfoCard('离开航班', work.departureFlight!.flightNumber ?? '--', Icons.flight_land),
+            SizedBox(height: 4.w),
+            _InfoCard('离开时间', work.departureFlight!.dateTime ?? '--', Icons.schedule),
+            SizedBox(height: 4.w),
+            _InfoCard('离开机场', work.departureFlight!.airport ?? '--', Icons.local_airport),
+            SizedBox(height: 10.w),
+          ],
+        ],
+        if (work.totalPrice?.isNotEmpty == true || work.cashAdvance?.isNotEmpty == true) ...[
+          _SectionHeader('费用信息'),
+          SizedBox(height: 6.w),
+          if (work.totalPrice?.isNotEmpty == true)
+            _InfoCard('团款总额', work.totalPrice!, Icons.euro),
+          if (work.cashAdvance?.isNotEmpty == true)
+            _InfoCard('备用金', work.cashAdvance!, Icons.account_balance_wallet_outlined),
+          if (work.ticketBudget?.isNotEmpty == true)
+            _InfoCard('门票预算', work.ticketBudget!, Icons.confirmation_number_outlined),
+          if (work.mealBudget?.isNotEmpty == true)
+            _InfoCard('餐费预算', work.mealBudget!, Icons.restaurant_outlined),
+          SizedBox(height: 10.w),
+        ],
+        if (work.agencyContact?.isNotEmpty == true || work.emergencyPhone?.isNotEmpty == true) ...[
+          _SectionHeader('应急联系'),
+          SizedBox(height: 6.w),
+          if (work.agencyContact?.isNotEmpty == true)
+            _InfoCard('组团社', '${work.agencyContact}  ${work.agencyContactPhone ?? ''}', Icons.business_outlined),
+          if (work.localContact?.isNotEmpty == true)
+            _InfoCard('地接社', '${work.localContact}  ${work.localContactPhone ?? ''}', Icons.support_agent_outlined),
+          if (work.emergencyPhone?.isNotEmpty == true)
+            _InfoCard('紧急电话', work.emergencyPhone!, Icons.emergency_outlined),
+          SizedBox(height: 10.w),
+        ],
+
+        // --- 操作按钮 ---
         SizedBox(height: 16.w),
         _ActionButton(Icons.bookmark_outline, '保存为模板', () => ctrl.onSaveAsTemplate()),
         SizedBox(height: 8.w),
@@ -246,11 +316,12 @@ class _OverviewTab extends StatelessWidget {
 }
 
 // ================================================================
-// Tab 2: 每日行程
+// Tab 0: 每日行程
 // ================================================================
 class _ItineraryTab extends StatelessWidget {
   final JourneyWork work;
-  const _ItineraryTab({required this.work});
+  final JourneyDetailController ctrl;
+  const _ItineraryTab({required this.work, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +339,11 @@ class _ItineraryTab extends StatelessWidget {
       padding: EdgeInsets.all(14.w),
       child: Column(children: [
         ...work.itineraryDays.map((day) => _DayDetailCard(day: day)),
+        // 操作按钮 — 保存的主要是行程
+        SizedBox(height: 20.w),
+        _ActionButton(Icons.bookmark_outline, '保存为模板', () => ctrl.onSaveAsTemplate()),
+        SizedBox(height: 8.w),
+        _ActionButton(Icons.auto_awesome_outlined, '生成客户行程', () => ctrl.onGenerateClientItinerary()),
         SizedBox(height: 40.w),
       ]),
     );
@@ -353,82 +429,6 @@ class _DayMeta extends StatelessWidget {
         Icon(icon, size: 13.sp, color: AppColors.assistantText),
         SizedBox(width: 6.w),
         Text(text, style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
-      ]),
-    );
-  }
-}
-
-// ================================================================
-// Tab 3: 详情 (航班/费用/应急)
-// ================================================================
-class _InfoTab extends StatelessWidget {
-  final JourneyWork work;
-  const _InfoTab({required this.work});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(14.w),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // 航班
-        if (work.arrivalFlight != null || work.departureFlight != null) ...[
-          _SectionHeader('航班信息'),
-          SizedBox(height: 6.w),
-          if (work.arrivalFlight != null) ...[
-            _InfoCard('抵达航班', work.arrivalFlight!.flightNumber ?? '--', Icons.flight),
-            SizedBox(height: 4.w),
-            _InfoCard('抵达时间', work.arrivalFlight!.dateTime ?? '--', Icons.schedule),
-            SizedBox(height: 4.w),
-            _InfoCard('抵达机场', work.arrivalFlight!.airport ?? '--', Icons.local_airport),
-            SizedBox(height: 10.w),
-          ],
-          if (work.departureFlight != null) ...[
-            _InfoCard('离开航班', work.departureFlight!.flightNumber ?? '--', Icons.flight_land),
-            SizedBox(height: 4.w),
-            _InfoCard('离开时间', work.departureFlight!.dateTime ?? '--', Icons.schedule),
-            SizedBox(height: 4.w),
-            _InfoCard('离开机场', work.departureFlight!.airport ?? '--', Icons.local_airport),
-            SizedBox(height: 10.w),
-          ],
-        ],
-        // 费用
-        if (work.totalPrice?.isNotEmpty == true || work.cashAdvance?.isNotEmpty == true) ...[
-          _SectionHeader('费用信息'),
-          SizedBox(height: 6.w),
-          if (work.totalPrice?.isNotEmpty == true)
-            _InfoCard('团款总额', work.totalPrice!, Icons.euro),
-          if (work.cashAdvance?.isNotEmpty == true)
-            _InfoCard('备用金', work.cashAdvance!, Icons.account_balance_wallet_outlined),
-          if (work.ticketBudget?.isNotEmpty == true)
-            _InfoCard('门票预算', work.ticketBudget!, Icons.confirmation_number_outlined),
-          if (work.mealBudget?.isNotEmpty == true)
-            _InfoCard('餐费预算', work.mealBudget!, Icons.restaurant_outlined),
-          SizedBox(height: 10.w),
-        ],
-        // 应急联系
-        if (work.agencyContact?.isNotEmpty == true || work.emergencyPhone?.isNotEmpty == true) ...[
-          _SectionHeader('应急联系'),
-          SizedBox(height: 6.w),
-          if (work.agencyContact?.isNotEmpty == true)
-            _InfoCard('组团社', '${work.agencyContact}  ${work.agencyContactPhone ?? ''}', Icons.business_outlined),
-          if (work.localContact?.isNotEmpty == true)
-            _InfoCard('地接社', '${work.localContact}  ${work.localContactPhone ?? ''}', Icons.support_agent_outlined),
-          if (work.emergencyPhone?.isNotEmpty == true)
-            _InfoCard('紧急电话', work.emergencyPhone!, Icons.emergency_outlined),
-          SizedBox(height: 10.w),
-        ],
-        // 无信息
-        if (work.arrivalFlight == null && work.totalPrice?.isEmpty == true && work.agencyContact?.isEmpty == true)
-          Center(child: Padding(
-            padding: EdgeInsets.only(top: 60.w),
-            child: Column(children: [
-              Icon(Icons.list_alt, size: 48.sp, color: AppColors.assistantText),
-              SizedBox(height: 10.w),
-              Text('暂无详细信息', style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
-              Text('点击右上角编辑添加', style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
-            ]),
-          )),
-        SizedBox(height: 40.w),
       ]),
     );
   }

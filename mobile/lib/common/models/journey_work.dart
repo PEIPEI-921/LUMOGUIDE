@@ -123,6 +123,12 @@ class JourneyWork {
   // ========== 酒店列表 ==========
   List<HotelInfo> hotels;
 
+  // ========== 起止城市（旅程地理起止点，非航班起降地）==========
+  String? departureCity; // 旅程出发城市名
+  String? departureCityCountry; // 出发城市所在国家
+  String? endCity; // 旅程结束城市名
+  String? endCityCountry; // 结束城市所在国家
+
   // ========== 费用信息 ==========
   String? totalPrice; // 团款总额
   String? cashAdvance; // 备用金
@@ -198,6 +204,10 @@ class JourneyWork {
     this.endDate,
     this.cities = const [],
     this.description,
+    this.departureCity,
+    this.departureCityCountry,
+    this.endCity,
+    this.endCityCountry,
     this.leaderName,
     this.leaderPhone,
     this.driverName,
@@ -247,6 +257,11 @@ class JourneyWork {
               .toList() ??
           [],
       description: json.safeString('description'),
+      // 起止城市
+      departureCity: json.safeString('departure_city'),
+      departureCityCountry: json.safeString('departure_city_country'),
+      endCity: json.safeString('end_city'),
+      endCityCountry: json.safeString('end_city_country'),
       // 人员
       leaderName: json.safeString('leader_name'),
       leaderPhone: json.safeString('leader_phone'),
@@ -320,6 +335,10 @@ class JourneyWork {
       'end_date': endDate,
       'cities': cities,
       'description': description,
+      'departure_city': departureCity,
+      'departure_city_country': departureCityCountry,
+      'end_city': endCity,
+      'end_city_country': endCityCountry,
       'leader_name': leaderName,
       'leader_phone': leaderPhone,
       'driver_name': driverName,

@@ -20,3 +20,5 @@ const String STORAGE_HOME_DATA_KEY = 'home_data';
 const String STORAGE_SYSTEM_LOGO_PATH_KEY = 'system_logo_path';
 const String STORAGE_SYSTEM_WELCOME_ZH_PATH_KEY = 'system_welcome_zh_path';
 const String STORAGE_SYSTEM_WELCOME_EN_PATH_KEY = 'system_welcome_en_path';
+
+const String STORAGE_JOURNEY_TEMPLATES_KEY = 'journey_templates';
