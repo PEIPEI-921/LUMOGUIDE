@@ -144,6 +144,11 @@ const ApiProvider = {
         }
       }
 
+      // Reset redirect guard on successful auth — so subsequent 401s are handled
+      if (code === 200) {
+        this._redirecting = false;
+      }
+
       const result = {
         success: code === 200,
         code: code,

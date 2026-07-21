@@ -55,6 +55,7 @@ Route::prefix('common')->group(function () {
     Route::get('home', [CommonController::class, 'homeData']);
     Route::get('homeSearch', [CommonController::class, 'homeSearch']);
     Route::get('search', [CommonController::class, 'search']);
+    Route::get('systemContinents', [CommonController::class, 'systemContinents']);
 });
 
 Route::prefix('payment')->group(function () {
@@ -96,6 +97,18 @@ Route::middleware('auth:api')->prefix('user')->group(function () {
     Route::post('applyCompany', [UserController::class, 'applyCompany']);
     Route::get('applyCompanyInfo', [UserController::class, 'applyCompanyInfo']);
 //    Route::post('editApplyCompany', [UserController::class, 'editApplyCompany']);
+
+    // JourneyWork — 我的历程
+    Route::get('journeyList', [UserController::class, 'journeyList']);
+    Route::get('journeyDetail', [UserController::class, 'journeyDetail']);
+    Route::post('journeyCreate', [UserController::class, 'journeyCreate']);
+    Route::put('journeyUpdate', [UserController::class, 'journeyUpdate']);
+    Route::delete('journeyDelete', [UserController::class, 'journeyDelete']);
+
+    // JourneyTemplate — 工作模板
+    Route::get('journeyTemplateList', [UserController::class, 'journeyTemplateList']);
+    Route::post('journeyTemplateSave', [UserController::class, 'journeyTemplateSave']);
+    Route::delete('journeyTemplateDelete', [UserController::class, 'journeyTemplateDelete']);
 });
 
 

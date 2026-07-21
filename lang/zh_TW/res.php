@@ -48,6 +48,8 @@ return [
 
     // require
     'id_required' => '請填寫ID',
+    'not_found' => '數據不存在',
+    'param_error' => '參數錯誤',
     'phone_required' => '請填寫電話',
     'phone_format_error' => '手機號必須包含國際區號',
     'email_required' => '請填寫郵箱',

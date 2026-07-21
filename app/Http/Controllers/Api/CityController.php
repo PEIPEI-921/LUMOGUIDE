@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\AddEvaluateRequest;
 use App\Http\Requests\FileRequest;
 use App\Http\Requests\ReserveGuideRequest;
+use App\Models\City;
 use App\Services\CityService;
 use App\Services\CommonService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CityController extends BaseController
 {
@@ -27,7 +29,73 @@ class CityController extends BaseController
         $area_id = $request->get('area_id', 0) ?? 0;
 
         $data = $service->lists($name, $continents_id, $area_id, $limit);
+        $data = $this->enrichCityCountry($data);
         return $this->success(__('res.success'), $data);
+    }
+
+    /**
+     * Inject country_name into city list items.
+     * 兼容 CityService::lists 返回 Collection / Paginator / 数组 等多种格式
+     */
+    private function enrichCityCountry($data)
+    {
+        // 统一转为数组，兼容 Paginator / Collection / array
+        if (is_object($data) && method_exists($data, 'toArray')) {
+            $data = $data->toArray();
+        } elseif (!is_array($data)) {
+            return $data;
+        }
+
+        // 提取城市列表
+        $list = $data['list'] ?? ($data['data'] ?? $data);
+        if (empty($list)) return $data;
+
+        // 收集城市 ID（兼容数组 & Collection/Model 对象）
+        $cityIds = [];
+        foreach ($list as $item) {
+            $id = is_array($item) ? ($item['id'] ?? null) : ($item->id ?? null);
+            if ($id) $cityIds[] = (int)$id;
+        }
+        if (empty($cityIds)) return $data;
+
+        $cityIds = array_unique($cityIds);
+
+        $allCountries = Cache::remember('city_country_map', 3600, function () {
+            return City::with('country')->get()
+                ->mapWithKeys(fn($c) => [$c->id => $c->country?->name ?? ''])
+                ->toArray();
+        });
+
+        $cityCountries = array_intersect_key($allCountries, array_flip($cityIds));
+
+        // 注入 country_name / country（兼容数组 & 对象）
+        foreach ($list as $i => $item) {
+            $id = is_array($item) ? ($item['id'] ?? null) : ($item->id ?? null);
+            $countryName = $cityCountries[$id] ?? '';
+
+            if (is_array($item)) {
+                $item['country_name'] = $countryName;
+                if (empty($item['country'] ?? '')) {
+                    $item['country'] = $countryName;
+                }
+                $list[$i] = $item;
+            } else {
+                $item->country_name = $countryName;
+                if (empty($item->country ?? '')) {
+                    $item->country = $countryName;
+                }
+            }
+        }
+
+        // 写回原始 key
+        if (isset($data['list'])) {
+            $data['list'] = $list;
+        } elseif (isset($data['data'])) {
+            $data['data'] = $list;
+        } else {
+            $data = $list;
+        }
+        return $data;
     }
 
     public function options(CityService $service, Request $request)

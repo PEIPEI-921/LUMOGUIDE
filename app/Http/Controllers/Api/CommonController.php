@@ -10,7 +10,9 @@ use App\Jobs\InvoiceJob;
 use App\Mail\InvoiceMail;
 use App\Mail\SendCodeMail;
 use App\Mail\VipExpiredMail;
+use App\Models\SystemContinents;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use App\Services\CommonService;
 use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Http\Request;
@@ -60,7 +62,7 @@ class CommonController extends BaseController
                 if ($v['identity'] == 3) {
                     $company = Company::query()->where('id', $v['company_id'])->first(['name', 'city_id']);
                     $nickname = $company->name;
-                    $city_id = $guide->city_id;
+                    $city_id = $company->city_id;
                 }
 
                 if ($city_id > 0) {
@@ -403,5 +405,37 @@ class CommonController extends BaseController
         return $this->success(__('res.success'), $data);
     }
 
+
+    /**
+     * 大洲/国家/城市 层级树（前端 _walkTree 直接遍历）
+     */
+    public function systemContinents(Request $request)
+    {
+        $tree = Cache::remember('system_continents_tree', 86400, function () {
+            $all = SystemContinents::orderBy('order')
+                ->get(['id', 'parent_id', 'name', 'order'])
+                ->toArray();
+
+            $childrenMap = [];
+            foreach ($all as $node) {
+                $pid = $node['parent_id'] ?? 0;
+                $childrenMap[$pid][] = $node;
+            }
+
+            $buildTree = function ($pid) use (&$childrenMap, &$buildTree) {
+                $nodes = $childrenMap[$pid] ?? [];
+                $result = [];
+                foreach ($nodes as $node) {
+                    $node['children'] = $buildTree($node['id']);
+                    $result[] = $node;
+                }
+                return $result;
+            };
+
+            return $buildTree(0);
+        });
+
+        return $this->success(__('res.success'), ['data' => $tree]);
+    }
 
 }
