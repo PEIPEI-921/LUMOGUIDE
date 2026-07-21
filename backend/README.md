@@ -24,6 +24,8 @@
 ├── database/migrations/        # 数据库迁移 ✅ 可编辑
 ├── frontend/                   # Web 前端（Vue 3 SPA 源文件目录）
 │   ├── index.html              # SPA 外壳（CDN 链接 + <div id="app">）
+│   ├── build.mjs               # 生产构建脚本（esbuild 合并压缩）
+│   ├── dist/                   # 构建输出（生产环境使用，gitignored）
 │   ├── images/                 # 图片资源
 │   ├── css/                    # 样式表
 │   │   ├── variables.css       # 设计 token（颜色、圆角、间距）
@@ -84,7 +86,7 @@
 
 1. **不要创建独立组件文件** — Vue 3 CDN 构建中，`components: {}` 注册在子组件模板中不解析，组件会静默渲染空白。所有模板必须内联在父组件中
 2. **所有前端文件放在 `frontend/`** — `public/css/` 和 `public/js/` 是 symlink，不要直接编辑
-3. **前端无构建步骤** — 修改 JS/CSS 后刷新浏览器即可看到效果
+3. **前端开发模式无构建步骤** — 修改 JS/CSS 后刷新浏览器即可看到效果；生产环境 `npm run build:prod` 用 esbuild 合并压缩（53 JS + 3 CSS → 1+1，HTTP 请求 57→4）
 4. **多语言**: I18n 对象必须用 `Vue.reactive()` 包裹，`I18n.init()` 必须在 `app.mount()` 之前
 5. **文件上传**: 使用 `URL.createObjectURL()` 预览时必须同时保存 `File` 对象，提交时上传 File
 6. **定时器**: 所有 `setInterval`/`setTimeout` 必须在 `beforeUnmount` 中清除
@@ -110,3 +112,21 @@
 4. 轻微（15 个）— 代码质量
 
 使用 Claude Code 打开该文件即可按指令逐轮自动修复。
+
+## 最近更新（2026-07-21）
+
+### 新增功能
+- **JourneyWork（我的历程）**: 用户工作记录 CRUD，含 `journey_work` 表（JSON content 列 + 软删除），API: `/api/user/journey*`
+- **JourneyTemplate（工作模板）**: 模板保存/列表/删除，`journey_template` 表，API: `/api/user/journeyTemplate*`
+- **systemContinents 层级树**: `GET /api/common/systemContinents` 返回大洲→地区→国家嵌套结构，替代 Flutter 的硬编码数据
+- **城市列表 country_name 注入**: `GET /api/city/lists` 现在返回 `country_name` 和 `country` 字段
+
+### 生产构建
+- `npm run build:prod` — esbuild 无依赖构建，将 53 JS + 3 CSS 合并压缩为内容哈希命名的单文件
+- 生产环境 `routes/web.php` 自动服务 `frontend/dist/index.html`，开发环境用原始文件
+- 构建输出已加入 `.gitignore`（`/frontend/dist`、`/public/dist`）
+
+### Bug 修复
+- CityController: `$c->country->name` 改用 nullsafe 操作符 `?->` 防止 null relation 导致 500
+- UserController: `expandJourneyWork` 中 `array_merge($content, $arr)` 确保模型真实字段不会被 content JSON 覆盖
+- routes/web.php: SPA index 延迟到请求时解析，避免 `route:cache` 烘焙不存在的 `dist/index.html`

@@ -13,9 +13,20 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// SPA index — use bundled assets in production, individual files in dev.
+// Resolved at request time (not registration time) so route:cache doesn't
+// bake a path to a file that doesn't exist yet.
+$resolveSpaIndex = function () {
+    if (app()->environment('production')) {
+        $dist = base_path('frontend/dist/index.html');
+        if (file_exists($dist)) return $dist;
+    }
+    return base_path('frontend/index.html');
+};
+
 // Root route
-Route::get('/', function () {
-    return response()->file(base_path('frontend/index.html'));
+Route::get('/', function () use ($resolveSpaIndex) {
+    return response()->file($resolveSpaIndex());
 });
 
 // Protocol pages (Blade views) — must be before SPA catch-all
@@ -31,6 +42,6 @@ Route::get('/protocol/{type}', function ($type) {
 // The Vue SPA handles routing via hash fragments (#/path).
 // /api/* → mobile app endpoints (unchanged)
 // /manage* or /admin* → Dcat Admin panel (unchanged)
-Route::get('/{any}', function () {
-    return response()->file(base_path('frontend/index.html'));
+Route::get('/{any}', function () use ($resolveSpaIndex) {
+    return response()->file($resolveSpaIndex());
 })->where('any', '^(?!api|' . config('admin.route.prefix', 'admin') . ')[^.]*$');
