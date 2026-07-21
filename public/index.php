@@ -44,7 +44,8 @@ if ($isApiRequest && file_exists(__DIR__ . '/../.env')) {
             $sep    = strpos($cached, "\n--CACHE-SPLIT--\n");
             if ($sep !== false) {
                 $rawHeaders = substr($cached, 0, $sep);
-                $body       = substr($cached, $sep + 18);
+                $body       = substr($cached, $sep + 17); // "\n--CACHE-SPLIT--\n" = 17 bytes
+                $httpCode   = 200; // cached responses are only stored for 200
                 $cacheHit   = true;
             }
         }

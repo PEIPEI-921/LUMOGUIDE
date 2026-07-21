@@ -31,6 +31,7 @@ const ProfilePage = {
               <div class="ds-name-row">
                 <span class="ds-name">{{ user.nickname || user.name }}</span>
                 <span :class="['ds-badge', identityClass]">{{ identityLabel }}</span>
+                <span v-if="UserStore.isVip" class="badge-vip">VIP</span>
               </div>
               <div class="ds-meta">
                 <span>ID: {{ (user.number || '').slice(0, 8) }}…</span>

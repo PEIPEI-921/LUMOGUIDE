@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMO GUIDE — 新版設計稿</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F9F9F6;
+  --surface: #FCFCFA;
+  --surface-alt: #F4F3F0;
+  --ink: #1a1a1a;
+  --ink-soft: #3d3d3d;
+  --muted: #6B7280;
+  --faint: #9CA3AF;
+  --primary: #666FFF;
+  --primary-soft: rgba(102,111,255,0.07);
+  --primary-hover: #5A5FE8;
+  --border: rgba(0,0,0,0.06);
+  --border-light: rgba(0,0,0,0.04);
+  --shadow-card:
+    rgba(0,0,0,0.03) 0px 0px 0px 1px,
+    rgba(0,0,0,0.04) 0px 2px 8px,
+    rgba(0,0,0,0.02) 0px 4px 16px;
+  --shadow-hover:
+    rgba(0,0,0,0.04) 0px 0px 0px 1px,
+    rgba(0,0,0,0.06) 0px 4px 16px,
+    rgba(0,0,0,0.03) 0px 8px 32px;
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-full: 100px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography ── */
+.serif { font-family: 'Noto Serif TC', 'Georgia', serif; }
+.h1 { font-family: 'Noto Serif TC', 'Georgia', serif; font-size: 36px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.2; }
+.h2 { font-family: 'Noto Serif TC', 'Georgia', serif; font-size: 24px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.3; }
+.h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.body { font-size: 15px; color: var(--ink-soft); line-height: 1.7; }
+.caption { font-size: 13px; color: var(--muted); }
+.tiny { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: inherit; font-size: 15px; font-weight: 500;
+  padding: 12px 28px; border: none; border-radius: var(--radius-full);
+  cursor: pointer; transition: background 0.15s, transform 0.1s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: rgba(0,0,0,0.04); }
+.btn-sm { font-size: 13px; padding: 8px 18px; }
+
+/* ── Inputs ── */
+.input-group {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 0 18px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-group:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+.input-group input {
+  flex: 1; border: none; background: transparent;
+  padding: 14px 0; font-size: 15px; color: var(--ink);
+  outline: none; font-family: inherit;
+}
+.input-group input::placeholder { color: var(--faint); }
+.input-icon { display: flex; flex-shrink: 0; color: var(--faint); }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.card:hover { box-shadow: var(--shadow-hover); }
+.card-clickable { cursor: pointer; }
+.card-clickable:hover { transform: translateY(-1px); }
+
+/* ── Page layout ── */
+.page { max-width: 960px; margin: 0 auto; padding: 0 32px 80px; }
+
+/* ── SECTION SEPARATOR ── */
+.section-break {
+  width: 100%; height: 1px; background: var(--border);
+  margin: 60px 0;
+}
+
+/* ══════════════════════════════════════════
+   PAGE 1 — Welcome + Login
+   ══════════════════════════════════════════ */
+.welcome-screen {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(155deg, #666FFF 0%, #4F58E8 40%, #3D46C0 100%);
+  padding: 48px 32px;
+  text-align: center;
+}
+.welcome-logo {
+  width: 90px; height: 90px; border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  margin-bottom: 40px;
+}
+.welcome-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.welcome-text {
+  font-family: 'Noto Serif TC', 'Georgia', serif;
+  font-size: 52px; font-weight: 400; color: #fff;
+  letter-spacing: 0.04em; line-height: 1.3;
+  margin-bottom: 12px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.welcome-sub {
+  font-family: 'Noto Serif TC', 'Georgia', serif;
+  font-size: 22px; color: rgba(255,255,255,0.6);
+  letter-spacing: 0.08em;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(155deg, #666FFF 0%, #4F58E8 40%, #3D46C0 100%);
+  padding: 48px 24px;
+}
+.login-card {
+  width: 100%; max-width: 400px;
+  background: var(--surface);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px 32px;
+  box-shadow: var(--shadow-card);
+}
+.login-card .brand {
+  font-family: 'Noto Serif TC', 'Georgia', serif;
+  font-size: 22px; color: var(--ink);
+  text-align: center; margin-bottom: 6px;
+}
+.login-card .brand span { color: var(--primary); }
+.login-card .brand-sub {
+  text-align: center; font-size: 13px; color: var(--muted);
+  margin-bottom: 32px;
+}
+.login-card form {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.login-card .helper {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 20px; font-size: 13px;
+}
+.login-card .helper a { color: var(--primary); text-decoration: none; font-weight: 500; }
+.login-card .helper label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+.login-card .helper input[type="checkbox"] { accent-color: var(--primary); }
+.login-card .footer-link {
+  text-align: center; margin-top: 24px; font-size: 13px; color: var(--muted);
+}
+.login-card .footer-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+
+/* ══════════════════════════════════════════
+   PAGE 2 — Home (Logged In)
+   ══════════════════════════════════════════ */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  height: 52px; display: flex; align-items: center;
+  padding: 0 24px; gap: 12px;
+  background: var(--primary);
+}
+.topbar-logo-img { height: 32px; width: auto; filter: brightness(0) invert(1); flex-shrink: 0; }
+.topbar-nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.topbar-tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.7);
+  cursor: pointer; border: none; background: transparent;
+  transition: all 0.2s;
+}
+.topbar-tab:hover { color: #fff; background: rgba(255,255,255,0.12); }
+.topbar-tab.active { color: #fff; background: rgba(255,255,255,0.2); font-weight: 600; }
+.topbar-tab svg { width: 17px; height: 17px; flex-shrink: 0; }
+.topbar-tab .badge {
+  position: absolute; top: 2px; right: -2px;
+  min-width: 16px; height: 16px; padding: 0 5px;
+  border-radius: 8px; background: #EF4444; color: #fff;
+  font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+}
+
+/* Hero gradient on home */
+.home-hero {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary) 52px, var(--bg) 300px);
+  padding-top: 52px;
+}
+
+/* ── Section Header ── */
+.sec-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 20px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sec-head-title {
+  font-family: 'Noto Serif TC', 'Georgia', serif;
+  font-size: 22px; font-weight: 400; letter-spacing: -0.01em;
+}
+.sec-head-more { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 500; }
+
+/* ── Strategy Grid ── */
+.strategy-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+  margin-bottom: 48px;
+}
+.strategy-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 8px; border-radius: var(--radius);
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+}
+.strategy-item:hover { transform: translateY(-2px); }
+.strategy-item svg { width: 32px; height: 32px; flex-shrink: 0; }
+.strategy-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+
+/* ── City Grid ── */
+.city-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+}
+.city-card {
+  position: relative; aspect-ratio: 1/1; border-radius: var(--radius);
+  overflow: hidden; cursor: pointer; background: #E5E7EB;
+  transition: transform 0.2s;
+}
+.city-card:hover { transform: translateY(-2px); }
+.city-card img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.city-card .overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 50%);
+  display: flex; flex-direction: column; justify-content: flex-end; padding: 16px;
+}
+.city-card .name { color: #fff; font-size: 15px; font-weight: 600; }
+.city-card .name-en { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 2px; }
+
+/* ── Guide Cards ── */
+.guide-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; }
+.guide-card {
+  flex-shrink: 0; width: 160px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+  overflow: hidden; cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.guide-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.guide-card img { width: 100%; height: 120px; object-fit: cover; }
+.guide-card .info { padding: 12px 14px; }
+.guide-card .info .gname { font-size: 14px; font-weight: 600; }
+.guide-card .info .glang { font-size: 11px; color: var(--primary); margin-top: 4px;
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  background: var(--primary-soft); font-weight: 500;
+}
+
+/* ── Search Bar ── */
+.search-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0 18px;
+  max-width: 640px; margin: 0 auto 40px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-bar:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft), var(--shadow-card);
+}
+.search-bar input {
+  flex: 1; border: none; background: transparent;
+  padding: 14px 0; font-size: 15px; color: var(--ink);
+  outline: none; font-family: inherit;
+}
+.search-bar input::placeholder { color: var(--faint); }
+.search-bar svg { flex-shrink: 0; color: var(--faint); }
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center; padding: 64px 24px;
+}
+.empty-state svg { width: 48px; height: 48px; color: var(--faint); margin-bottom: 16px; }
+.empty-state .title { font-size: 15px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+.empty-state .desc { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── News Feed Card ── */
+.news-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-card);
+  cursor: pointer; margin-bottom: 12px;
+  transition: box-shadow 0.2s;
+}
+.news-card:hover { box-shadow: var(--shadow-hover); }
+.news-card .nc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.news-card .nc-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--primary-soft); display: flex; align-items: center; justify-content: center;
+  font-size: 15px; color: var(--primary); font-weight: 600; flex-shrink: 0;
+}
+.news-card .nc-name { font-size: 14px; font-weight: 600; }
+.news-card .nc-time { font-size: 12px; color: var(--faint); }
+.news-card .nc-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; line-height: 1.5; }
+.news-card .nc-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+/* ── Pill Tabs ── */
+.pill-tabs { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; }
+.pill-tab {
+  padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.pill-tab:hover { border-color: var(--primary); color: var(--primary); }
+.pill-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── Message list ── */
+.msg-item {
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light); cursor: pointer;
+  transition: background 0.15s;
+}
+.msg-item:hover { background: rgba(0,0,0,0.01); }
+.msg-item:last-child { border-bottom: none; }
+.msg-icon {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary); background: var(--primary-soft);
+}
+.msg-icon svg { width: 20px; height: 20px; }
+.msg-body { flex: 1; min-width: 0; }
+.msg-body .title { font-size: 14px; font-weight: 600; }
+.msg-body .preview { font-size: 13px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-count {
+  min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px;
+  background: #EF4444; color: #fff; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.msg-arrow { color: var(--faint); font-size: 16px; }
+
+/* ── Profile card ── */
+.profile-card {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow-card); margin-bottom: 20px;
+}
+.profile-card .avatar {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary), #9B9FFF);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 22px; font-weight: 600;
+}
+.profile-card .info { flex: 1; min-width: 0; }
+.profile-card .info .pname { font-size: 17px; font-weight: 600; }
+.profile-card .info .pid { font-size: 12px; color: var(--faint); margin-top: 2px; }
+.profile-card .badge {
+  font-size: 10px; padding: 3px 10px; border-radius: 100px; font-weight: 600;
+}
+.badge-guide { background: #EEF2FF; color: var(--primary); }
+.badge-vip { background: linear-gradient(135deg,#FFFBF0,#FFF7E0); color: #D4A017; border: 1px solid rgba(212,160,23,.25); }
+
+/* ── Stats Row ── */
+.stats-row {
+  display: flex; gap: 12px; margin-bottom: 24px;
+}
+.stat-item {
+  flex: 1; text-align: center; padding: 16px 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-card);
+}
+.stat-item .num { font-size: 22px; font-weight: 600; }
+.stat-item .label { font-size: 11px; color: var(--faint); margin-top: 4px; }
+
+/* ── Menu list ── */
+.menu-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+.menu-item {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  border-bottom: 1px solid var(--border-light); cursor: pointer;
+  transition: background 0.15s;
+}
+.menu-item:hover { background: rgba(0,0,0,0.01); }
+.menu-item:last-child { border-bottom: none; }
+.menu-item .mi-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+}
+.menu-item .mi-label { font-size: 14px; font-weight: 500; flex: 1; }
+.menu-item .mi-arrow { color: var(--faint); font-size: 15px; }
+
+@media (max-width: 768px) {
+  .page { padding: 0 16px 60px; }
+  .strategy-grid { grid-template-columns: repeat(3, 1fr); }
+  .city-grid { grid-template-columns: repeat(2, 1fr); }
+  .welcome-text { font-size: 36px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ PAGE 1: WELCOME ═══════════════════ -->
+<div class="welcome-screen">
+  <div class="welcome-logo">
+    <img src="logo-app-icon.png" alt="LUMO GUIDE" class="welcome-logo-img">
+  </div>
+  <div class="welcome-text">路上有光，盟友相伴</div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 2: LOGIN ═══════════════════ -->
+<div class="login-screen">
+  <img src="logo_lumoguide.png" alt="LUMO GUIDE" style="height:42px;width:auto;margin-bottom:28px;filter:brightness(0) invert(1);opacity:0.9">
+  <div class="login-card">
+    <div class="brand-sub">路上有光，盟友相伴</div>
+    <form>
+      <div class="input-group">
+        <span class="input-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 4-10 8L2 4"/></svg></span>
+        <input type="email" placeholder="請輸入郵箱">
+      </div>
+      <div class="input-group">
+        <span class="input-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></span>
+        <input type="password" placeholder="請輸入密碼">
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:6px">登錄</button>
+    </form>
+    <div class="helper">
+      <label><input type="checkbox"> 記住密碼</label>
+      <a href="#">忘記密碼</a>
+    </div>
+    <div class="footer-link">
+      還沒有賬號？<a href="#">去註冊</a>
+    </div>
+  </div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 3: HOME ═══════════════════ -->
+<div class="home-hero">
+<div class="topbar">
+  <img src="logo_lumoguide.png" alt="LUMO GUIDE" class="topbar-logo-img">
+  <div class="topbar-nav">
+    <button class="topbar-tab active">首頁</button>
+    <button class="topbar-tab">城市</button>
+    <button class="topbar-tab">資訊</button>
+    <button class="topbar-tab" style="position:relative">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="badge" style="position:relative;margin-left:-4px;vertical-align:super">3</span>
+    </button>
+    <button class="topbar-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+    <button class="topbar-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="page" style="padding-top:32px">
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="搜尋城市、導遊或景點…">
+  </div>
+
+  <!-- City Strategy -->
+  <div class="sec-head">
+    <div class="sec-head-title">城市攻略</div>
+  </div>
+  <div class="strategy-grid">
+    <div class="strategy-item" style="background:rgba(102,111,255,0.06)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="6" stroke="#666FFF" stroke-width="1.6"/><path d="M6 27c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#666FFF" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span class="strategy-label" style="color:#666FFF">導遊</span>
+    </div>
+    <div class="strategy-item" style="background:rgba(244,180,19,0.08)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M6 7h20l-2 12H8L6 7z" stroke="#F4B413" stroke-width="1.6"/><path d="M8 7c0-2 1.5-3 3-3h10c1.5 0 3 1 3 3" stroke="#F4B413" stroke-width="1.6"/></svg>
+      <span class="strategy-label" style="color:#C89200">餐廳</span>
+    </div>
+    <div class="strategy-item" style="background:rgba(255,108,0,0.08)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="5" y="8" width="22" height="18" rx="2" stroke="#FF6C00" stroke-width="1.6"/><line x1="5" y1="14" x2="27" y2="14" stroke="#FF6C00" stroke-width="1.6"/></svg>
+      <span class="strategy-label" style="color:#D45A00">購物</span>
+    </div>
+    <div class="strategy-item" style="background:rgba(168,55,255,0.06)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="16" rx="2" stroke="#A837FF" stroke-width="1.6"/><path d="M12 10V6a4 4 0 0 1 8 0v4" stroke="#A837FF" stroke-width="1.6"/></svg>
+      <span class="strategy-label" style="color:#8C2BE0">酒店</span>
+    </div>
+    <div class="strategy-item" style="background:rgba(0,235,194,0.08)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 26V6l8-4 8 4v20" stroke="#00EBC2" stroke-width="1.6"/><line x1="12" y1="14" x2="20" y2="14" stroke="#00EBC2" stroke-width="1.6"/></svg>
+      <span class="strategy-label" style="color:#00B898">景點</span>
+    </div>
+    <div class="strategy-item" style="background:rgba(102,149,255,0.08)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#6695FF" stroke-width="1.6"/><polygon points="16,8 20,14 16,20 12,14" stroke="#6695FF" stroke-width="1.6"/></svg>
+      <span class="strategy-label" style="color:#4C7BD4">交通</span>
+    </div>
+  </div>
+
+  <!-- Hot Cities -->
+  <div class="sec-head">
+    <div class="sec-head-title">熱門城市</div>
+    <a href="#" class="sec-head-more">查看全部 ›</a>
+  </div>
+  <div class="pill-tabs">
+    <button class="pill-tab active">歐洲</button>
+    <button class="pill-tab">亞洲</button>
+    <button class="pill-tab">北美洲</button>
+    <button class="pill-tab">大洋洲</button>
+  </div>
+  <div class="city-grid">
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23c8d6e5' width='200' height='200'/%3E%3Ccircle cx='120' cy='60' r='30' fill='%23a0b4c8'/%3E%3Crect x='40' y='140' width='120' height='60' fill='%238090a0'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Salzburg</div><div class="name-en">薩爾茨堡 · 奧地利</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23dfe6e9' width='200' height='200'/%3E%3Crect x='60' y='50' width='30' height='60' fill='%23747d8c'/%3E%3Crect x='100' y='80' width='30' height='30' fill='%23747d8c'/%3E%3Ccircle cx='120' cy='30' r='15' fill='%239da8b4'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Wien</div><div class="name-en">維也納 · 奧地利</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23d1ccc0' width='200' height='200'/%3E%3Cpolygon points='100,50 60,100 140,100' fill='%23999282'/%3E%3Crect x='70' y='100' width='60' height='50' fill='%23a99e8c'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Praha</div><div class="name-en">布拉格 · 捷克</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e8d5b7' width='200' height='200'/%3E%3Ccircle cx='100' cy='80' r='25' fill='%23d4a574'/%3E%3Crect x='60' y='130' width='80' height='50' fill='%23c4956a'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Paris</div><div class="name-en">巴黎 · 法國</div></div></div>
+  </div>
+
+  <!-- Recommended Guides -->
+  <div class="sec-head" style="margin-top:48px">
+    <div class="sec-head-title">推薦導遊</div>
+    <a href="#" class="sec-head-more">查看全部 ›</a>
+  </div>
+  <div class="guide-scroll">
+    <div class="guide-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect fill='%23dfe6e9' width='160' height='120'/%3E%3Ccircle cx='80' cy='50' r='40' fill='%23b2bec3'/%3E%3C/svg%3E"><div class="info"><div class="gname">張導遊</div><div class="glang">中文 · 英文</div></div></div>
+    <div class="guide-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect fill='%23d1ccc0' width='160' height='120'/%3E%3Ccircle cx='80' cy='50' r='40' fill='%23a4b0be'/%3E%3C/svg%3E"><div class="info"><div class="gname">Anna Müller</div><div class="glang">Deutsch · English</div></div></div>
+    <div class="guide-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect fill='%23e8d5b7' width='160' height='120'/%3E%3Ccircle cx='80' cy='50' r='40' fill='%23cfb99a'/%3E%3C/svg%3E"><div class="info"><div class="gname">李導遊</div><div class="glang">中文 · 日文</div></div></div>
+    <div class="guide-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect fill='%23c8d6e5' width='160' height='120'/%3E%3Ccircle cx='80' cy='50' r='40' fill='%2393a8bc'/%3E%3C/svg%3E"><div class="info"><div class="gname">Marco Rossi</div><div class="glang">Italiano · English</div></div></div>
+  </div>
+
+  <!-- News Feed -->
+  <div class="sec-head" style="margin-top:48px">
+    <div class="sec-head-title">最新資訊</div>
+    <a href="#" class="sec-head-more">查看全部 ›</a>
+  </div>
+  <div class="pill-tabs">
+    <button class="pill-tab active">全部</button>
+    <button class="pill-tab">城市動態</button>
+    <button class="pill-tab">旅遊攻略</button>
+    <button class="pill-tab">行業資訊</button>
+  </div>
+  <div class="news-card">
+    <div class="nc-header">
+      <div class="nc-avatar">L</div>
+      <div><div class="nc-name">LUMO 官方</div><div class="nc-time">2 小時前</div></div>
+    </div>
+    <div class="nc-title">2026 夏季歐洲旅遊旺季指南 — 薩爾茨堡音樂節即將開幕</div>
+    <div class="nc-desc">每年的薩爾茨堡音樂節吸引全球數十萬遊客，提前預訂住宿和門票至關重要。本文為你整理完整的音樂節攻略。</div>
+  </div>
+  <div class="news-card">
+    <div class="nc-header">
+      <div class="nc-avatar">張</div>
+      <div><div class="nc-name">張導遊</div><div class="nc-time">5 小時前</div></div>
+    </div>
+    <div class="nc-title">維也納美泉宮 — 你不該錯過的 5 個隱藏角落</div>
+    <div class="nc-desc">大多數遊客只走黃金路線，但美泉宮花園裡藏著許多鮮為人知的絕美角落。</div>
+  </div>
+</div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 4: MESSAGE CENTER ═══════════════════ -->
+<div class="page" style="padding-top:48px">
+  <div class="h2" style="margin-bottom:20px">消息中心</div>
+  <div class="card" style="overflow:hidden">
+    <div class="msg-item">
+      <div class="msg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3"/><path d="M1 20v-1a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v1"/><circle cx="18" cy="7" r="3"/><path d="M23 20v-1a5 5 0 0 0-2.5-4.3"/></svg></div>
+      <div class="msg-body"><div class="title">關注信息</div><div class="preview">張導遊開始關注了你</div></div>
+      <span class="msg-count">5</span>
+      <span class="msg-arrow">›</span>
+    </div>
+    <div class="msg-item">
+      <div class="msg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg></div>
+      <div class="msg-body"><div class="title">評論通知</div><div class="preview">有人在你的攻略下發表了評論</div></div>
+      <span class="msg-count">12</span>
+      <span class="msg-arrow">›</span>
+    </div>
+    <div class="msg-item">
+      <div class="msg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="1"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="msg-body"><div class="title">預約通知</div><div class="preview">你有 3 個新的預約請求</div></div>
+      <span class="msg-count">3</span>
+      <span class="msg-arrow">›</span>
+    </div>
+    <div class="msg-item">
+      <div class="msg-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="msg-body"><div class="title">系統消息</div><div class="preview">LUMO GUIDE v2.0 版本更新通知</div></div>
+      <span class="msg-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 5: PROFILE ═══════════════════ -->
+<div class="page" style="padding-top:48px">
+  <div class="h2" style="margin-bottom:20px">我的</div>
+
+  <!-- Profile -->
+  <div class="profile-card">
+    <div class="avatar">冠</div>
+    <div class="info">
+      <div class="pname">周冠培</div>
+      <div class="pid">ID: 100283</div>
+    </div>
+    <span class="badge badge-guide">認證導遊</span>
+    <span class="badge badge-vip">VIP</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.8" style="flex-shrink:0;cursor:pointer"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.2 4.2l1.4 1.4m12.8 12.8l1.4 1.4M1 12h2m18 0h2M4.2 19.8l1.4-1.4m12.8-12.8l1.4-1.4"/></svg>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-item"><div class="num">128</div><div class="label">關注</div></div>
+    <div class="stat-item"><div class="num">356</div><div class="label">粉絲</div></div>
+    <div class="stat-item"><div class="num">42</div><div class="label">預約</div></div>
+    <div class="stat-item"><div class="num">4.9</div><div class="label">評分</div></div>
+  </div>
+
+  <!-- Menu -->
+  <div class="menu-card">
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3l4 4-12 12H5v-4L17 3z"/></svg></div>
+      <span class="mi-label">編輯資料</span>
+      <span class="mi-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polygon points="12 6 12 12 16 14"/></svg></div>
+      <span class="mi-label">我的預約</span>
+      <span class="mi-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/></svg></div>
+      <span class="mi-label">我的評價</span>
+      <span class="mi-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+      <span class="mi-label">我的發布</span>
+      <span class="mi-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a5 5 0 0 0-5-5H8a5 5 0 0 0-5 5v8a5 5 0 0 0 5 5h8a5 5 0 0 0 5-5z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <span class="mi-label">積分商城</span>
+      <span class="mi-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="mi-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.7c.2 1.1.5 2.2.9 3.3a2 2 0 0 1-.5 2.1L8.1 10.3a16 16 0 0 0 5.6 5.6l1.2-1.3a2 2 0 0 1 2.1-.5c1.1.4 2.2.7 3.3.9a2 2 0 0 1 1.7 2v.1z"/></svg></div>
+      <span class="mi-label">聯繫客服</span>
+      <span class="mi-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ EMPTY STATE ═══════════════════ -->
+<div class="page" style="padding-top:48px">
+  <div class="h2" style="margin-bottom:20px">空狀態示例</div>
+  <div class="card" style="max-width:400px">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2Z"/><path d="M4 6h16"/><path d="M4 10h16"/><path d="M4 14h10"/></svg>
+      <div class="title">暫無內容</div>
+      <div class="desc">這裡還沒有任何內容，稍後再來看看吧</div>
+      <button class="btn btn-primary btn-sm">重新載入</button>
+    </div>
+  </div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 6: CITY LIST ═══════════════════ -->
+<div class="home-hero">
+<div class="topbar">
+  <img src="logo_lumoguide.png" alt="LUMO GUIDE" class="topbar-logo-img">
+  <div class="topbar-nav">
+    <button class="topbar-tab">首頁</button>
+    <button class="topbar-tab active">城市</button>
+    <button class="topbar-tab">資訊</button>
+    <button class="topbar-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+    <button class="topbar-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+  </div>
+</div>
+<div class="page" style="padding-top:36px">
+  <div class="h2" style="margin-bottom:8px">城市</div>
+  <div style="display:flex;align-items:center;gap:10px;max-width:400px;margin-bottom:28px;padding:10px 0;border-bottom:1px solid var(--border)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="搜索城市..." style="flex:1;border:none;background:transparent;font-size:15px;font-family:inherit;color:var(--ink);outline:none">
+  </div>
+
+  <!-- Continent tabs -->
+  <div style="display:flex;gap:28px;margin-bottom:18px;overflow-x:auto">
+    <button style="font-size:14px;font-weight:400;color:var(--ink);background:none;border:none;cursor:pointer;padding:0 0 6px;border-bottom:2px solid var(--ink)">歐洲</button>
+    <button style="font-size:14px;font-weight:400;color:var(--faint);background:none;border:none;cursor:pointer;padding:0 0 6px">亞洲</button>
+    <button style="font-size:14px;font-weight:400;color:var(--faint);background:none;border:none;cursor:pointer;padding:0 0 6px">北美洲</button>
+    <button style="font-size:14px;font-weight:400;color:var(--faint);background:none;border:none;cursor:pointer;padding:0 0 6px">大洋洲</button>
+  </div>
+
+  <!-- Area pills -->
+  <div style="display:flex;gap:6px;margin-bottom:24px;overflow-x:auto">
+    <button class="pill-tab active">全部</button>
+    <button class="pill-tab">西歐</button>
+    <button class="pill-tab">中歐</button>
+    <button class="pill-tab">南歐</button>
+    <button class="pill-tab">北歐</button>
+    <button class="pill-tab">東歐</button>
+  </div>
+
+  <!-- City grid 4-col -->
+  <div class="city-grid">
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23c8d6e5' width='200' height='200'/%3E%3Ccircle cx='120' cy='60' r='28' fill='%23a0b4c8'/%3E%3Crect x='40' y='140' width='120' height='60' fill='%238090a0'/%3E%3C/svg%3E"><div class="overlay"><div class="name">London</div><div class="name-en">倫敦 · 英國</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e8d5b7' width='200' height='200'/%3E%3Ccircle cx='100' cy='80' r='25' fill='%23d4a574'/%3E%3Crect x='60' y='130' width='80' height='50' fill='%23c4956a'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Paris</div><div class="name-en">巴黎 · 法國</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23dfe6e9' width='200' height='200'/%3E%3Crect x='60' y='50' width='25' height='55' fill='%23747d8c'/%3E%3Crect x='95' y='75' width='25' height='30' fill='%23747d8c'/%3E%3Ccircle cx='110' cy='30' r='12' fill='%239da8b4'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Wien</div><div class="name-en">維也納 · 奧地利</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23d1ccc0' width='200' height='200'/%3E%3Cpolygon points='100,50 60,100 140,100' fill='%23999282'/%3E%3Crect x='70' y='100' width='60' height='50' fill='%23a99e8c'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Praha</div><div class="name-en">布拉格 · 捷克</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e0d5c8' width='200' height='200'/%3E%3Ccircle cx='100' cy='70' r='30' fill='%23ccbbaa'/%3E%3Crect x='55' y='130' width='90' height='55' fill='%23b8a590'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Roma</div><div class="name-en">羅馬 · 意大利</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23cad5e0' width='200' height='200'/%3E%3Ccircle cx='100' cy='65' r='22' fill='%239fafbf'/%3E%3Crect x='50' y='130' width='100' height='55' fill='%238090a0'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Berlin</div><div class="name-en">柏林 · 德國</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23dfe4d8' width='200' height='200'/%3E%3Ccircle cx='90' cy='55' r='20' fill='%23bcc5b0'/%3E%3Crect x='40' y='135' width='120' height='50' fill='%239ba890'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Amsterdam</div><div class="name-en">阿姆斯特丹</div></div></div>
+    <div class="city-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e8ded5' width='200' height='200'/%3E%3Ccircle cx='100' cy='60' r='28' fill='%23d4c4b0'/%3E%3Crect x='55' y='135' width='90' height='50' fill='%23bfa98e'/%3E%3C/svg%3E"><div class="overlay"><div class="name">Barcelona</div><div class="name-en">巴塞隆納</div></div></div>
+  </div>
+</div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 7: CITY DETAIL ═══════════════════ -->
+<div class="home-hero">
+<div class="topbar">
+  <img src="logo_lumoguide.png" alt="LUMO GUIDE" class="topbar-logo-img">
+  <div class="topbar-nav">
+    <button class="topbar-tab">首頁</button>
+    <button class="topbar-tab active">城市</button>
+    <button class="topbar-tab">資訊</button>
+    <button class="topbar-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+    <button class="topbar-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+  </div>
+</div>
+
+<!-- Banner -->
+<div style="position:relative;height:220px;background:#E5E7EB;overflow:hidden">
+  <div style="position:absolute;inset:0;background:linear-gradient(135deg,#c8d6e5,#a0b4c8)"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.5),transparent)"></div>
+  <div style="position:absolute;bottom:20px;left:32px;color:#fff">
+    <div style="font-family:'Noto Serif TC','Georgia',serif;font-size:26px;font-weight:400;letter-spacing:-0.01em">Salzburg</div>
+    <div style="font-size:12px;opacity:0.7">薩爾茨堡 · 奧地利</div>
+  </div>
+</div>
+
+<div class="page" style="padding-top:0">
+  <!-- Tabs -->
+  <div style="display:flex;justify-content:center;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px;position:sticky;top:52px;z-index:30;background:var(--bg)">
+    <button style="padding:14px 24px;font-size:16px;font-weight:500;color:var(--primary);border:none;background:transparent;cursor:pointer;border-bottom:2px solid var(--primary)">總覽</button>
+    <button style="padding:14px 24px;font-size:16px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">景點</button>
+    <button style="padding:14px 24px;font-size:16px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">餐廳</button>
+    <button style="padding:14px 24px;font-size:16px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">購物</button>
+    <button style="padding:14px 24px;font-size:16px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">交通</button>
+  </div>
+
+  <!-- Overview stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px">
+    <div class="card" style="text-align:center;padding:24px 16px">
+      <div class="tiny" style="margin-bottom:4px">貨幣</div>
+      <div style="font-size:16px;font-weight:600">EUR €</div>
+    </div>
+    <div class="card" style="text-align:center;padding:24px 16px">
+      <div class="tiny" style="margin-bottom:4px">語言</div>
+      <div style="font-size:16px;font-weight:600">Deutsch</div>
+    </div>
+    <div class="card" style="text-align:center;padding:24px 16px">
+      <div class="tiny" style="margin-bottom:4px">人口</div>
+      <div style="font-size:16px;font-weight:600">15.7 萬</div>
+    </div>
+    <div class="card" style="text-align:center;padding:24px 16px">
+      <div class="tiny" style="margin-bottom:4px">時區</div>
+      <div style="font-size:16px;font-weight:600">UTC+1</div>
+    </div>
+  </div>
+
+  <!-- Sub tabs -->
+  <div class="pill-tabs">
+    <button class="pill-tab active">全部</button>
+    <button class="pill-tab">歷史古蹟</button>
+    <button class="pill-tab">自然景觀</button>
+    <button class="pill-tab">博物館</button>
+  </div>
+
+  <!-- Content grid -->
+  <div class="city-grid">
+    <div class="city-card"><div class="overlay"><div class="name">要塞城堡</div><div class="name-en">Festung Hohensalzburg</div></div></div>
+    <div class="city-card"><div class="overlay"><div class="name">米拉貝爾宮</div><div class="name-en">Schloss Mirabell</div></div></div>
+    <div class="city-card"><div class="overlay"><div class="name">莫扎特故居</div><div class="name-en">Mozarts Geburtshaus</div></div></div>
+    <div class="city-card"><div class="overlay"><div class="name">海爾布倫宮</div><div class="name-en">Schloss Hellbrunn</div></div></div>
+  </div>
+</div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 8: SEARCH ═══════════════════ -->
+<div class="page" style="padding-top:48px">
+  <div class="h2" style="margin-bottom:20px">搜索</div>
+
+  <div class="search-bar" style="margin:0 0 24px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="搜尋城市、導遊或景點…" value="Salzburg">
+    <button class="btn btn-primary btn-sm" style="flex-shrink:0">搜尋</button>
+  </div>
+
+  <!-- Result tabs -->
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
+    <button style="padding:10px 20px;font-size:14px;font-weight:500;color:var(--primary);border:none;background:transparent;cursor:pointer;border-bottom:2px solid var(--primary)">城市 <span style="font-size:10px;color:var(--faint);margin-left:4px">3</span></button>
+    <button style="padding:10px 20px;font-size:14px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">導遊 <span style="font-size:10px;color:var(--faint);margin-left:4px">5</span></button>
+    <button style="padding:10px 20px;font-size:14px;font-weight:400;color:var(--faint);border:none;background:transparent;cursor:pointer">內容 <span style="font-size:10px;color:var(--faint);margin-left:4px">8</span></button>
+  </div>
+
+  <!-- Results grid -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+    <div class="card card-clickable" style="overflow:hidden">
+      <div style="aspect-ratio:4/3;background:#c8d6e5;overflow:hidden"></div>
+      <div style="padding:14px 16px"><div style="font-size:14px;font-weight:600">Salzburg</div><div style="font-size:12px;color:var(--faint);margin-top:2px">薩爾茨堡</div></div>
+    </div>
+    <div class="card card-clickable" style="overflow:hidden">
+      <div style="aspect-ratio:4/3;background:#dfe6e9;overflow:hidden"></div>
+      <div style="padding:14px 16px"><div style="font-size:14px;font-weight:600">Hallstatt</div><div style="font-size:12px;color:var(--faint);margin-top:2px">哈爾施塔特</div></div>
+    </div>
+    <div class="card card-clickable" style="overflow:hidden">
+      <div style="aspect-ratio:4/3;background:#d1ccc0;overflow:hidden"></div>
+      <div style="padding:14px 16px"><div style="font-size:14px;font-weight:600">Wien</div><div style="font-size:12px;color:var(--faint);margin-top:2px">維也納</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section-break"></div>
+
+<!-- ═══════════════════ PAGE 9: PUBLISH MANAGEMENT ═══════════════════ -->
+<div class="page" style="padding-top:48px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div class="h2" style="margin:0">發布管理</div>
+    <button class="btn btn-primary btn-sm">+ 新增景點</button>
+  </div>
+
+  <div style="display:flex;gap:4px;margin-bottom:20px;padding:3px;border-radius:100px;background:rgba(0,0,0,0.03)">
+    <button style="flex:1;border:none;border-radius:100px;padding:9px 0;font-size:13px;font-weight:500;background:var(--primary);color:#fff;cursor:pointer">景點</button>
+    <button style="flex:1;border:none;border-radius:100px;padding:9px 0;font-size:13px;font-weight:400;background:transparent;color:var(--ink);cursor:pointer">資訊</button>
+    <button style="flex:1;border:none;border-radius:100px;padding:9px 0;font-size:13px;font-weight:400;background:transparent;color:var(--ink);cursor:pointer">交通</button>
+    <button style="flex:1;border:none;border-radius:100px;padding:9px 0;font-size:13px;font-weight:400;background:transparent;color:var(--ink);cursor:pointer">設施</button>
+    <button style="flex:1;border:none;border-radius:100px;padding:9px 0;font-size:13px;font-weight:400;background:transparent;color:var(--ink);cursor:pointer">活動</button>
+  </div>
+
+  <!-- Item cards -->
+  <div class="card" style="padding:14px 18px;margin-bottom:10px">
+    <div style="display:flex;gap:14px">
+      <div style="width:72px;height:72px;border-radius:8px;background:#c8d6e5;flex-shrink:0;overflow:hidden"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">要塞城堡 Festung Hohensalzburg</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">薩爾茨堡 · 歷史古蹟</div>
+        <span style="font-size:10px;padding:2px 10px;border-radius:100px;background:rgba(102,111,255,0.08);color:var(--primary);font-weight:500">審核中</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:4px">
+        <button style="padding:6px 12px;font-size:12px;border-radius:6px;background:rgba(0,0,0,0.04);border:none;cursor:pointer;color:var(--ink)">編輯</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px 18px;margin-bottom:10px">
+    <div style="display:flex;gap:14px">
+      <div style="width:72px;height:72px;border-radius:8px;background:#dfe6e9;flex-shrink:0;overflow:hidden"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">米拉貝爾宮 Schloss Mirabell</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">薩爾茨堡 · 歷史古蹟</div>
+        <span style="font-size:10px;padding:2px 10px;border-radius:100px;background:rgba(0,190,170,0.08);color:#00BEAA;font-weight:500">審核通過</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:4px">
+        <button style="padding:6px 12px;font-size:12px;border-radius:6px;background:rgba(0,0,0,0.04);border:none;cursor:pointer;color:var(--ink)">編輯</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px 18px">
+    <div style="display:flex;gap:14px">
+      <div style="width:72px;height:72px;border-radius:8px;background:#d1ccc0;flex-shrink:0;overflow:hidden"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">海爾布倫宮 Schloss Hellbrunn</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">薩爾茨堡 · 自然景觀</div>
+        <span style="font-size:10px;padding:2px 10px;border-radius:100px;background:rgba(221,0,0,0.06);color:#DD0000;font-weight:500">審核駁回</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:4px">
+        <button style="padding:6px 12px;font-size:12px;border-radius:6px;background:rgba(0,0,0,0.04);border:none;cursor:pointer;color:var(--ink)">編輯</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

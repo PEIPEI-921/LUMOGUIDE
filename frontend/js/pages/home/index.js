@@ -81,32 +81,25 @@ const HomePage = {
       <div class="ds-page-wrapper">
       <template v-if="homeData">
         <!-- City Strategy -->
-        <div v-if="homeData.city && homeData.city.length" class="strategy-section">
-          <div class="strategy-title">
-            <span class="strategy-title-text">{{ t('城市攻略') }}</span>
-            <span class="strategy-title-line"></span>
+        <div v-if="homeData.city && homeData.city.length">
+          <div class="sec-head">
+            <div class="sec-head-title">{{ t('城市攻略') }}</div>
           </div>
           <div class="strategy-grid">
             <div v-for="cat in strategyCategories" :key="cat.key"
               class="strategy-card" :style="{background:cat.bg}"
               @click="onStrategyTap(cat)">
               <div class="strategy-icon" v-html="cat.svg"></div>
-              <span class="strategy-label">{{ t(cat.label) }}</span>
+              <span class="strategy-label" :style="{color:cat.color}">{{ t(cat.label) }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Hot Cities by Continent (后台推荐城市，按大洲分类) -->
+        <!-- Hot Cities by Continent -->
         <div v-if="continentGroups.length > 0">
-          <div class="section-header">
-            <div class="section-header-left">
-              <span class="section-accent"></span>
-              <div>
-                <span class="section-title">{{ t('熱門城市') }}</span>
-                <span class="section-subtitle" style="display:block;">{{ t('在路上輕鬆掌握每個城市') }}</span>
-              </div>
-            </div>
-            <a href="#/city" class="section-more">{{ t('查看全部') }} ›</a>
+          <div class="sec-head">
+            <div class="sec-head-title">{{ t('熱門城市') }}</div>
+            <a href="#/city" class="sec-head-more">{{ t('查看全部') }} ›</a>
           </div>
 
           <!-- Continent Tabs — same style as guide/merchant filter pills -->
@@ -137,12 +130,9 @@ const HomePage = {
 
         <!-- Recommended Guides -->
         <div v-if="homeData.guide && homeData.guide.length">
-          <div class="section-header">
-            <div class="section-header-left">
-              <span class="section-accent"></span>
-              <span class="section-title">{{ t('推薦導遊') }}</span>
-            </div>
-            <a href="#/search?type=guide" class="section-more">{{ t('查看全部') }} ›</a>
+          <div class="sec-head" style="margin-top:48px">
+            <div class="sec-head-title">{{ t('推薦導遊') }}</div>
+            <a href="#/search?type=guide" class="sec-head-more">{{ t('查看全部') }} ›</a>
           </div>
           <div class="filter-pills" v-if="guideCategories.length > 1">
             <button v-for="(cat, idx) in guideCategories" :key="'gc-'+idx"
@@ -150,11 +140,11 @@ const HomePage = {
               @click="onGuideCatTap(idx)">{{ cat.name || t('全部') }}</button>
           </div>
           <div class="h-scroll" :key="'gg-'+guideCatIndex">
-            <div v-for="guide in currentGuides" :key="'g-'+guide.id" class="guide-card" style="cursor:pointer;" @click="goGuideDetail(guide.id)">
-              <img class="guide-img" :src="imageUrl(guide.photo)" />
-              <div class="guide-info">
-                <div class="guide-name">{{ guide.name }}</div>
-                <div v-if="guide.language && guide.language.length" class="guide-tag">{{ guide.language[0] }}</div>
+            <div v-for="guide in currentGuides" :key="'g-'+guide.id" class="guide-card-v2" @click="goGuideDetail(guide.id)">
+              <img :src="imageUrl(guide.photo)" />
+              <div class="gc-info">
+                <div class="gc-name">{{ guide.name }}</div>
+                <div v-if="guide.language && guide.language.length" class="gc-lang">{{ guide.language[0] }}</div>
               </div>
             </div>
           </div>
@@ -162,12 +152,9 @@ const HomePage = {
 
         <!-- Recommended Businesses -->
         <div v-if="shopCategories.length > 0">
-          <div class="section-header">
-            <div class="section-header-left">
-              <span class="section-accent"></span>
-              <span class="section-title">{{ t('推薦商家') }}</span>
-            </div>
-            <span class="section-more" style="cursor:pointer;" @click="goSearch('shop')">{{ t('查看全部') }} ›</span>
+          <div class="sec-head" style="margin-top:48px">
+            <div class="sec-head-title">{{ t('推薦商家') }}</div>
+            <span class="sec-head-more" style="cursor:pointer;" @click="goSearch('shop')">{{ t('查看全部') }} ›</span>
           </div>
           <div class="filter-pills" v-if="shopCategories.length > 1">
             <button v-for="(cat, idx) in shopCategories" :key="'sc-'+idx"
@@ -230,28 +217,29 @@ const HomePage = {
 
         <!-- Information / News -->
         <div v-if="homeData.information && homeData.information.length">
-          <div class="section-header">
-            <div class="section-header-left">
-              <span class="section-accent"></span>
-              <span class="section-title">{{ t('熱門資訊') }}</span>
-            </div>
-            <a href="#/news" class="section-more">{{ t('查看全部') }} ›</a>
+          <div class="sec-head" style="margin-top:48px">
+            <div class="sec-head-title">{{ t('熱門資訊') }}</div>
+            <a href="#/news" class="sec-head-more">{{ t('查看全部') }} ›</a>
           </div>
           <div class="filter-pills" v-if="infoCategories.length > 1">
             <button v-for="(cat, idx) in infoCategories" :key="'ic-'+idx"
               class="filter-pill" :class="{ active: infoCatIndex === idx }"
               @click="infoCatIndex = idx">{{ cat.name || t('全部') }}</button>
           </div>
-          <div v-for="info in currentInfoList" :key="'i-'+info.id" class="news-card" style="cursor:pointer;" @click="goNewsDetail(info.id)">
-            <div class="news-content">
-              <div class="news-title">{{ info.title }}</div>
-              <div class="news-desc">{{ info.desc || '' }}</div>
-              <div class="news-meta">
-                <span>{{ info.user_nickname || '' }}</span>
-                <span v-if="info.evaluate_count">💬 {{ info.evaluate_count }}</span>
+          <div v-for="info in currentInfoList" :key="'i-'+info.id"
+            class="news-card-v2" @click="goNewsDetail(info.id)">
+            <div class="nc-header">
+              <div class="nc-avatar">
+                <img v-if="info.user_avatar" class="nc-avatar-img" :src="imageUrl(info.user_avatar)" />
+                <span v-else>{{ (info.user_nickname || 'L')[0] }}</span>
+              </div>
+              <div>
+                <div class="nc-name">{{ info.user_nickname || t('LUMO 官方') }}</div>
+                <div class="nc-time">{{ timeAgo(info.created_at) }}</div>
               </div>
             </div>
-            <img v-if="info.first_picture" class="news-img" :src="imageUrl(info.first_picture)" />
+            <div class="nc-title">{{ info.title }}</div>
+            <div class="nc-desc">{{ info.desc || '' }}</div>
           </div>
         </div>
 
@@ -282,18 +270,18 @@ const HomePage = {
       shopBannerTimer: null,
 
       strategyCategories: [
-        { key: 'guide', label: '導遊', bg: '#EDEAF6',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="4.5" r="3.5" stroke="#162539" stroke-width="1.6"/><path d="M4.5 21v-6a4 4 0 0 1 4-3.5" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="16.5" y1="2" x2="16.5" y2="13" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 2l4.5 2.5-4.5 2.5z" fill="#7C5CFF" stroke="none"/></svg>' },
-        { key: 'attraction', label: '景點', bg: '#E2F0E8',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M3 22l5-10 3 4 2-3 4-5.5 3.5 7.5" stroke="#162539" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 11c-1.5 0-3 .8-3 2s1.5 2 3 2h8c1.2 0 2.2-.8 2.2-1.8 0-1-.8-2-2-1.8-.3-1.8-2-2.5-3.5-1.8" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="8.5" r="1.5" fill="#06D6A0" stroke="none"/></svg>' },
-        { key: 'restaurant', label: '餐廳', bg: '#FBF3E0',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M4 7.5c0-2 3.5-3 8-3s8 1 8 3" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><rect x="4.5" y="8.5" width="15" height="2.8" rx="0.5" fill="#FF8C42" stroke="none"/><path d="M4 13c0 2 3.5 3 8 3s8-1 8-3" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><rect x="9" y="17" width="6" height="5" rx="1.3" stroke="#162539" stroke-width="1.6"/><line x1="12" y1="14.5" x2="12" y2="17" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/></svg>' },
-        { key: 'shopping', label: '購物', bg: '#FDE8E2',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M7 3L3.5 7v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V7l-3.5-4z" stroke="#162539" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.5 7h17" stroke="#162539" stroke-width="1.6"/><path d="M7 3a5 5 0 0 1 10 0" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><path d="M9 7.5V6" stroke="#EF476F" stroke-width="2.2" stroke-linecap="round"/><path d="M15 7.5V6" stroke="#EF476F" stroke-width="2.2" stroke-linecap="round"/></svg>' },
-        { key: 'accommodation', label: '住宿', bg: '#F2E8F5',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="15" rx="1" stroke="#162539" stroke-width="1.6"/><rect x="7" y="10" width="3.5" height="12" stroke="#162539" stroke-width="1.6"/><rect x="13.5" y="10" width="3.5" height="12" stroke="#162539" stroke-width="1.6"/><rect x="14.5" y="12" width="2" height="3.5" rx="0.3" fill="#A837FF" stroke="none"/><line x1="5" y1="3" x2="5" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="3" x2="12" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/><line x1="19" y1="3" x2="19" y2="7" stroke="#162539" stroke-width="1.6" stroke-linecap="round"/></svg>' },
-        { key: 'ticket', label: '票務', bg: '#E3F0F8',
-          svg: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#162539" stroke-width="1.6"/><line x1="14" y1="4" x2="14" y2="20" stroke="#162539" stroke-width="1.6"/><circle cx="17" cy="8" r="1.2" fill="#4ECDC4" stroke="none"/><circle cx="17" cy="12" r="1.2" fill="#4ECDC4" stroke="none"/><circle cx="17" cy="16" r="1.2" fill="#4ECDC4" stroke="none"/></svg>' },
+        { key: 'guide', label: '導遊', bg: 'rgba(102,111,255,0.06)', color: '#666FFF',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="6" stroke="#666FFF" stroke-width="1.6"/><path d="M6 27c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#666FFF" stroke-width="1.6" stroke-linecap="round"/></svg>' },
+        { key: 'restaurant', label: '餐廳', bg: 'rgba(244,180,19,0.08)', color: '#C89200',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M6 7h20l-2 12H8L6 7z" stroke="#F4B413" stroke-width="1.6"/><path d="M8 7c0-2 1.5-3 3-3h10c1.5 0 3 1 3 3" stroke="#F4B413" stroke-width="1.6"/></svg>' },
+        { key: 'shopping', label: '購物', bg: 'rgba(255,108,0,0.08)', color: '#D45A00',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="5" y="8" width="22" height="18" rx="2" stroke="#FF6C00" stroke-width="1.6"/><line x1="5" y1="14" x2="27" y2="14" stroke="#FF6C00" stroke-width="1.6"/></svg>' },
+        { key: 'accommodation', label: '住宿', bg: 'rgba(168,55,255,0.06)', color: '#8C2BE0',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="16" rx="2" stroke="#A837FF" stroke-width="1.6"/><path d="M12 10V6a4 4 0 0 1 8 0v4" stroke="#A837FF" stroke-width="1.6"/></svg>' },
+        { key: 'attraction', label: '景點', bg: 'rgba(0,235,194,0.08)', color: '#00B898',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M8 26V6l8-4 8 4v20" stroke="#00EBC2" stroke-width="1.6"/><line x1="12" y1="14" x2="20" y2="14" stroke="#00EBC2" stroke-width="1.6"/></svg>' },
+        { key: 'ticket', label: '票務', bg: 'rgba(102,149,255,0.08)', color: '#4C7BD4',
+          svg: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="11" stroke="#6695FF" stroke-width="1.6"/><polygon points="16,8 20,14 16,20 12,14" stroke="#6695FF" stroke-width="1.6"/></svg>' },
       ]
     };
   },
@@ -420,6 +408,7 @@ const HomePage = {
   methods: {
     t(key) { return I18n.t(key); },
     imageUrl: imageUrl,
+    timeAgo: timeAgo,
 
     async initData() {
       // Load cache for immediate display (both homeData and cityAreaMap)

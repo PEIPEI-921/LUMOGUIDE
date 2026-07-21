@@ -13,11 +13,13 @@ const CityPage = {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input v-model="searchKeyword" :placeholder="$t('搜索城市...')"
             @keyup.enter="goSearch" @focus="searchFocused=true" @blur="searchFocused=false"
-            style="flex:1;background:none;font-size:15px;color:#162539;outline:none;border:none;font-family:inherit" />
+            style="flex:1;background:none;font-size:15px;color:#1a1a1a;outline:none;border:none;font-family:inherit" />
         </div>
       </div>
 
       <div class="ds-page-wrapper" style="padding-top:16px">
+      <h1 class="h2" style="padding:0 var(--spacing-lg);margin-bottom:16px">{{ $t('城市') }}</h1>
+
       <!-- Guide Toolbar -->
       <div v-if="isGuide" style="display:flex;justify-content:flex-end;padding:0 var(--spacing-lg);margin-bottom:6px">
         <a href="#" @click.prevent="onPublishCity"
@@ -25,20 +27,26 @@ const CityPage = {
           @mouseenter="$event.currentTarget.style.background='#5A5FE8';$event.currentTarget.style.transform='translateY(-1px)'"
           @mouseleave="$event.currentTarget.style.background='#666FFF';$event.currentTarget.style.transform=''">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          發布城市
+          {{ t('發佈城市') }}
         </a>
       </div>
 
       <!-- Loading -->
-      <div v-if="!continents.length && loading" style="text-align:center;padding:80px 0">
-        <div class="spinner"></div>
+      <div v-if="!continents.length && loading" class="card" style="max-width:400px;margin:20px auto 0">
+        <div class="empty-state-v2">
+          <div class="spinner" style="margin-bottom:16px"></div>
+          <div class="title">{{ $t('載入中...') }}</div>
+        </div>
       </div>
 
       <!-- Error / Empty -->
-      <div v-if="!continents.length && !loading" style="text-align:center;padding:80px 0">
-        <p v-if="pageError" style="color:#EF4444;font-size:14px;margin-bottom:20px">{{ pageError }}</p>
-        <p v-else style="color:#9CA3AF;font-size:14px;margin-bottom:20px">{{ $t('暫無城市數據') }}</p>
-        <button @click="fetchContinents" style="font-size:13px;color:#666FFF;background:none;border:none;cursor:pointer;font-weight:500">{{ $t('重新載入') }}</button>
+      <div v-if="!continents.length && !loading" class="card" style="max-width:400px;margin:20px auto 0">
+        <div class="empty-state-v2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2Z"/><path d="M4 6h16"/><path d="M4 10h16"/><path d="M4 14h10"/></svg>
+          <div class="title">{{ pageError ? $t('載入失敗') : $t('暫無城市數據') }}</div>
+          <div v-if="pageError" class="desc">{{ pageError }}</div>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 18px" @click="fetchContinents">{{ $t('重新載入') }}</button>
+        </div>
       </div>
 
       <template v-if="continents.length">
@@ -47,18 +55,23 @@ const CityPage = {
           <button v-for="(c, idx) in continents" :key="'ct-'+c.id"
             @click="selectContinent(idx)"
             style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;transition:all .2s;position:relative;letter-spacing:.01em"
-            :style="{ color: continentIndex === idx ? '#162539' : '#9CA3AF' }">
+            :style="{ color: continentIndex === idx ? '#1a1a1a' : '#9CA3AF' }">
             {{ c.name }}
-            <span v-if="continentIndex === idx" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#162539;border-radius:1px"></span>
+            <span v-if="continentIndex === idx" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#1a1a1a;border-radius:1px"></span>
           </button>
         </div>
 
-        <!-- Area pills — subtle chips -->
-        <div v-if="currentAreas.length > 1" style="display:flex;gap:6px;padding:0 var(--spacing-lg) 16px;overflow-x:auto">
+        <!-- Area pills — includes "全部" -->
+        <div v-if="currentAreas.length > 0" style="display:flex;gap:6px;padding:0 var(--spacing-lg) 16px;overflow-x:auto">
+          <button @click="selectArea(-1)"
+            style="font-size:11px;font-weight:400;white-space:nowrap;padding:4px 12px;border-radius:100px;cursor:pointer;transition:all .2s;letter-spacing:.02em"
+            :style="{ background: areaIndex === -1 ? '#1a1a1a' : 'transparent', color: areaIndex === -1 ? '#fff' : '#6B7280', border: areaIndex === -1 ? '1px solid #1a1a1a' : '1px solid rgba(0,0,0,.08)' }">
+            {{ $t('全部') }}
+          </button>
           <button v-for="(area, idx) in currentAreas" :key="'ar-'+area.id"
             @click="selectArea(idx)"
             style="font-size:11px;font-weight:400;white-space:nowrap;padding:4px 12px;border-radius:100px;cursor:pointer;transition:all .2s;letter-spacing:.02em"
-            :style="{ background: areaIndex === idx ? '#162539' : 'transparent', color: areaIndex === idx ? '#fff' : '#6B7280', border: areaIndex === idx ? '1px solid #162539' : '1px solid rgba(0,0,0,.08)' }">
+            :style="{ background: areaIndex === idx ? '#1a1a1a' : 'transparent', color: areaIndex === idx ? '#fff' : '#6B7280', border: areaIndex === idx ? '1px solid #1a1a1a' : '1px solid rgba(0,0,0,.08)' }">
             {{ area.name }}
           </button>
         </div>
@@ -66,8 +79,9 @@ const CityPage = {
         <!-- Cities Grid — 4 columns, clean cards -->
         <div class="card-grid-4" style="margin-top:0;gap:20px">
           <div v-for="city in currentCities" :key="'city-'+city.id"
+            class="card"
             @click="goCityDetail(city.id)"
-            style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;background:#E5E7EB;transition:transform .25s"
+            style="position:relative;overflow:hidden;aspect-ratio:1/1;cursor:pointer;padding:0"
             @mouseenter="$event.currentTarget.style.transform='translateY(-2px)'"
             @mouseleave="$event.currentTarget.style.transform=''">
             <img :src="imageUrl(city.first_picture)" alt="" loading="lazy"
@@ -85,8 +99,9 @@ const CityPage = {
           </div>
         </div>
 
-        <div v-if="!currentCities.length && !tabLoading" style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:13px">
-          {{ $t('此分類暫無城市') }}
+        <div v-if="!currentCities.length && !tabLoading" style="text-align:center;padding:60px 0 40px">
+          <img src="/images/logo_lumoguide.png" alt="LUMO GUIDE" style="max-width:200px;opacity:.35;margin-bottom:16px" />
+          <div style="font-size:13px;color:#9CA3AF">{{ $t('此分類暫無城市') }}</div>
         </div>
         <div v-if="tabLoading" style="text-align:center;padding:40px 0">
           <div class="spinner"></div>
@@ -102,7 +117,7 @@ const CityPage = {
     return {
       continents: [],       // [{id, name, areas: [{id, name}]}]
       continentIndex: 0,
-      areaIndex: 0,         // index within current continent's areas
+      areaIndex: -1,        // -1 = 全部, 0+ = specific area
       cities: [],           // currently displayed cities
       loading: false,
       tabLoading: false,
@@ -145,7 +160,7 @@ const CityPage = {
         // Show tabs immediately — areas empty, will lazy-load
         this.continents = continentList.map(c => ({ id: c.id, name: c.name, areas: [] }));
         this.continentIndex = 0;
-        this.areaIndex = 0;
+        this.areaIndex = -1;  // "全部" by default
 
         if (this.continents.length > 0) {
           // Step 2: Fetch areas ONLY for first continent (1 API call — not all)
@@ -175,7 +190,7 @@ const CityPage = {
 
     async selectContinent(idx) {
       this.continentIndex = idx;
-      this.areaIndex = 0;
+      this.areaIndex = -1;  // reset to "全部"
       this.cities = [];
       // Lazy-load areas for this continent if not yet fetched
       await this.loadAreasForContinent(idx);
@@ -191,20 +206,49 @@ const CityPage = {
     async fetchCities() {
       const c = this.continents[this.continentIndex];
       if (!c) return;
-      const area = c.areas[this.areaIndex];
 
       this.tabLoading = true;
       try {
-        const params = { page: 1, limit: 100 };
-        if (c.id) params.continents_id = c.id;
-        if (area && area.id) params.area_id = area.id;
-
-        const res = await ApiProvider.get(ApiUrl.cityList, params);
-        if (res.success) {
-          const list = res.data?.list || res.data || [];
-          this.cities = Array.isArray(list) ? list : [];
+        if (this.areaIndex === -1) {
+          // 「全部」— API requires BOTH continents_id + area_id to filter correctly.
+          // Fetch each area's cities in parallel, then combine (dedup by id).
+          // If a continent has no areas, return empty — we can't filter without area_id.
+          if (c.areas.length === 0) {
+            this.cities = [];
+          } else {
+            const results = await Promise.all(
+              c.areas.map(area =>
+                ApiProvider.get(ApiUrl.cityList, { page: 1, limit: 100, continents_id: c.id, area_id: area.id })
+              )
+            );
+            const seen = new Set();
+            const allCities = [];
+            results.forEach(res => {
+              if (res.success) {
+                const list = res.data?.list || (Array.isArray(res.data) ? res.data : []);
+                if (Array.isArray(list)) {
+                  list.forEach(city => {
+                    if (!seen.has(city.id)) { seen.add(city.id); allCities.push(city); }
+                  });
+                }
+              }
+            });
+            this.cities = allCities;
+          }
         } else {
-          this.cities = [];
+          // Specific area
+          const area = c.areas[this.areaIndex];
+          const params = { page: 1, limit: 100 };
+          if (c.id) params.continents_id = c.id;
+          if (area && area.id) params.area_id = area.id;
+
+          const res = await ApiProvider.get(ApiUrl.cityList, params);
+          if (res.success) {
+            const list = res.data?.list || res.data || [];
+            this.cities = Array.isArray(list) ? list : [];
+          } else {
+            this.cities = [];
+          }
         }
       } catch (e) {
         console.error('[CityPage] fetchCities error:', e);

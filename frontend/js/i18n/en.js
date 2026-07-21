@@ -328,6 +328,31 @@ const en = {
   '星期五': 'Friday',
   '星期六': 'Saturday',
   '星期日': 'Sunday',
+
+  // --- i18n coverage (added 2026-07-17) ---
+  '路上有光，盟友相伴': 'LUMO leads, GUIDE exceeds',
+  '圖片加載失敗': 'Image Load Failed',
+  '點擊空白處關閉': 'Tap to Close',
+  '在瀏覽器中打開': 'Open in Browser',
+  '網頁加載失敗，請檢查鏈接是否有效': 'Page load failed, check link',
+  'LuMo Guide 認證': 'LuMo Guide Certification',
+  'LUMO 官方': 'LUMO Official',
+  '圖片': 'Image',
+  '重試': 'Retry',
+  '載入中...': 'Loading...',
+  '此分類暫無城市': 'No Cities Here',
+  '暫無城市數據': 'No City Data',
+  '重新載入': 'Reload',
+  '搜索城市...': 'Search Cities...',
+  '發布城市': 'Publish City',
+  '發布管理': 'Publish Manager',
+  '發佈時間': 'Publish Time',
+  '駁回原因': 'Rejection Reason',
+  '發布': 'Publish',
+  '新增': 'Add New',
+  '暫無': 'No',
+  '切換城市': 'Switch City',
+  '選擇城市': 'Select City',
 };
 
 if (typeof module !== 'undefined' && module.exports) {

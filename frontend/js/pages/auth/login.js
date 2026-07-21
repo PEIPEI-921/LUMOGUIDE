@@ -5,16 +5,12 @@
 const LoginPage = {
   template: `
     <div class="auth-page">
-      <div class="auth-card">
-        <!-- Logo -->
-        <div class="auth-logo">
-          <img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="auth-logo-img" />
-        </div>
+      <!-- White logo above card -->
+      <img src="/images/logo_lumoguide.png" alt="LUMO GUIDE"
+        style="height:42px;width:auto;margin-bottom:28px;filter:brightness(0) invert(1);opacity:0.9" />
 
-        <!-- App Icon -->
-        <div class="auth-app-icon">
-          <img src="/images/logo-app-icon.png" alt="LuMo Guide" class="auth-app-icon-img" />
-        </div>
+      <div class="auth-card">
+        <div class="auth-brand-sub">{{ t('路上有光，盟友相伴') }}</div>
 
         <form class="auth-form" @submit.prevent="doLogin" autocomplete="on">
           <!-- Email -->
@@ -57,7 +53,7 @@ const LoginPage = {
           <!-- Login button -->
           <button class="auth-btn" type="submit" :disabled="loading">
             <span v-if="loading">{{ t('加載中...') }}</span>
-            <span v-else>登 录</span>
+            <span v-else>{{ t('登錄') }}</span>
           </button>
         </form>
 
@@ -72,7 +68,6 @@ const LoginPage = {
 
         <!-- Footer links -->
         <div class="auth-footer">
-          <a href="#" @click.prevent="$router.push('/forget-password')">{{ t('忘記密碼') }}</a>
           <a href="#" @click.prevent="$router.push('/register')">{{ t('還沒有賬號？去註冊') }}</a>
         </div>
 
@@ -91,7 +86,7 @@ const LoginPage = {
       email: creds.email,
       password: creds.password,
       remember: creds.remember,
-      agreed: true,
+      agreed: false,
       loading: false,
       showPw: false
     };
