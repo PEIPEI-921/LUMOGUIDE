@@ -24,14 +24,14 @@ const GuidePublishPage = {
     <div class="page-content">
       <!-- Not logged in -->
       <div v-if="!UserStore.isLogin" style="text-align:center;padding-top:80px">
-        <div style="font-size:48px;margin-bottom:16px">📝</div>
+        <div style="font-size:48px;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3l4 4-12 12H5v-4L17 3z"/></svg></div>
         <p style="color:var(--color-secondary-text);margin-bottom:20px">{{ $t('請先登入') }}</p>
         <button @click="$router.push('/login')" class="ds-btn ds-btn-primary" style="max-width:200px;margin:0 auto">{{ $t('去登入') }}</button>
       </div>
 
       <!-- Not guide -->
       <div v-else-if="!isGuide" style="text-align:center;padding-top:80px">
-        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <div style="font-size:48px;margin-bottom:16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
         <p style="color:var(--color-secondary-text);margin-bottom:20px">{{ $t('此功能僅限導遊使用') }}</p>
         <button @click="$router.back()" class="ds-btn ds-btn-primary" style="max-width:200px;margin:0 auto">{{ $t('返回') }}</button>
       </div>
@@ -40,17 +40,14 @@ const GuidePublishPage = {
       <div v-else class="ds-container-760">
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <h2 class="ds-page-head" style="margin:0">{{ $t('發布管理') }}</h2>
+          <h2 class="h2" style="margin:0">{{ $t('發布管理') }}</h2>
           <button v-if="currentTab" @click="onAddItem" style="font-size:13px;color:var(--color-primary);font-weight:500;background:none;border:none;cursor:pointer">+ {{ $t('新增') }}{{ currentTab.label }}</button>
         </div>
 
-        <!-- Type tabs — pill style matching Flutter _CustomTabBar -->
-        <div style="display:flex;gap:6px;margin-bottom:16px;padding:3px;border-radius:100px;background:var(--color-bg-card)">
+        <!-- Type tabs — segmented control v2 -->
+        <div class="segmented-control">
           <button v-for="(t, i) in TAB_CONFIG" :key="t.key" @click="switchTab(i)"
-            :style="activeTab === i
-              ? 'background:#666FFF;color:#fff;font-weight:500;box-shadow:0 2px 8px rgba(102,111,255,.25)'
-              : 'background:transparent;color:#162539;font-weight:400'"
-            style="flex:1;border:none;border-radius:100px;padding:7px 0;font-size:13px;cursor:pointer;transition:all .2s">{{ t.label }}</button>
+            :class="['segmented-btn', { active: activeTab === i }]">{{ $t(t.label) }}</button>
         </div>
 
         <!-- Loading -->
@@ -60,24 +57,24 @@ const GuidePublishPage = {
 
         <!-- Error -->
         <div v-else-if="error" class="ds-empty">
-          <div style="font-size:36px;margin-bottom:8px">⚠️</div>
+          <div style="font-size:36px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <p style="color:var(--color-secondary-text);margin-bottom:12px">{{ error }}</p>
           <button @click="fetchItems" class="ds-btn ds-btn-primary">{{ $t('重新載入') }}</button>
         </div>
 
         <!-- Empty -->
         <div v-else-if="items.length===0" class="ds-empty">
-          <div style="font-size:36px;margin-bottom:8px">📝</div>
-          <p style="color:var(--color-assistant-text);font-size:13px">{{ $t('暫無') }}{{ currentTab?.label }}{{ $t('發布') }}</p>
+          <div style="font-size:36px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3l4 4-12 12H5v-4L17 3z"/></svg></div>
+          <p style="color:var(--color-assistant-text);font-size:13px">{{ $t('暫無') }}{{ $t(currentTab?.label) }}{{ $t('發布') }}</p>
         </div>
 
         <!-- List — matching Flutter _Item widget layout -->
         <div v-else>
           <div v-for="item in items" :key="item.id"
-            style="border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.05);margin-bottom:10px">
+            class="card" style="padding:14px 18px;margin-bottom:10px">
 
             <!-- Card body -->
-            <div style="padding:10px;background:#fff">
+            <div>
               <!-- Row 1: Publish time + status (matching Flutter) -->
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                 <div style="display:flex;align-items:center;gap:6px">
@@ -88,7 +85,7 @@ const GuidePublishPage = {
                 <!-- Status badge — matching Flutter StatusWidget: bordered style -->
                 <span v-if="auditStatus(item.audit_status).label"
                   :style="{ color: auditStatus(item.audit_status).color, borderColor: auditStatus(item.audit_status).color }"
-                  style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid;white-space:nowrap;flex-shrink:0">{{ auditStatus(item.audit_status).label }}</span>
+                  style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid;white-space:nowrap;flex-shrink:0">{{ $t(auditStatus(item.audit_status).label) }}</span>
               </div>
 
               <!-- Row 2: Thumbnail + Content (matching Flutter layout) -->
@@ -103,7 +100,7 @@ const GuidePublishPage = {
                 <!-- Content — type-specific fields (matching Flutter per-type display) -->
                 <div style="flex:1;min-width:0">
                   <!-- Name/Title -->
-                  <div style="font-size:14px;font-weight:500;color:#162539;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px">{{ item.name || item.title || '—' }}</div>
+                  <div style="font-size:14px;font-weight:500;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:8px">{{ item.name || item.title || '—' }}</div>
 
                   <!-- Type-specific info fields (matching Flutter IconContent widgets) -->
                   <!-- Attraction: 開放時間 + 地址 -->
@@ -165,7 +162,7 @@ const GuidePublishPage = {
             <!-- Operate bar — matching Flutter OperateWidget: edit only (canDelete: false) -->
             <div style="height:40px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.6);border-top:1px solid rgba(0,0,0,.04);cursor:pointer"
               @click="onEditItem(item)">
-              <span style="font-size:14px;color:#162539;font-weight:500">{{ $t('編輯') }}</span>
+              <span style="font-size:14px;color:#1a1a1a;font-weight:500">{{ $t('編輯') }}</span>
             </div>
 
           </div>
