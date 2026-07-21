@@ -12,7 +12,7 @@ class CityListStore extends GetxController with ApiMixin {
       'page': 1,
     });
     if (!res.isSuccess) return;
-    final data = res.dataJson['lists'] as List<dynamic>? ?? [];
+    final data = res.dataJson['list'] as List<dynamic>? ?? [];
     cityList.value = data.map((e) => CityList.fromJson(e)).toList();
   }
 }

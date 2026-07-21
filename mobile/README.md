@@ -1,16 +1,32 @@
-# lumotrip
+# LUMOTRIP (LUMOGUIDE)
 
-A new Flutter project.
+Flutter 旅行指南 App，支持 iOS / Android / macOS。
 
-## Getting Started
+- 版本：1.0.6+19
+- 后端 API：`https://api.lumoguide.com/api/`
+- 后端代码：`../LUMO_GUIDE_BackendCode/`（Laravel PHP）
 
-This project is a starting point for a Flutter application.
+## 环境
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter 3.44.4 (Dart 3.12.2)，安装路径 `~/flutter/`
+- 中国镜像必需（`PUB_HOSTED_URL` / `FLUTTER_STORAGE_BASE_URL`）
+- 详见 [SETUP.md](SETUP.md) 和 [CLAUDE.md](CLAUDE.md)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 快速开始
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run -d macos   # macOS 桌面
+flutter run             # 自动检测设备
+flutter build apk       # Android APK
+flutter build ios       # iOS
+```
+
+## 文档
+
+| 文档 | 说明 |
+|------|------|
+| [CLAUDE.md](CLAUDE.md) | 架构、模式、已知问题 |
+| [SETUP.md](SETUP.md) | 新机器环境配置 |
+| [docs/testflight-upload.md](docs/testflight-upload.md) | TestFlight 上传指南 |
+| [docs/backend-requirements.md](docs/backend-requirements.md) | 后端修改需求清单 |

@@ -112,13 +112,15 @@ Every page follows a strict 3-file pattern:
 2. **`page.dart`** — `StatelessWidget`. Gets controller via `Get.find()` or creates it via `Get.put()` on first access.
 3. **`index.dart`** — barrel exports both controller and page.
 
+**`RefreshableMixin`** (`lib/common/widgets/refresh/mix.dart`) provides paginated list state with pull-to-refresh and load-more via `easy_refresh`. Controllers mix it in, configure with `initRefresh()`, override `fetchData()` (calls API with `page`/`limit`), and feed results to `endLoad(lists)`. The mixin manages `.obs` items list, page counter, refresh/load completion signals, and "no more" footer state.
+
 ### API layer
 
 - `ApiProvider` is a singleton Dio wrapper. All HTTP methods return `ApiResult` (never throws).
 - `ApiMixin` is a mixin that delegates to `ApiProvider` — mix this into any controller/service that needs network access.
 - `ApiResult` provides `.isSuccess`, `.dataJson` (single object), `.dataList` (array), `.message`.
 - `AuthInterceptor` attaches the Bearer token from `UserStore.to.token` to every request.
-- API URLs are static string constants in `ApiUrl` class. Dev mode is toggled via `ApiUrl._isDev` (currently `false`).
+- API URLs are static string constants in `ApiUrl` abstract class (`lib/common/apis/urls.dart`). Dev mode is toggled via `ApiUrl._isDev` (compile-time const, currently `false` — requires code change + rebuild to switch).
 
 ### State management
 
@@ -177,7 +179,10 @@ See [[calendar-redesign]], [[booking-color-coding]].
 | `/journey_detail` | `JourneyDetailPage` | Work detail: 2 tabs (行程/详情), save as template, generate & share client itinerary |
 | `/journey_editor` | `JourneyEditorPage` | Create/edit work trip form with auto day-by-day content |
 
-**Data model:** `JourneyWork` (`lib/common/models/journey_work.dart`) with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Backend API `GET /user/journeyList` is TODO — `mockData()` provides 4 sample entries as fallback. Mock data loaded immediately (no API wait) to avoid blank screen.
+**Data models:**
+- `JourneyWork` (`lib/common/models/journey_work.dart`) — main work entity with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Also contains `FlightInfo`, `HotelInfo`, `ItineraryDay`, `ItineraryItem` (embedded; TODO on line 523 to split into separate files). Backend CRUD APIs now available at `/user/journeyList|Detail|Create|Update|Delete`. `mockData()` still provides 4 sample entries as fallback if API fails.
+- `JourneyTemplate` (`lib/common/models/journey_template.dart`) — reusable template saved from a work; used by `TemplatePickerSheet` and `TemplateSaveDialog`. Backend APIs at `/user/journeyTemplateList|Save|Delete`.
+- **Backend data storage:** Journey CRUD uses Laravel JSON `content` column — all fields stored as JSON blob. `expandJourneyWork()` in backend expands content to flat fields on response. Frontend sends flat JSON; backend stores in `content`. See `docs/backend-requirements.md`.
 
 **Dynamic status (`effectiveStatus`):** Status is computed from dates relative to today, not stored:
 - 进行中：startDate ≤ today ≤ endDate
@@ -221,13 +226,15 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **Editor redesign v4 (2026-07):** Country-based titles via city→country mapping:
 - **Problem:** Backend `/city/lists` only returns `area_id`/`area_name` (region, e.g. "中歐"), not `country`. Titles fell back to areaName → "中歐几日游".
-- **Solution:** Call `https://api.lumoguide.com/manage/systemContinents` (full URL in `ApiUrl.systemContinents`) to get the continent→area→country→city hierarchy tree.
+- **Solution:** Backend `/common/systemContinents` API returns continent→country→city hierarchy tree (with `Cache::remember` 24h TTL). Frontend `ApiUrl.systemContinents = '/common/systemContinents'` routes through standard Dio base URL. Also backend `CityController::enrichCityCountry()` injects `country_name` via `City::whereIn('id', $cityIds)->with('country')` query (with `Cache::remember('city_country_map', 3600)` 1h TTL).
 - **`_cityCountryMap`:** `Map<int, String>` mapping city ID → country name, built by `_loadSystemContinents()` which is called after `_loadCityList()`.
 - **`_walkTree(node, parentName)`:** Recursive tree walker. **Leaf nodes = cities, parent nodes = countries.** Handles both 3-level (continent→country→city) and 4-level (continent→area→country→city) structures. Includes `debugPrint` logging for diagnostics.
 - **`cityCountry(CityList c)`:** Unified country lookup: `city.country` → `_cityCountryMap` → `areaName`.
 - **`_autoGenerateTitle()` rewritten:** Collects cities from `startCity` + `endCity` + all `itineraryDays[].cityName`, deduplicates, maps to countries, joins. e.g. "奥地利捷克匈牙利5日游". Falls back to city name concatenation if no country data.
 - **Labels renamed:** "出发城市"→"游览起始城市", "结束城市"→"游览结束城市" in both `page.dart` (`_CityPickerRow` labels) and `controller.dart` (picker sheet titles, comments).
 - City picker subtitles (3 pickers) now use `cityCountry(c)` instead of raw `c.country ?? c.areaName ?? ''`.
+- **Bug fix (2026-07-21):** `CityListStore.fetchCityList()` used wrong JSON key `res.dataJson['lists']` (plural) — corrected to `res.dataJson['list']` (singular), matching all other callers of `/city/lists`. Previously `CityListStore.to.cityList` was always empty.
+- **Bug fix (2026-07-21):** `_CityPickerRow` now uses `controller.cityCountry(c)` instead of raw `c.country`, matching city picker subtitles.
 
 **FAB create-options sheet (2026-07):** Journey list FAB replaced with `_showCreateOptions` bottom sheet:
 - 4 entries: 空白创建 → editor / 从模板创建 → `TemplatePickerSheet` / 拍照导入 (reserved) / 文件导入 (reserved)
@@ -300,6 +307,7 @@ See [[calendar-redesign]], [[booking-color-coding]].
    - 详见 [[ios-podspec-patches]]
 7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable`、`TableCalendar` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
 8. **macOS App Sandbox 缺网络权限导致所有 API 请求失败:** `DebugProfile.entitlements` 和 `Release.entitlements` 需要添加 `com.apple.security.network.client` 权限，否则沙箱会阻止所有 HTTP 请求。已在两个 entitlements 文件中添加。详见 [[macos-network-entitlement]]。
+9. **Journey Editor `onSubmit()` 未调用 API:** 后端 JourneyWork CRUD 接口已就绪（`/user/journeyList|Detail|Create|Update|Delete`），但前端 `lib/pages/journey_editor/controller.dart:714` 的 `onSubmit()` 和 `onSaveAsTemplate()` 仍是 stub（仅显示 toast 并关闭页面，不发送 HTTP 请求）。后续需对接 API。
 
 ## New machine setup
 

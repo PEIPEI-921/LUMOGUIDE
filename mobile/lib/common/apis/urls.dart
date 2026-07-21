@@ -52,8 +52,8 @@ abstract class ApiUrl {
   /// 获取城市列表
   static const cityList = '/city/lists';
 
-  /// 系统大洲/国家/城市层级（含城市→国家归属）
-  static const systemContinents = 'https://api.lumoguide.com/manage/systemContinents';
+  /// 系统大洲/国家/城市层级树（含城市→国家归属）
+  static const systemContinents = '/common/systemContinents';
 
   static const cityOptions = '/city/options';
 

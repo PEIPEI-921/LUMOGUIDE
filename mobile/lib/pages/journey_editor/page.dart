@@ -210,6 +210,8 @@ class _CityPickerRow extends StatelessWidget {
       Expanded(
         child: Obx(() {
           final c = city.value;
+          final controller = Get.find<JourneyEditorController>();
+          final country = c != null ? controller.cityCountry(c) : '';
           if (c == null) {
             return GestureDetector(
               onTap: onTap,
@@ -237,7 +239,7 @@ class _CityPickerRow extends StatelessWidget {
               SizedBox(width: 6.w),
               Expanded(
                 child: Text(
-                  '${c.name ?? ''}${c.country?.isNotEmpty == true ? ' · ${c.country}' : ''}',
+                  '${c.name ?? ''}${country.isNotEmpty ? ' · $country' : ''}',
                   style: TextStyle(fontSize: 13.sp, color: AppColors.primaryText),
                 ),
               ),
