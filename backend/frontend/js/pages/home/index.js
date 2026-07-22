@@ -498,7 +498,9 @@ const HomePage = {
       } else if (dataType === 2) {
         this.$router.push('/guide/' + item.id);
       } else if (dataType === 3) {
-        this.$router.push('/detail/content?id=' + item.id + '&city_id=' + (item.city_id || item.cityId) + '&type_id=' + (item.type_id || item.typeId));
+        const cid = item.city_id || item.cityId || '';
+        const tid = item.type_id || item.typeId || '';
+        this.$router.push('/detail/content?id=' + item.id + (cid ? '&city_id=' + cid : '') + (tid ? '&type_id=' + tid : ''));
       }
       this.searchResults = [];
       this.searchQuery = '';
@@ -512,7 +514,7 @@ const HomePage = {
     goGuideDetail(id) { this.$router.push('/guide/' + id); },
     goNewsDetail(id) { this.$router.push('/news/' + id); },
     goCommonDetail(id, cityId, typeId) {
-      this.$router.push('/detail/content?id=' + id + '&city_id=' + cityId + '&type_id=' + typeId);
+      this.$router.push('/detail/content?id=' + id + (cityId ? '&city_id=' + cityId : '') + (typeId ? '&type_id=' + typeId : ''));
     },
     goSearch(type) {
       this.$router.push('/search?type=' + type);

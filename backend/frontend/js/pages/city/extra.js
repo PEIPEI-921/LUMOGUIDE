@@ -60,7 +60,7 @@ const CityStrategyPage = {
       <!-- Content Grid -->
       <div v-else style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:12px">
         <a v-for="item in items" :key="item.id"
-          :href="activeType === 'guide' ? '#/guide/' + item.id : '#/detail/' + activeType + '?id=' + item.id + '&city_id=' + item.city_id"
+          :href="activeType === 'guide' ? '#/guide/' + item.id : '#/detail/' + activeType + '?id=' + item.id + '&city_id=' + (item.city_id || currentCity?.id || '') + '&type_id=' + (TYPE_TO_ID[activeType] || '')"
           class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
           <div style="height:140px;overflow:hidden;background:var(--color-bg-card)">
             <img v-if="item.photo || item.first_picture" :src="item.photo || item.first_picture" :alt="item.name"
@@ -80,6 +80,7 @@ const CityStrategyPage = {
 
   data() {
     return {
+      TYPE_TO_ID: { attraction: 1, restaurant: 2, shopping: 3, accommodation: 4, transportation: 5, facility: 6, activity: 7, ticket: 8 },
       activeType: '',
       items: [],
       loading: false,
@@ -316,7 +317,7 @@ const CityGuideListPage = {
 
   methods: {
     async load() {
-      const cityId = this.$route.query.city_id;
+      const cityId = parseInt(this.$route.query.city_id, 10);
       if (!cityId) {
         this.error = '缺少城市 ID';
         this.loading = false;

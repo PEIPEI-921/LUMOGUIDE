@@ -116,7 +116,7 @@ const CityDetailPage = {
         <div v-else>
           <div v-if="contentItems.length > 0" class="city-content-grid">
             <a v-for="item in contentItems" :key="item.id"
-              :href="'#/detail/' + currentTabKey + '?id=' + item.id + '&city_id=' + cityId"
+              :href="'#/detail/' + currentTabKey + '?id=' + item.id + (cityId ? '&city_id=' + cityId : '') + '&type_id=' + getTypeId(currentTabKey)"
               class="ds-card ds-card-hover city-card-item" style="background:transparent;box-shadow:none">
               <div class="city-card-img">
                 <img v-if="item.first_picture" :src="item.first_picture" :alt="item.name">
@@ -248,6 +248,10 @@ const CityDetailPage = {
   },
 
   methods: {
+    getTypeId(key) {
+      const tab = this.contentTabs.find(t => t.key === key);
+      return tab ? tab.typeId : 0;
+    },
     async loadCity() {
       const id = this.$route.query.id;
       if (!id) {
