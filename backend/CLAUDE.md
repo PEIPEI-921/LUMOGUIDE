@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **LuMo Guide（路盟）** — a professional platform for travel industry insiders (tour guides, merchants, content creators) built on Laravel 9. Slogan: **"路上有光，盟友相伴"**. Provides REST API for a Flutter mobile app, a Vue 3 SPA web frontend, and a Dcat Admin panel. The platform covers travel destinations (cities), tour guides, merchants/shops, information articles, reservations, Stripe VIP subscriptions, and a points/rewards system. **All users must log in and pass identity verification to access content.**
 
-**Important**: Source files under `app/` are encoded with **swoole_loader**. The PHP extension `swoole_loader` must be loaded or the files will appear garbled. Do not edit encoded files directly — work through the admin panel or API layer. A few files (like `helpers.php`, `lang/`, `routes/`, `config/`, `.env`, `composer.json`) are plaintext.
+**All source code is plaintext** (2026-07-22: `app/Services/` decoded from swoole_loader, no longer requires the extension).
 
 ## File Organization: Where to Put What
 
@@ -38,65 +38,63 @@ When creating or modifying files in this project, always follow these convention
 
 ### Backend Source Code
 
-> ⚠️ Most files under `app/` are **encoded with swoole_loader** and cannot be read or edited directly. Only the paths marked **plaintext** below can be modified.
-
-| What | Location | Swoole | Pattern |
-|------|----------|--------|--------|
-| **API Controllers** | `app/Http/Controllers/Api/` | encoded | `*Controller.php`, extend `BaseController` |
-| **Base Controller** | `app/Http/Controllers/Controller.php` | encoded | All controllers extend this |
-| **Services** | `app/Services/` | encoded | `*Service.php`, one per domain |
-| **Models** | `app/Models/` | encoded | `*.php`, extend Eloquent `Model` or `Authenticatable` |
-| **Enums** | `app/Enums/` | encoded | `*.php`, class constants only |
-| **Request Validation** | `app/Http/Requests/` | encoded | `*Request.php`, one per form/endpoint |
-| **Middleware** | `app/Http/Middleware/` | encoded | `*.php` |
-| **Admin Controllers** | `app/Admin/Controllers/` | encoded | `*Controller.php` |
-| **Admin Repositories** | `app/Admin/Repositories/` | encoded | `*.php` |
-| **Admin Forms** | `app/Admin/Forms/` | encoded | `*.php` |
-| **Background Jobs** | `app/Jobs/` | encoded | `*Job.php` |
-| **Mail Classes** | `app/Mail/` | encoded | `*Mail.php` |
-| **Exceptions** | `app/Exceptions/` | encoded | `*.php` |
-| **Providers** | `app/Providers/` | encoded | `*ServiceProvider.php` |
-| **Console Commands** | `app/Console/` | encoded | `*.php` |
-| **Helper Functions** | `app/helpers.php` | ✅ plaintext | Global PHP functions |
-| **HTTP Kernel** | `app/Http/Kernel.php` | encoded | Middleware registration |
-| **Console Kernel** | `app/Console/Kernel.php` | encoded | Schedule tasks |
+| What | Location | Pattern |
+|------|----------|--------|
+| **API Controllers** | `app/Http/Controllers/Api/` | `*Controller.php`, extend `BaseController` |
+| **Base Controller** | `app/Http/Controllers/Controller.php` | All controllers extend this |
+| **Services** | `app/Services/` | `*Service.php`, one per domain |
+| **Models** | `app/Models/` | `*.php`, extend Eloquent `Model` or `Authenticatable` |
+| **Enums** | `app/Enums/` | `*.php`, class constants only |
+| **Request Validation** | `app/Http/Requests/` | `*Request.php`, one per form/endpoint |
+| **Middleware** | `app/Http/Middleware/` | `*.php` |
+| **Admin Controllers** | `app/Admin/Controllers/` | `*Controller.php` |
+| **Admin Repositories** | `app/Admin/Repositories/` | `*.php` |
+| **Admin Forms** | `app/Admin/Forms/` | `*.php` |
+| **Background Jobs** | `app/Jobs/` | `*Job.php` |
+| **Mail Classes** | `app/Mail/` | `*Mail.php` |
+| **Exceptions** | `app/Exceptions/` | `*.php` |
+| **Providers** | `app/Providers/` | `*ServiceProvider.php` |
+| **Console Commands** | `app/Console/` | `*.php` |
+| **Helper Functions** | `app/helpers.php` | Global PHP functions |
+| **HTTP Kernel** | `app/Http/Kernel.php` | Middleware registration |
+| **Console Kernel** | `app/Console/Kernel.php` | Schedule tasks |
 
 ### Routing
 
-| What | Location | Swoole |
-|------|----------|--------|
-| API routes | `routes/api.php` | ✅ plaintext |
-| Web routes | `routes/web.php` | ✅ plaintext |
-| Admin routes | `app/Admin/routes.php` | ✅ plaintext |
-| Console routes | `routes/console.php` | ✅ plaintext |
-| Broadcast channels | `routes/channels.php` | ✅ plaintext |
+| What | Location |
+|------|----------|
+| API routes | `routes/api.php` |
+| Web routes | `routes/web.php` |
+| Admin routes | `app/Admin/routes.php` |
+| Console routes | `routes/console.php` |
+| Broadcast channels | `routes/channels.php` |
 
 ### Configuration
 
-| What | Location | Swoole |
-|------|----------|--------|
-| Environment variables | `.env` | ✅ plaintext (never commit) |
-| Env example | `.env.example` | ✅ plaintext |
-| App config | `config/app.php` | ✅ plaintext |
-| Database config | `config/database.php` | ✅ plaintext |
-| Admin config | `config/admin.php` | ✅ plaintext |
-| JWT config | `config/jwt.php` | ✅ plaintext |
-| IM config | `config/im.php` | ✅ plaintext |
-| Other config | `config/*.php` | ✅ plaintext |
+| What | Location |
+|------|----------|
+| Environment variables | `.env` (never commit) |
+| Env example | `.env.example` |
+| App config | `config/app.php` |
+| Database config | `config/database.php` |
+| Admin config | `config/admin.php` |
+| JWT config | `config/jwt.php` |
+| IM config | `config/im.php` |
+| Other config | `config/*.php` |
 
 ### Database
 
-| What | Location | Swoole |
-|------|----------|--------|
-| Migrations | `database/migrations/` | ✅ plaintext |
-| Seeders | `database/seeders/` | ✅ plaintext |
-| Factories | `database/factories/` | ✅ plaintext |
+| What | Location |
+|------|----------|
+| Migrations | `database/migrations/` |
+| Seeders | `database/seeders/` |
+| Factories | `database/factories/` |
 
 ### Translations
 
-| What | Location | Swoole |
-|------|----------|--------|
-| Language strings | `lang/en/*.php` | ✅ plaintext |
+| What | Location |
+|------|----------|
+| Language strings | `lang/en/*.php` |
 
 ### Public Assets (Vendor / Compiled)
 
@@ -193,28 +191,16 @@ npm run build:prod
 - **Composer**: `/opt/homebrew/bin/composer`
 - **Node.js**: v23.11.0 via Homebrew, npm 11.15.0
 - **IDE**: PhpStorm 2026.1, Run Configuration uses `start.sh` (Shell Script type)
-- **Local dev DB**: Connects to production MySQL via SSH tunnel. `.env` DB_HOST=127.0.0.1, DB_PORT=3307. The tunnel maps 3307 → server's 127.0.0.1:3306.
+### Local Dev
 
-### Local Dev Without swoole_loader
-
-Since `app/` source files are encoded with swoole_loader (not installed locally), `public/index.php` contains an **API proxy** at the top of the file. It intercepts all `/api/*` requests and forwards them to `https://api.lumoguide.com` via cURL, returning the production response directly — entirely bypassing Laravel's encoded controllers.
-
-- Proxy code lives at the TOP of `public/index.php` (before `require autoload.php`)
-- Requests are matched by `str_starts_with($requestUri, '/api/')`
-- Timeout: 60s total, 10s connect
-- Non-API requests (`/`, `/test.html`, etc.) fall through to normal Laravel bootstrap
-- **API proxy cache** (2026-07-08): GET requests are cached to disk (`storage/cache/api-proxy/`) with per-endpoint TTLs (2 min default, 30 min for `/common/config`, 10 min for `/common/getContinentsList`, 5 min for `/city/lists`). Second request hits disk cache in ~1ms instead of TLS round-trip. POST/PUT/DELETE bypass cache. Cache key includes auth token hash for user isolation. Response header `X-Proxy-Cache: HIT/MISS`. See [[api-cache-system]] in memory.
-- **Frontend API cache** (2026-07-08): `provider.js` has in-memory Map cache for GET responses (1 min default TTL). Page navigation between already-visited routes → 0ms API responses. POST/PUT/DELETE automatically invalidate related cache. See [[api-cache-system]] in memory.
-
-> **Important**: Local proxy software (Surge, ClashX, V2Ray) interferes with this. These tools hijack DNS for `api.lumoguide.com` to a virtual IP (`198.18.0.51`) and SSL handshakes time out. Disable the proxy software for local dev, or the API proxy will return 502 errors.
+- **Database**: Import `mysql -u root -p lumo_guide < database/lumo_guide_full.sql`
+- **Start**: `/opt/homebrew/bin/php artisan serve --host=0.0.0.0 --port=8000` (or `./start.sh`)
+- **Uploads**: User-uploaded files in `storage-uploads.tar.gz` (342MB, 1201 files); extracted by deploy.sh step 9
+- **Deploy**: `./deploy.sh` — 11-step one-click deployment (tested in Docker container)
 
 ### PhpStorm Setup
 
-Run Configuration (`start`) executes `start.sh`, which:
-1. Checks if SSH tunnel on port 3307 exists → creates if missing
-2. Starts `php artisan serve --host=0.0.0.0 --port=8000`
-
-If the configuration breaks, recreate it manually: Settings → PHP → CLI Interpreter → `/opt/homebrew/opt/php@8.3/bin/php`, then Run → Edit Configurations → Shell Script pointing to `start.sh`.
+Run Configuration (`start`) executes `start.sh` which starts `php artisan serve --host=0.0.0.0 --port=8000`.
 
 ## Frontend
 
@@ -368,7 +354,7 @@ All 69 Web routes implemented, matching the 71 Flutter pages. Mobile-only featur
 
 The Flutter mobile app working copy is at `/Users/xuejingchen/Desktop/vscode/lumotrip/` (this project). The original reference source is at `/Users/guanpei/Downloads/LUMOGUIDE- Front/LUMOGUIDE-frontend/`. All API endpoints and data models are defined there — use as reference when building web pages. See `[[mobile-frontend-reference]]` in memory for full details.
 
-## Server Connection
+## Server Connection (legacy — project now independent)
 
 | Item | Value |
 |------|-------|
@@ -376,18 +362,11 @@ The Flutter mobile app working copy is at `/Users/xuejingchen/Desktop/vscode/lum
 | Domain | easyname (DNS only) |
 | IP | 47.76.27.105 |
 | SSH user | root |
-| SSH auth | password (see `start.sh`) |
+| SSH auth | password (see administrator) |
 | Web root | `/www/wwwroot/lumo/public/` |
-| Nginx panel | `/www/server/panel/vhost/nginx/` |
 | MySQL DB | lumo_guide (MySQL 5.7.44, localhost:3306) |
-| MySQL credentials | `lumo_guide` / `KHdKYKz6WyBQ81b3` |
 
-**SSH Tunnel** (run manually if needed):
-```bash
-sshpass -p '<password>' ssh -o StrictHostKeyChecking=no -L 3307:127.0.0.1:3306 root@47.76.27.105 -N -f
-```
-
-**SSH blocked**: if `kex_exchange_identification: Connection closed by remote host`, SSH is blocked (likely Alibaba Cloud security group). Use **Alibaba Cloud ECS Console → Remote Connection → VNC** as backup access.
+**2026-07-22**: Codebase fully decoupled. All source code plaintext. Database dump + upload files included in repo. Use `./deploy.sh` on any Ubuntu server.
 
 ## Architecture
 
@@ -497,9 +476,9 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 ## Critical Rules
 
 ### Backend
-- **Source code is encoded**: Services (`app/Services/`) are encoded with swoole_loader and cannot be read or edited. **Controllers** (`app/Http/Controllers/`) are plaintext and can be edited. Models, routes, configs, language files, and migrations are also plaintext.
+- **All source code is plaintext** — Services decoded 2026-07-22. No special extensions required.
 - **Admin panel**: at `/manage` (not `/admin`), set by `ADMIN_ROUTE_PREFIX=manage` in `.env`.
-- **Stripe is live**: `.env` contains production keys. Do not commit `.env`.
+- **Stripe**: `.env` keys must be configured per deployment. Do not commit `.env`.
 - **Response format**: All API responses are `{code: int, message: string, data: object/array}`.
 - **Queue driver**: Redis (`QUEUE_CONNECTION=redis`).
 - **Bug report**: 62 known bugs documented in `.claude/bug-report-2026-07-07.md` (4 rounds: critical→high→medium→minor).
