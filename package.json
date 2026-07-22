@@ -5,6 +5,7 @@
     },
     "devDependencies": {
         "axios": "^1.1.2",
+        "esbuild": "^0.21.0",
         "lodash": "^4.17.19"
     }
 }

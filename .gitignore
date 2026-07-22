@@ -34,3 +34,4 @@ vite.config.js
 .DS_Store
 /storage/cache/
 /frontend/dist
+storage-uploads.tar.gz

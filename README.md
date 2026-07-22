@@ -2,131 +2,186 @@
 
 > **"路上有光，盟友相伴"** — 旅游行业人士的专业信息交流平台
 
-面向导游、商家、内容创作者的综合性平台。提供 REST API（Flutter 移动端）、Vue 3 SPA Web 前端、Dcat Admin 管理后台。覆盖旅游目的地（城市）、导游、商户、资讯文章、预约、Stripe VIP 订阅、积分商城等功能。
+面向导游、商家、内容创作者的综合性平台。提供 REST API（Flutter 移动端）、Vue 3 SPA Web 前端、Dcat Admin 管理后台。覆盖城市目的地、导游、商户、资讯文章、预约、Stripe VIP 订阅、积分商城等功能。
 
 **所有用户需登录并通过身份审核方可访问内容。**
 
 ## 目录结构
 
 ```
-├── app/                        # 后端源码（swoole_loader 编码，大部分不可直接编辑）
+├── app/                        # 后端源码（全部明文，2026-07-22 解码）
 │   ├── Admin/                  # Dcat Admin 管理后台
 │   ├── Http/Controllers/Api/   # API 控制器
 │   ├── Models/                 # Eloquent 模型
-│   ├── Services/               # 业务逻辑层
+│   ├── Services/               # 业务逻辑层（11 个 Service）
 │   ├── Enums/                  # 常量枚举
 │   ├── Jobs/                   # 后台任务
-│   └── helpers.php             # 全局辅助函数 ✅ 可编辑
-├── config/                     # 配置文件 ✅ 可编辑
-├── routes/                     # 路由定义 ✅ 可编辑
+│   └── helpers.php             # 全局辅助函数
+├── config/                     # 配置文件
+├── routes/                     # 路由定义
 │   ├── api.php                 # API 路由
 │   └── web.php                 # Web 路由（SPA catch-all）
-├── database/migrations/        # 数据库迁移 ✅ 可编辑
-├── frontend/                   # Web 前端（Vue 3 SPA 源文件目录）
-│   ├── index.html              # SPA 外壳（CDN 链接 + <div id="app">）
-│   ├── build.mjs               # 生产构建脚本（esbuild 合并压缩）
-│   ├── dist/                   # 构建输出（生产环境使用，gitignored）
+├── database/                   # 数据库
+│   ├── migrations/             # 迁移文件（16 个）
+│   ├── lumo_guide_full.sql     # 完整生产 dump（56 表，1.6M）
+│   ├── schema.sql              # 仅表结构（66K）
+│   ├── seed.sql                # 配置/查找数据（349K）
+│   └── data.sql                # 用户内容数据（1.2M）
+├── frontend/                   # Web 前端（Vue 3 SPA）
+│   ├── index.html              # SPA 外壳
+│   ├── build.mjs               # 生产构建脚本（esbuild）
+│   ├── dist/                   # 构建输出（gitignored）
 │   ├── images/                 # 图片资源
-│   ├── css/                    # 样式表
-│   │   ├── variables.css       # 设计 token（颜色、圆角、间距）
-│   │   ├── app.css             # 全局布局、排版、工具类
-│   │   └── components.css      # .ds-* 组件类、topbar、认证卡片
-│   └── js/                     # JavaScript
-│       ├── app.js              # Vue 应用入口、AppShell 组件、全局注册
-│       ├── router.js           # Hash 路由（69 条路由 + auth guard）
-│       ├── api/                # API 调用层（provider.js + 183 个 URL 常量）
-│       ├── stores/             # 响应式状态（user.js、config.js）
-│       ├── i18n/               # 多语言（zh-CN、zh-TW、en）
-│       ├── utils/              # 工具函数
-│       ├── components/         # 共享组件
-│       └── pages/              # 页面组件（36 个文件，69 个路由）
+│   ├── css/                    # 样式表（3 文件）
+│   └── js/                     # JavaScript（53 文件，69 路由）
 ├── public/                     # 公开资源（css/js 为 → frontend/ 的 symlink）
-├── resources/views/            # Blade 模板
+├── deploy.sh                   # 一键部署脚本（11 步）
+├── storage-uploads.tar.gz      # 用户上传文件打包（342MB，1201 文件）
 └── .claude/                    # Claude Code 配置
-    └── bug-report-2026-07-07.md # ⚠️ 深度 Bug 扫描报告（待修复）
+    └── bug-report-2026-07-07.md # 深度 Bug 扫描报告（62 个）
 ```
 
 ## 技术栈
 
 | 层 | 技术 | 说明 |
 |---|------|------|
-| 后端框架 | Laravel 9 | PHP 8.3 |
-| 数据库 | MySQL | 生产库 `lumo_guide` |
+| 后端框架 | Laravel 9 | PHP 8.x |
+| 数据库 | MySQL 5.7+ | 56 张表 |
 | 队列 | Redis | 后台任务驱动 |
 | API 认证 | JWT (tymon/jwt-auth) | TTL 7 天 |
 | 管理后台 | Dcat Admin | 路径 `/manage` |
 | 支付 | Stripe | VIP 订阅 |
-| Web 前端 | Vue 3 + Vue Router 4 | CDN 加载，无构建工具 |
-| 移动端 | Flutter | 参考源 `/Users/guanpei/Downloads/LUMOGUIDE- Front/` |
+| Web 前端 | Vue 3 + Vue Router 4 | CDN 加载，同源 API |
+| 移动端 | Flutter | REST API 客户端 |
 | 即时通讯 | 腾讯 IM | 仅移动端 |
 
-## 本地开发环境
+## 快速部署
+
+### 在新服务器上一键部署
 
 ```bash
-# PHP 8.3.21 via Homebrew
-# 启动开发服务器（自动建立 SSH 隧道连接生产数据库）
-./start.sh
+git clone <仓库地址> lumo_guide
+cd lumo_guide
 
-# 或手动
-/opt/homebrew/bin/php artisan serve
+# 确保 storage-uploads.tar.gz 在项目根目录（用户上传的图片等）
 
-# 清除缓存（修改路由/配置后）
-/opt/homebrew/bin/php artisan config:clear && php artisan cache:clear && php artisan route:clear
+# 交互模式（推荐首次部署）
+./deploy.sh
 
-# 运行测试
-/opt/homebrew/bin/php artisan test
+# 或自动模式
+./deploy.sh --auto
 ```
 
-- **数据库**: 通过 SSH 隧道连接生产 MySQL（`127.0.0.1:3307` → 服务器 `3306`）
-- **API 代理**: `public/index.php` 拦截 `/api/*` 并转发到 `https://api.lumoguide.com`（本地无 swoole_loader）
-- **⚠️ 注意**: 本地代理软件（Surge、ClashX）会劫持 DNS 导致 API 代理失败，开发时需关闭
-- **后端源文件编码**: `app/` 下大部分 PHP 文件由 swoole_loader 编码，本地不可读取/编辑
+脚本执行 11 个步骤：环境检查 → 配置文件 → Composer 依赖 → 目录权限 → 数据库导入 → 前端构建 → 缓存优化 → Nginx 配置 → 上传文件恢复 → 队列 Worker → 定时任务。
+
+### 手动部署步骤
+
+```bash
+# 1. 配置环境
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+# 编辑 .env 填入数据库密码、Stripe、邮件、IM 等密钥
+
+# 2. 安装依赖
+composer install --no-dev --optimize-autoloader
+
+# 3. 导入数据库
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lumo_guide DEFAULT CHARSET utf8mb4"
+mysql -u root -p lumo_guide < database/lumo_guide_full.sql
+php artisan migrate  # 运行未应用的迁移（如 journey_work/journey_template）
+
+# 4. 设置权限
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+
+# 5. 恢复上传文件
+tar xzf storage-uploads.tar.gz -C storage/app/public/
+php artisan storage:link
+
+# 6. 前端构建
+npm install --no-save
+npm run build:prod
+
+# 7. 优化
+php artisan config:cache && php artisan view:cache && php artisan event:cache
+
+# 8. Nginx 配置 → 见 deploy.sh 第 8 步生成的模板
+# 9. 队列 Worker → Supervisor 配置
+# 10. 定时任务 → crontab -e
+```
+
+## 本地开发
+
+```bash
+# 启动
+/opt/homebrew/bin/php artisan serve --host=0.0.0.0 --port=8000
+
+# 导入本地数据库
+mysql -u root -p lumo_guide < database/lumo_guide_full.sql
+
+# 清除缓存
+php artisan config:clear && php artisan cache:clear && php artisan route:clear
+
+# 前端开发模式 — 无需构建，直接修改 JS/CSS 刷新浏览器即可
+```
+
+## 环境要求
+
+| 组件 | 最低版本 | 说明 |
+|------|---------|------|
+| PHP | 8.0+ | 必需扩展: bcmath, ctype, curl, dom, exif, fileinfo, gd, json, mbstring, openssl, pdo, pdo_mysql, redis, tokenizer, xml, zip |
+| MySQL | 5.7+ | 56 表 |
+| Redis | 任意 | 队列和配置缓存 |
+| Node.js | 16+ | 前端生产构建（esbuild） |
+| Composer | 2.x | PHP 依赖管理 |
+| Nginx | 任意 | Web 服务器 |
 
 ## 前端关键约束
 
 1. **不要创建独立组件文件** — Vue 3 CDN 构建中，`components: {}` 注册在子组件模板中不解析，组件会静默渲染空白。所有模板必须内联在父组件中
 2. **所有前端文件放在 `frontend/`** — `public/css/` 和 `public/js/` 是 symlink，不要直接编辑
-3. **前端开发模式无构建步骤** — 修改 JS/CSS 后刷新浏览器即可看到效果；生产环境 `npm run build:prod` 用 esbuild 合并压缩（53 JS + 3 CSS → 1+1，HTTP 请求 57→4）
-4. **多语言**: I18n 对象必须用 `Vue.reactive()` 包裹，`I18n.init()` 必须在 `app.mount()` 之前
-5. **文件上传**: 使用 `URL.createObjectURL()` 预览时必须同时保存 `File` 对象，提交时上传 File
-6. **定时器**: 所有 `setInterval`/`setTimeout` 必须在 `beforeUnmount` 中清除
+3. **API 使用同源路径** — API URL 由 `window.location.origin` 自动检测，不依赖特定域名
+4. **生产构建**: `npm run build:prod` 用 esbuild 合并压缩（53 JS + 3 CSS → 1+1，57→4 请求）
+5. **多语言**: I18n 对象必须用 `Vue.reactive()` 包裹，`I18n.init()` 必须在 `app.mount()` 之前
+6. **文件上传**: 使用 `URL.createObjectURL()` 预览时必须同时保存 `File` 对象，提交时上传 File
+7. **定时器**: 所有 `setInterval`/`setTimeout` 必须在 `beforeUnmount` 中清除
 
-## 服务器连接
+## 数据库
 
-| 项目 | 值 |
-|------|-----|
-| 服务商 | easyname |
-| IP | 47.76.27.105 |
-| SSH | root@47.76.27.105 |
-| MySQL | lumo_guide (3306) |
-| API | https://api.lumoguide.com |
-| 管理后台 | https://api.lumoguide.com/manage |
+- **56 张表**，42 张有数据（dump 自生产 MySQL 5.7.44）
+- 14 张空表为按需填充（failed_jobs、password_resets 等），正常
+- 3 个内置管理员账户：`admin`、`lumo`、`Zhou Guanpei`（bcrypt 密码）
+- 导入后运行 `php artisan migrate` 确保 journey_work/journey_template 表被创建
 
-## 🔧 Bug 修复指引
+## 管理后台
 
-项目根目录的 `bug-report-2026-07-07.md` 包含 **62 个已知 Bug** 的详细报告，每个 Bug 含问题说明、复现条件、修复代码和预防措施。按优先级分四轮修复：
+- 路径: `/manage`（由 `.env` 中 `ADMIN_ROUTE_PREFIX=manage` 配置）
+- 内置账户: `admin`
+- 功能: 城市审核、导游/商户管理、内容管理、积分/VIP 配置、系统设置等
 
-1. 严重（4 个）— 安全漏洞 + 页面崩溃
-2. 高危（14 个）— 功能错误 + 数据丢失
-3. 中等（29 个）— UI 问题 + 边缘情况
-4. 轻微（15 个）— 代码质量
+## 更新日志
 
-使用 Claude Code 打开该文件即可按指令逐轮自动修复。
+### 2026-07-22 — 代码独立化
 
-## 最近更新（2026-07-21）
+- 11 个 Service 文件从 swoole_loader 解码为明文，不再需要特殊扩展
+- API 代理从 `public/index.php` 移除，恢复标准 Laravel 入口
+- 前端 JS 中硬编码的 `api.lumoguide.com` 改为 `window.location.origin` 同源自适应
+- `.env` 中所有生产凭据替换为占位符
+- `start.sh` 移除 SSH 密码和生产 IP
+- 创建 `deploy.sh` 11 步一键部署脚本（Docker 验证通过）
+- 数据库 dump（`database/lumo_guide_full.sql`）+ 上传文件打包（`storage-uploads.tar.gz`）纳入仓库
+- Laravel 调度器 + Supervisor 队列 Worker 配置加入部署脚本
 
-### 新增功能
-- **JourneyWork（我的历程）**: 用户工作记录 CRUD，含 `journey_work` 表（JSON content 列 + 软删除），API: `/api/user/journey*`
-- **JourneyTemplate（工作模板）**: 模板保存/列表/删除，`journey_template` 表，API: `/api/user/journeyTemplate*`
-- **systemContinents 层级树**: `GET /api/common/systemContinents` 返回大洲→地区→国家嵌套结构，替代 Flutter 的硬编码数据
-- **城市列表 country_name 注入**: `GET /api/city/lists` 现在返回 `country_name` 和 `country` 字段
+### 2026-07-21
 
-### 生产构建
-- `npm run build:prod` — esbuild 无依赖构建，将 53 JS + 3 CSS 合并压缩为内容哈希命名的单文件
-- 生产环境 `routes/web.php` 自动服务 `frontend/dist/index.html`，开发环境用原始文件
-- 构建输出已加入 `.gitignore`（`/frontend/dist`、`/public/dist`）
+- JourneyWork CRUD、JourneyTemplate、systemContinents 层级树、城市 country_name 注入
+- esbuild 前端生产构建、62 个 Bug 扫描报告
 
-### Bug 修复
-- CityController: `$c->country->name` 改用 nullsafe 操作符 `?->` 防止 null relation 导致 500
-- UserController: `expandJourneyWork` 中 `array_merge($content, $arr)` 确保模型真实字段不会被 content JSON 覆盖
-- routes/web.php: SPA index 延迟到请求时解析，避免 `route:cache` 烘焙不存在的 `dist/index.html`
+## Bug 修复指引
+
+项目根目录的 `bug-report-2026-07-07.md` 包含 62 个已知 Bug 的详细报告，按优先级分四轮修复：严重（4）→ 高危（14）→ 中等（29）→ 轻微（15）。
+
+## 许可
+
+内部项目。含原始第三方 API 密钥的数据需在部署后替换为新凭据。

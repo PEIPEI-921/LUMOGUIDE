@@ -40,7 +40,7 @@ function formatDate(date) {
 function imageUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return 'https://api.lumoguide.com/' + path.replace(/^\//, '');
+  return window.location.origin + '/' + path.replace(/^\//, '');
 }
 
 /**
