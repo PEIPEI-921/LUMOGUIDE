@@ -1,6 +1,7 @@
 /node_modules
 /public/build
 /public/hot
+/public/dist
 /public/storage
 /storage/*.key
 /storage/framework/cache/*
@@ -32,3 +33,4 @@ vite.config.js
 /.claude/
 .DS_Store
 /storage/cache/
+/frontend/dist

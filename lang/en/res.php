@@ -48,6 +48,8 @@ return [
 
     // require
     'id_required' => 'Please enter the ID',
+    'not_found' => 'Data not found',
+    'param_error' => 'Invalid parameter',
     'phone_required' => 'Please enter the phone number',
     'phone_format_error' => 'Phone number must include country code',
     'email_required' => 'Please enter the email',

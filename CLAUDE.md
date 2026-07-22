@@ -109,6 +109,26 @@ When creating or modifying files in this project, always follow these convention
 
 > `frontend/` is the single source of truth for all frontend files. `public/css` and `public/js` are symlinks so PHP's built-in server finds them via `server.php` while serving from ONE copy.
 
+### Frontend Build Step (Production Bundling)
+
+A zero-dependency esbuild build step bundles the 53 JS + 3 CSS files into 1 JS + 1 CSS for production, reducing HTTP requests from 57 → 4.
+
+**How it works:**
+- `frontend/build.mjs` reads `index.html` to determine the JS/CSS loading order
+- Concatenates all files in that order, minifies with esbuild (`minifyIdentifiers: false` — critical, see below)
+- Outputs content-hashed bundles to `frontend/dist/`
+- `public/dist` is a symlink → `../frontend/dist` (same pattern as `public/css`, `public/js`)
+- `routes/web.php` checks `app()->environment('production')` to serve `dist/index.html` vs `index.html`
+
+**Usage:**
+```bash
+npm run build:prod         # Build production bundles
+APP_ENV=production php artisan serve  # Test production mode
+# Default (APP_ENV=local): individual files, no build needed
+```
+
+**Critical constraint — `minifyIdentifiers: false`**: esbuild MUST NOT rename identifiers. All 54 JS files use global variables (`HomePage`, `UserStore`, `ApiProvider`, etc.) and `router.js` references page components by these global names. If esbuild shortens variable names, the router breaks and the app renders blank.
+
 ### Decision Rules for New Files
 
 1. **Is it a frontend page (HTML/CSS/JS)?** → `frontend/` (NOT `public/` — the `public/css` and `public/js` symlinks exist only to bridge PHP's built-in server)
@@ -161,12 +181,17 @@ When creating or modifying files in this project, always follow these convention
 # Open http://localhost:8000/ in browser after starting server
 # Verify API compatibility: curl http://localhost:8000/api/common/config
 # Verify SPA shell loads: curl http://localhost:8000/
+
+# Frontend production build (bundles 53 JS + 3 CSS → 1 JS + 1 CSS via esbuild)
+npm run build:prod
+# Output: frontend/dist/ — served when APP_ENV=production, dev uses individual files
 ```
 
 ## Development Environment
 
 - **PHP**: 8.3.21 via Homebrew at `/opt/homebrew/opt/php@8.3/bin/php`
 - **Composer**: `/opt/homebrew/bin/composer`
+- **Node.js**: v23.11.0 via Homebrew, npm 11.15.0
 - **IDE**: PhpStorm 2026.1, Run Configuration uses `start.sh` (Shell Script type)
 - **Local dev DB**: Connects to production MySQL via SSH tunnel. `.env` DB_HOST=127.0.0.1, DB_PORT=3307. The tunnel maps 3307 → server's 127.0.0.1:3306.
 
@@ -199,22 +224,18 @@ The web frontend is a **Vue.js 3 + Vue Router** single-page application served f
 
 **Tech stack**: Vue 3 + Vue Router 4 (CDN), custom CSS (no framework), Fetch API, Google Fonts (Noto Serif SC for brand, ZCOOL KuaiLe for welcome Chinese, Caveat for welcome English).
 
-**Design system** (refined 2025-07-05 via `frontend-design` skill, responsive refresh 2026-07-06):
+**Design system**:
 - Primary: `#666FFF` (indigo), Primary Dark: `#4A52E0`
 - Page background: `#F9F9F6` (warm paper-white), Card: `#FFFFFF`, Text: `#1a1a1a` (ink) / `#6B7280` (muted) / `#9CA3AF` (faint)
 - Accent colors: `#EF4444` (red), `#F97316` (orange), `#F59E0B` (amber), `#10B981` (green), `#8B5CF6` (purple)
-- Border: `rgba(0,0,0,.06)`, subtle shadows with `rgba(0,0,0,.03)`
-- Radius: large 20px / small 12px
+- Border: `rgba(0,0,0,.06)`, shadows: `rgba(0,0,0,.03)`, Radius: 20px (large) / 12px (small)
 - Display typeface: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`; Body: system font stack
-- **Glassmorphism Header**: Replaced (2026-07-06) by primary indigo gradient header `linear-gradient(135deg, #666FFF, #5A5FE8)`, height 52px, with white text/icons.
-- **Signature element**: 路盟 badge (45° rotated square with "盟") — REMOVED. Replaced by `logo_lumoguide.png` full horizontal logo (36px high, transparent bg, white version via CSS filter on welcome page).
+- Header: `#7C5CFF` solid purple, 52px, no box-shadow. Logo: `logo_lumoguide.png` (36px, white via CSS filter)
+- Body gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)` — solid topbar → fade to paper-white
 
-**Responsive layout system** (2026-07-06 global refresh):
-- **3 breakpoints**: default ≥861px (32px side padding) → ≤860px tablet (16px) → ≤480px mobile (12px, reduced fonts/spacing)
-- **Container classes**: `.ds-container-600` (forms/lists), `.ds-container-640` (messages/addresses/records), `.ds-container-760` (detail/articles), `.ds-container-960` (galleries/malls), `.ds-container-1280` (wide dashboards)
-- **Default centering**: `.ds-page-wrapper` (max-width 1280px, margin auto) for tab pages; search/hero areas stay full-width
-- **Auth pages**: Redesigned (2026-07-06) to match Flutter mobile: full-screen indigo gradient background + centered white `.auth-card` (max-width 400px, radius 20px) with full-rounded inputs (radius 100px). **Welcome page** (redesigned 2026-07-08): splash animation — characters write on one-by-one via `clip-path` reveal, pause 2s, auto-redirect. Chinese (ZCOOL KuaiLe) / English (Caveat) auto-switch based on `navigator.language`.
-- **Full-screen pages** (not constrained): Welcome (`.welcome-page`), Photo Viewer, Web View
+**Responsive**: 3 breakpoints — ≥861px (32px padding) / ≤860px tablet (16px) / ≤480px mobile (12px). Container classes: `.ds-container-600` (forms/lists), `.ds-container-640` (messages/addresses), `.ds-container-760` (detail/articles), `.ds-container-960` (galleries), `.ds-container-1280` (wide dashboards). `.ds-page-wrapper` (max-width 1280px, auto margin) for tab pages.
+
+**Auth pages**: Full-screen indigo gradient + centered white `.auth-card` (max-width 400px, radius 20px) + full-rounded inputs (radius 100px). Welcome page uses splash animation (characters write on via clip-path, 2s pause, auto-redirect). Full-screen pages (Welcome, Photo Viewer, Web View) are not constrained by `.ds-page-wrapper`.
 
 **CDN versions (pinned)**:
 ```html
@@ -365,7 +386,7 @@ This ensures `/api/*` (mobile app), `/manage*` or `/admin*` (admin panel), and s
 | Phase 8 | 导航栏+认证页+商家区块改造 | 全局 | ✅ (2026-07-06) |
 | Phase 9 | 城市攻略 + 卡片系统 + 全局渐变 + 城市详情重构 + 交叉导航 + 页面改造 | 2 + 全局 | ✅ (2026-07-06) |
 
-**69/69 routes implemented** (100%). See `plan.md` for full details. Top nav bar uses solid `#666FFF` indigo (no shadow, unified with primary), body gradient seamlessly matches, all pages share unified gradient background, auth pages match Flutter mobile layout, shop section has banner carousel driving category auto-switch, city strategy page uses GPS location to find nearest city with rectangular pill type navigation.
+**69/69 routes implemented** (100%). See `plan.md` for full details. Top nav bar uses solid `#7C5CFF` purple (no shadow), body gradient seamlessly matches, all pages share unified gradient background, auth pages match Flutter mobile layout, shop section has banner carousel driving category auto-switch, city strategy page uses GPS location to find nearest city with rectangular pill type navigation.
 
 ### App-Web Feature Parity
 
@@ -396,16 +417,22 @@ The Flutter mobile app working copy is at `/Users/xuejingchen/Desktop/vscode/lum
 
 | Item | Value |
 |------|-------|
-| Provider | easyname |
+| Cloud | Alibaba Cloud ECS (杭州) |
+| Domain | easyname (DNS only) |
 | IP | 47.76.27.105 |
 | SSH user | root |
-| MySQL DB | lumo_guide |
-| MySQL port | 3306 (server) → 3307 (local tunnel) |
+| SSH auth | password (see `start.sh`) |
+| Web root | `/www/wwwroot/lumo/public/` |
+| Nginx panel | `/www/server/panel/vhost/nginx/` |
+| MySQL DB | lumo_guide (MySQL 5.7.44, localhost:3306) |
+| MySQL credentials | `lumo_guide` / `KHdKYKz6WyBQ81b3` |
 
 **SSH Tunnel** (run manually if needed):
 ```bash
-ssh -L 3307:127.0.0.1:3306 root@47.76.27.105 -N
+sshpass -p '<password>' ssh -o StrictHostKeyChecking=no -L 3307:127.0.0.1:3306 root@47.76.27.105 -N -f
 ```
+
+**SSH blocked**: if `kex_exchange_identification: Connection closed by remote host`, SSH is blocked (likely Alibaba Cloud security group). Use **Alibaba Cloud ECS Console → Remote Connection → VNC** as backup access.
 
 ## Architecture
 
@@ -419,9 +446,9 @@ Authentication: JWT via `tymon/jwt-auth` (config in `config/jwt.php`). Routes us
 
 **Route groups** (prefixes in `routes/api.php`):
 - `auth` — public: login, sendCode, register, resetPassword
-- `common` — public + auth: config, fileUpload, home/search, area/continent lookups, type/class lookups
-- `user` — auth required: profile, addresses, reservations, guide/company applications
-- `city` — mixed auth: listing, detail, content by type (attraction/restaurant/shopping/accommodation/transportation/facility/activity/ticket), evaluations, follows
+- `common` — public + auth: config, fileUpload, home/search, area/continent lookups, type/class lookups, systemContinents
+- `user` — auth required: profile, addresses, reservations, guide/company applications, **JourneyWork CRUD** (journeyList/Detail/Create/Update/Delete), **JourneyTemplate** (templateList/Save/Delete)
+- `city` — mixed auth: listing (includes `country_name`), detail, content by type (attraction/restaurant/shopping/accommodation/transportation/facility/activity/ticket), evaluations, follows
 - `guide` — auth required: publish/edit/delete city content, manage reservations
 - `company` — auth required: shop CRUD, reservation management
 - `information` — mixed: articles listing and evaluations
@@ -495,9 +522,41 @@ Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 
 ## Database
 
-MySQL (`lumo_guide`). Migrations in `database/migrations/` — custom tables start from `2025_06_06`. Admin tables use Dcat Admin defaults (`admin_users`, `admin_roles`, `admin_permissions`, etc.). The `.env` contains live DB credentials — do not commit them.
+MySQL 5.7 (`lumo_guide`), **56 tables** in production (15 migration files produce 50 tables; 6 added manually). Migrations in `database/migrations/`.
 
-## Important Notes
+### Database Dump Files
+
+| File | Size | Content |
+|------|------|---------|
+| `database/schema.sql` | 66K | 56 tables exact structure from production mysqldump |
+| `database/seed.sql` | 349K | 22 config tables with production data (admin, system_config, city_type, VIP plans, etc.) |
+| `database/data.sql` | 1.2M | 20 user-content tables with production data (users, cities, guides, content, orders, etc.) |
+| `database/lumo_guide_full.sql` | 1.6M | Complete production dump (reference copy) |
+
+### 6 Tables Missing from Migrations (added directly to production)
+
+`city_content_edit` (city content audit), `city_edit` (city audit), `system_country` (countries), `trip_days` (trip itineraries), `trips` (tour packages), `migrations` (Laravel tracking, auto-created).
+
+Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
+
+## Critical Rules
+
+### Backend
+- **Source code is encoded**: Services (`app/Services/`) are encoded with swoole_loader and cannot be read or edited. **Controllers** (`app/Http/Controllers/`) are plaintext and can be edited. Models, routes, configs, language files, and migrations are also plaintext.
+- **Admin panel**: at `/manage` (not `/admin`), set by `ADMIN_ROUTE_PREFIX=manage` in `.env`.
+- **Stripe is live**: `.env` contains production keys. Do not commit `.env`.
+- **Response format**: All API responses are `{code: int, message: string, data: object/array}`.
+- **Queue driver**: Redis (`QUEUE_CONNECTION=redis`).
+- **Bug report**: 62 known bugs documented in `.claude/bug-report-2026-07-07.md` (4 rounds: critical→high→medium→minor).
+
+### Frontend — Hard Pitfalls
+- **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component. `app-topbar.js` is kept only as reference.
+- **API response snake_case**: Access fields exactly as the API returns them (`guide_type`, `city_id`, `first_picture`). Never use camelCase — JS silently returns `undefined` with no errors.
+- **i18n reactivity**: I18n MUST be `Vue.reactive()` and `I18n.init()` MUST run before `app.mount('#app')`.
+- **File upload blob trap**: Store both the `File` object AND blob URL. Blob URLs are preview-only — upload File objects on submit. Revoke blob URLs in `beforeUnmount`.
+- **Timer cleanup**: Every `setInterval`/`setTimeout` must store its handle on `this._timer` and be cleared in `beforeUnmount`.
+- **CSS constraints**: `font-weight` must be multiples of 100. All `var(--xxx)` must match `variables.css` definitions. Use centralized z-index variables.
+- **Topbar visibility**: `showTopBar` must list ALL auth routes (`/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`).
 
 - **Source code is encoded**: Most `.php` files in `app/` require `swoole_loader` extension. Attempting to read them returns garbled content. The plaintext files are: `helpers.php`, route files, config files, language files, migrations, and the `public/` directory.
 - **Custom admin prefix**: Admin panel is at `/manage`, not `/admin` (set via `ADMIN_ROUTE_PREFIX=manage` in `.env`).
@@ -512,17 +571,17 @@ MySQL (`lumo_guide`). Migrations in `database/migrations/` — custom tables sta
 - **Home page guide auto-switch**: Guide categories auto-switch every 5s (matching Flutter's `_guideAutoScrollTimer`). Manual tap resets the timer. Keep original `.h-scroll` layout — do NOT change guide card visual style.
 - **Reuse existing styles**: Before creating new CSS classes, check if existing utility classes (`.filter-pills`, `.filter-pill`, `.card-grid-*`, `.h-scroll`, `.ds-*`) already provide the needed style. Creating custom styles when existing ones suffice causes visual inconsistency. See [[reuse-existing-styles]] in memory.
 - **Layout stability during auto-switch**: Use placeholder slots (invisible cards with `visibility: hidden`) to pad to the max row count across all categories, preventing page height from jumping. City placeholders work via `aspect-ratio: 16/9`; Guide/Shop placeholders MUST have full DOM structure (image + info + text) — an empty `<div>` collapses to zero height because there's no content to push it open. See [[shop-banner-carousel]] and [[home-page-city-continents]] in memory.
-- **Topbar (top navigation bar)**: Redesigned 2026-07-06, unified 2026-07-16 — solid `#666FFF` indigo background (unified with primary), height 52px, **no box-shadow**. Logo uses `logo_lumoguide.png` with `filter: brightness(0) invert(1)` to appear white on dark bg (36px high, far left). Logo uses `logo_lumoguide.png` with `filter: brightness(0) invert(1)` to appear white on dark bg (36px high, far left). Tabs (首頁/城市/資訊 + SVG 简笔画图标 for 消息/我的) are left-aligned after logo. Search button with magnifying glass SVG icon at far right. **Auth toggle button** (2026-07-08): login/logout SVG icon to the right of search — shows login arrow when logged out, logout arrow when logged in; click logs out and redirects to `/login`. `topBarMode` always `'tabs'` — nav bar visible on ALL pages except welcome/login/register. See [[topbar-redesign]] and [[topbar-auth-button]] in memory.
+- **Topbar (top navigation bar)**: Redesigned 2026-07-06 — solid `#7C5CFF` purple background, height 52px, **no box-shadow**（2026-07-06 移除以实现与渐变无缝融合）. Logo uses `logo_lumoguide.png` with `filter: brightness(0) invert(1)` to appear white on dark bg (36px high, far left). Tabs (首頁/城市/資訊 + SVG 简笔画图标 for 消息/我的) are left-aligned after logo. Search button with magnifying glass SVG icon at far right. **Auth toggle button** (2026-07-08): login/logout SVG icon to the right of search — shows login arrow when logged out, logout arrow when logged in; click logs out and redirects to `/login`. `topBarMode` always `'tabs'` — nav bar visible on ALL pages except welcome/login/register. See [[topbar-redesign]] and [[topbar-auth-button]] in memory.
 - **Auth pages**: Redesigned 2026-07-06 to match Flutter mobile layout — full-screen indigo gradient bg + centered white `.auth-card` (max-width 400px, border-radius 20px) + full-rounded inputs (border-radius 100px). **Login page** (updated 2026-07-08): title replaced by app icon image (`logo-app-icon.png`, 100×100px, purple rounded square), email/password icons use SVG line icons (not emoji), password visibility toggle uses SVG eye icons, form uses `<form @submit.prevent>` to trigger browser password manager. **Remember password** (2026-07-08): checkbox actually saves password to localStorage; credentials survive explicit logout and token expiry; only cleared when user unchecks the box. Login/Register/Welcome/ForgetPassword/VerifyCode/PasswordInput all use this unified style. See [[auth-pages-redesign]], [[login-page-app-icon]], and [[remember-password-feature]] in memory.
 - **Shop/Business section**: Banner carousel from `cat.banner` drives category switching — all banner slides shown (4s each), then auto-advance to next category. Categories with no banner AND no list are filtered out. Placeholder padding prevents layout jumping between categories. Merchant card images use `aspect-ratio: 16/9` (same as city cards). List: 4 columns on desktop, 2 on mobile. See [[shop-banner-carousel]] in memory.
 - **Spacing (web traditional)**: Card grids (`.card-grid-*`) and horizontal scroll (`.h-scroll`) use `--spacing-lg` (16px) gap — the web standard, not the tight 8px mobile-native spacing. On mobile ≤480px, reduced to `--spacing-md` (12px). See [[reuse-existing-styles]] in memory.
 - **City strategy GPS location**: Clicking any city strategy category navigates to `/city/strategy?type=X`. Page uses browser Geolocation API → `/common/location` API to find the nearest city, then filters content by `city_id`. Manual city switching via picker panel. City name displayed in white text, right-aligned. Falls back to first city from `cityList` if GPS denied. **API endpoint fix (2026-07-06)**: Guide type uses `cityGuide` (`/city/guide`), NOT `guideCityList` (`/guide/cityList` — that's for guides managing their own cities). Guide detail links use `#/guide/:id`, not `#/detail/guide`. Image field: `item.photo || item.first_picture` (guides return `photo`, others return `first_picture`). See [[city-strategy-gps-location]] in memory.
-- **Strategy cards design**: Home page city strategy uses 6-column CSS Grid, always one row (never wraps — icons/text shrink on narrow screens). Cards: square, pastel macaron backgrounds, 14px border radius, flat no-shadow. Icons: thin line SVG (`#1a1a1a`, 1.6px stroke) + small solid color accents. Text: 24px bold below icon. **City strategy page variant**: 9 type pills — rectangular (icon left of text), not square — using `.strategy-pills` / `.strategy-pill` classes. See [[strategy-cards-design]] and [[city-strategy-gps-location]] in memory.
-- **Global gradient background** (2026-07-06, unified 2026-07-16): All pages share `body` gradient: `linear-gradient(180deg, #666FFF 0%, #666FFF 52px, #F9F9F6 400px)`. First 52px is solid `#666FFF` — seamlessly matches topbar. Then fades to `#F9F9F6` (warm paper-white). `.app-shell` is `transparent` to let it through. Replaced the old messy multi-layer radial blob approach. Auth/welcome pages unaffected (full-screen overlays). Do NOT add radial blobs or textures — they clash with the solid topbar. See [[global-gradient-background]] in memory.
+- **Strategy cards design**: Home page city strategy uses 6-column CSS Grid, always one row (never wraps — icons/text shrink on narrow screens). Cards: square, pastel macaron backgrounds, 14px border radius, flat no-shadow. Icons: thin line SVG (`#162539`, 1.6px stroke) + small solid color accents. Text: 24px bold below icon. **City strategy page variant**: 9 type pills — rectangular (icon left of text), not square — using `.strategy-pills` / `.strategy-pill` classes. See [[strategy-cards-design]] and [[city-strategy-gps-location]] in memory.
+- **Global gradient background** (2026-07-06): All pages share `body` gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)`. First 52px is solid `#7C5CFF` — seamlessly matches topbar. Then fades to `#F9F9F6` (warm paper-white). `.app-shell` is `transparent` to let it through. Replaced the old messy multi-layer radial blob approach. Auth/welcome pages unaffected (full-screen overlays). Do NOT add radial blobs or textures — they clash with the solid topbar. See [[global-gradient-background]] in memory.
 - **City list page continent grouping** (2026-07-06): City list page (`city/index.js`) fetches `/city/lists` API (139 cities), then groups by continent using `AREA_TO_CONTINENT` mapping from home page. The API returns `{total, list}` with `area_name` field per city — must extract `res.data.list`, NOT treat `res.data` as array. Continent tabs in order: 亚洲→欧洲→北美洲→南美洲→非洲→大洋洲. Uses `card-grid-2` (2 columns). Fallback empty state with retry button for API failures. See [[home-page-city-continents]] in memory.
 - **City detail page design** (2026-07-06): Redesigned with 4-column grid (`.city-content-grid`), smaller images (100px height), and two-level classification. **一级分类**: `.ds-tabs` underline tabs (概覽/導遊/景點/餐廳/購物/票務/住宿/交通/設施/活動, matching Flutter order). **二级分类**: `.ds-type-tab` pills with **「全部」as default** (`subTabIndex: -1` means no sub-category filter). Responsive: 4 cols→3 cols (≤860px)→2 cols (≤480px). Image height: 100px→90px→80px. Container: `ds-container-1280`. **Activity API fix**: activity type uses `category_id` parameter, NOT `type_class_id` (all other types use `type_class_id`). See [[city-detail-page-design]] in memory.
 - **Cross-navigation links** (2026-07-06): All detail pages link to related entities — clicking a city name anywhere navigates to city detail, clicking an author/guide name navigates to guide detail. Guide detail → city (via `guide.city_id`), News detail → guide (via `news.user.guide_id`) + city (via `news.user.city_id`), Common/Company detail → city (via `item.city_id` or route query). City names styled in primary color when clickable. List APIs within city context don't return `city_id` (already filtered), so no cross-links needed in city-internal lists. See [[cross-navigation-links]] in memory.
-- **News/Message/Mine page redesign** (2026-07-06, v2 refresh 2026-07-16): **News** → `.news-card-v2` with avatar header (`.nc-header` + `.nc-avatar` container + `.nc-title` + `.nc-desc`). ⚠️ `.nc-avatar-img` MUST be wrapped in `.nc-avatar` (36×36px container); without it, images render at natural size. **Messages** → `.card` > `.msg-item` with `.msg-icon` (ALL SVG, no emoji! use `:style="{ background: item.bg }"` for per-item colors), `.msg-body`, `.msg-count`, `.msg-arrow`. **Mine** → `.profile-card-v2` (pc-avatar, pc-info, pc-name, pc-id, `.badge-guide`/`.badge-company`/`.badge-vip`), `.stats-row-v2` + `.stat-card`, `.menu-card` + `.menu-item-v2` (mi-icon, mi-label, mi-arrow). See [[v2-redesign-patterns]] in memory.
+- **News/Message/Mine page redesign** (2026-07-06): All three tab pages redesigned for clean web feel. **News**: cover image card layout, `.ds-container-760`, serif titles, meta row (author avatar + date + views + comments), load-more button with 100px radius. **Messages**: card-based category list with colored icon backgrounds + red count badges, serif page headings, better empty states (large contextual icons). **Mine**: `.ds-profile-card` with avatar gradient fallback, `.ds-menu-group` for service menus, warm gradient VIP card, promotion cards with subtle borders. All pages use inline empty/error states (no reliance on `<empty-state>` component which may not resolve in CDN build). See [[web-standard-layout-patterns]] and [[vue3-cdn-component-pitfall]] in memory.
 - **SPA architecture confirmed**: SPA is the correct choice for this project (not multi-HTML). All content is behind login wall so SEO is irrelevant. The SPA advantages — no-refresh navigation between 69 routes, shared topbar/design-system, in-memory UserStore/ConfigStore — outweigh the CDN component registration pitfalls. See [[spa-architecture-decision]] in memory.
 - **Comprehensive bug scan (2026-07-07)**: Full project scan found 62 bugs across 53 frontend + 9 backend files → **all 62 fixed (2026-07-07)** in 4 rounds (5 critical / 13 high / 29 medium / 15 minor). Report at `bug-report-2026-07-07.md` in project root. See [[bug-scan-2026-07-07]] in memory.
 - **i18n reactivity**: I18n object MUST be wrapped in `Vue.reactive()` and `I18n.init()` MUST run before `app.mount('#app')`. Otherwise locale changes don't trigger re-renders and first render always uses default `zh-CN`. See [[i18n-reactivity]] in memory.
@@ -547,9 +606,4 @@ MySQL (`lumo_guide`). Migrations in `database/migrations/` — custom tables sta
 - **Search API response format** (fixed 2026-07-07): `/common/homeSearch` returns a **flat array** where each item has `data_type`: 1=city, 2=guide, 3=content. Must filter by `data_type` to group results. The API does NOT return `{city: [], guide: [], content: []}` structure. See [[search-api-flat-array]] in memory.
 - **UserStore identity getters** (fixed 2026-07-07): `isGuide`/`isEnterprise`/`isUser` must use `Number(this.userInfo?.identity)` — the API returns identity as a string. All other pages use `Number(profile.identity) === 2` pattern; UserStore was the only place using strict `=== 2` which fails for string `"2"`. See [[userstore-identity-type-fix]] in memory.
 - **City card overlay redesign** (2026-07-07): Changed from top-aligned gradient (`to bottom`) to bottom-aligned (`to top`), matching Flutter design. Name + area badge side-by-side in `.city-name-row`, english name below. Text: white with subtle shadow, no heavy background. CSS in `components.css` affects both home page and city list page. See [[city-list-server-driven]] in memory.
-- **V2 card class override** (2026-07-16): The v2 `.card` definition (components.css line ~3205) overloads the original (line ~1156). Key difference: v2 `.card` has **NO padding** (original had `padding: var(--spacing-lg)`), and adds `box-shadow: var(--shadow-card)` + `border: 1px solid var(--color-border)`. When using `.card`, add explicit padding if needed or wrap content in a padded child like `.empty-state-v2` (which has `padding: 64px 24px`). See [[v2-redesign-patterns]] in memory.
-- **V2 section headers** (2026-07-16): Replace old `.section-header`/`.section-header-left`/`.section-accent`/`.section-title`/`.section-subtitle`/`.section-more` patterns with `.sec-head` > `.sec-head-title` + `.sec-head-more`. The `.sec-head` class provides: flex row, bottom border, 20px bottom margin. `.sec-head-title` uses serif font at 22px.
-- **PHP API proxy cache httpCode bug** (fixed 2026-07-16): In `public/index.php`, the cache-hit path was missing `$httpCode = 200;`. This caused `http_response_code($httpCode)` to receive undefined, PHP cast it to 0, and browser `fetch()` could treat HTTP 0 as a network error — silently returning no data. Always set `$httpCode = 200;` in the cache-hit branch. Clear cache after fixing: `rm -rf storage/cache/api-proxy/*.cache`. See [[php-proxy-cache-httpcode]] in memory.
-- **Template method existence check** (2026-07-16): Always verify that every function/method referenced in Vue templates actually exists. Example: v2 news cards used `formatRelativeTime(info.created_at)` but the function doesn't exist (correct name is `timeAgo`). Vue 3 emits a console warning and renders empty string. Check with `grep -rn "FunctionName" frontend/` before committing.
-- **API response cache lifecycle** (2026-07-16): The PHP proxy caches GET responses to `storage/cache/api-proxy/` with per-endpoint TTLs (2 min default, 30 min for `/common/config`, 10 min for `/common/getContinentsList`, 5 min for `/city/lists`). The frontend `provider.js` has an **additional** in-memory Map cache (1 min default). This means bug fixes may not take effect until both caches expire or are cleared. Always `rm -rf storage/cache/api-proxy/*.cache` + hard refresh browser after fixing API-related bugs.
 - **Publish form city_id pre-fill** (2026-07-07): `publish/form.js` reads `$route.query.city_id` in `init()` to pre-select city dropdown when navigating from city detail FAB. Enables seamless "add content from city page" flow.

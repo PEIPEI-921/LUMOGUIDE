@@ -11,6 +11,8 @@ use App\Http\Requests\EditInfoRequest;
 use App\Http\Requests\FeedbackRequest;
 use App\Http\Requests\ReserveGuideRequest;
 use App\Http\Requests\UserAddressRequest;
+use App\Models\JourneyTemplate;
+use App\Models\JourneyWork;
 use App\Services\CityService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -457,6 +459,184 @@ class UserController extends BaseController
     public function editApplyCompany(UserService $service, ApplyCompanyRequest $request)
     {
         $service->editApplyCompany($request->validated());
+        return $this->success(__('res.success'));
+    }
+
+    // ============================================
+    // JourneyWork — 我的历程 CRUD
+    // ============================================
+
+    /**
+     * 将 content JSON 展开为平铺字段返回给前端
+     */
+    private function expandJourneyWork($work)
+    {
+        if (!$work) return null;
+        $arr = $work->toArray();
+        $content = $arr['content'] ?? [];
+        if (is_array($content)) {
+            unset($arr['content']);
+            $arr = array_merge($content, $arr);
+        }
+        return $arr;
+    }
+
+    /**
+     * 对分页器的每一项展开 content，返回 {list, total, page, limit}
+     */
+    private function paginateAndExpand($paginator, $limit)
+    {
+        $list = $paginator->getCollection()->map(fn($m) => $this->expandJourneyWork($m))->toArray();
+        return $this->success(__('res.success'), [
+            'list'  => $list,
+            'total' => $paginator->total(),
+            'page'  => $paginator->currentPage(),
+            'limit' => $limit,
+        ]);
+    }
+
+    public function journeyList(Request $request)
+    {
+        $user = auth()->user();
+        $limit = (int)($request->get('limit', 15) ?: 15);
+        $status = (int)($request->get('status', 0) ?: 0);
+        $area_id = (int)($request->get('area_id', 0) ?: 0);
+        $keyword = $request->get('keyword', '') ?: '';
+
+        $query = JourneyWork::where('user_id', $user->id);
+        if ($status > 0) $query->where('status', $status);
+        if ($area_id > 0) $query->where('area_id', $area_id);
+        if ($keyword) {
+            $query->where('title', 'like', "%{$keyword}%");
+        }
+
+        return $this->paginateAndExpand($query->orderBy('id', 'desc')->paginate($limit), $limit);
+    }
+
+    public function journeyDetail(Request $request)
+    {
+        $id = (int)($request->get('id', 0) ?: 0);
+        if ($id <= 0) return $this->error(__('res.id_required'));
+
+        $work = JourneyWork::where('user_id', auth()->id())->find($id);
+        if (!$work) return $this->error(__('res.not_found'), 404);
+
+        return $this->success(__('res.success'), $this->expandJourneyWork($work));
+    }
+
+    public function journeyCreate(Request $request)
+    {
+        $user = auth()->user();
+
+        // 接收前端平铺字段，全部存入 content JSON
+        $all = $request->post();
+        $content = is_array($all) ? $all : [];
+        unset($content['user_id'], $content['_token'], $content['id']); // 移除不安全字段
+
+        if (empty($content)) return $this->error(__('res.param_error'));
+
+        $title = $content['title'] ?? ($content['name'] ?? '');
+        $status = (int)($content['status'] ?? 1);
+        $areaId = (int)($content['area_id'] ?? 0);
+        unset($content['title'], $content['name'], $content['status'], $content['area_id']); // 已提取到独立列，不重复存 JSON
+
+        $work = JourneyWork::create([
+            'user_id' => $user->id,
+            'title'   => $title,
+            'status'  => $status,
+            'area_id' => $areaId,
+            'content' => $content,
+        ]);
+
+        return $this->success(__('res.success'), $this->expandJourneyWork($work));
+    }
+
+    public function journeyUpdate(Request $request)
+    {
+        $id = (int)($request->post('id', 0) ?: 0);
+        if ($id <= 0) return $this->error(__('res.id_required'));
+
+        $work = JourneyWork::where('user_id', auth()->id())->find($id);
+        if (!$work) return $this->error(__('res.not_found'), 404);
+
+        $all = $request->post();
+        $content = is_array($all) ? $all : [];
+        unset($content['user_id'], $content['_token'], $content['id']);
+
+        $update = [];
+        if (isset($content['title'])) { $update['title'] = $content['title']; unset($content['title']); }
+        elseif (isset($content['name'])) { $update['title'] = $content['name']; unset($content['name']); }
+        if (isset($content['status'])) { $update['status'] = (int)$content['status']; unset($content['status']); }
+        if (isset($content['area_id'])) { $update['area_id'] = (int)$content['area_id']; unset($content['area_id']); }
+
+        // 合并已有 content + 新提交字段（过滤 null 值，避免覆盖已有数据）
+        $existing = $work->content ?? [];
+        $filtered = array_filter($content, fn($v) => $v !== null);
+        $merged = array_merge(is_array($existing) ? $existing : [], $filtered);
+        $update['content'] = $merged;
+
+        $work->update($update);
+        return $this->success(__('res.success'), $this->expandJourneyWork($work->fresh()));
+    }
+
+    public function journeyDelete(Request $request)
+    {
+        $id = (int)($request->post('id', 0) ?: 0);
+        if ($id <= 0) return $this->error(__('res.id_required'));
+
+        $work = JourneyWork::where('user_id', auth()->id())->find($id);
+        if (!$work) return $this->error(__('res.not_found'), 404);
+
+        $work->delete();
+        return $this->success(__('res.success'));
+    }
+
+    // ============================================
+    // JourneyTemplate — 工作模板
+    // ============================================
+
+    public function journeyTemplateList(Request $request)
+    {
+        $user = auth()->user();
+        $limit = (int)($request->get('limit', 15) ?: 15);
+
+        return $this->paginateAndExpand(
+            JourneyTemplate::where('user_id', $user->id)->orderBy('id', 'desc')->paginate($limit),
+            $limit
+        );
+    }
+
+    public function journeyTemplateSave(Request $request)
+    {
+        $user = auth()->user();
+
+        $all = $request->post();
+        $content = is_array($all) ? $all : [];
+        unset($content['user_id'], $content['_token'], $content['id']);
+
+        if (empty($content)) return $this->error(__('res.param_error'));
+
+        $title = $content['title'] ?? ($content['name'] ?? '');
+        unset($content['title'], $content['name']);
+
+        $template = JourneyTemplate::create([
+            'user_id' => $user->id,
+            'title'   => $title,
+            'content' => $content,
+        ]);
+
+        return $this->success(__('res.success'), $this->expandJourneyWork($template));
+    }
+
+    public function journeyTemplateDelete(Request $request)
+    {
+        $id = (int)($request->post('id', 0) ?: 0);
+        if ($id <= 0) return $this->error(__('res.id_required'));
+
+        $template = JourneyTemplate::where('user_id', auth()->id())->find($id);
+        if (!$template) return $this->error(__('res.not_found'), 404);
+
+        $template->delete();
         return $this->success(__('res.success'));
     }
 
