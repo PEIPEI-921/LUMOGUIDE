@@ -41,13 +41,31 @@ const GuidePublishPage = {
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <h2 class="h2" style="margin:0">{{ $t('發布管理') }}</h2>
-          <button v-if="currentTab" @click="onAddItem" style="font-size:13px;color:var(--color-primary);font-weight:500;background:none;border:none;cursor:pointer">+ {{ $t('新增') }}{{ currentTab.label }}</button>
+          <button v-if="currentTab" @click="onAddItem"
+            style="padding:8px 18px;font-size:13px;font-weight:600;color:#fff;background:var(--color-primary);border:none;border-radius:100px;cursor:pointer;transition:background .2s"
+            @mouseenter="$event.currentTarget.style.background='var(--color-primary-dark)'"
+            @mouseleave="$event.currentTarget.style.background='var(--color-primary)'">
+            + {{ $t('新增') }}{{ $t(currentTab.label) }}
+          </button>
         </div>
 
         <!-- Type tabs — segmented control v2 -->
         <div class="segmented-control">
           <button v-for="(t, i) in TAB_CONFIG" :key="t.key" @click="switchTab(i)"
             :class="['segmented-btn', { active: activeTab === i }]">{{ $t(t.label) }}</button>
+        </div>
+
+        <!-- Search -->
+        <div v-if="!loading && !error && items.length > 0" style="position:relative;margin-bottom:12px">
+          <input v-model="searchQuery" :placeholder="$t('搜索') + ' ' + $t(currentTab?.label) + '...'"
+            style="width:100%;padding:9px 38px 9px 16px;border:1px solid var(--color-border);border-radius:100px;font-size:13px;outline:none;background:var(--color-bg-card);box-sizing:border-box;transition:border-color .2s"
+            @focus="$event.currentTarget.style.borderColor='var(--color-primary)'"
+            @blur="$event.currentTarget.style.borderColor='var(--color-border)'">
+          <!-- Clear button -->
+          <svg v-if="searchQuery" @click="searchQuery = ''" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#9CA3AF"
+            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </div>
 
         <!-- Loading -->
@@ -62,15 +80,21 @@ const GuidePublishPage = {
           <button @click="fetchItems" class="ds-btn ds-btn-primary">{{ $t('重新載入') }}</button>
         </div>
 
-        <!-- Empty -->
-        <div v-else-if="items.length===0" class="ds-empty">
+        <!-- Empty (no items at all) -->
+        <div v-else-if="items.length===0 && !searchQuery" class="ds-empty">
           <div style="font-size:36px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3l4 4-12 12H5v-4L17 3z"/></svg></div>
           <p style="color:var(--color-assistant-text);font-size:13px">{{ $t('暫無') }}{{ $t(currentTab?.label) }}{{ $t('發布') }}</p>
         </div>
 
+        <!-- Search-no-results (items exist but none match search) -->
+        <div v-else-if="filteredItems.length===0 && searchQuery" class="ds-empty">
+          <div style="font-size:36px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <p style="color:var(--color-assistant-text);font-size:13px">{{ $t('暫無搜索結果') }}</p>
+        </div>
+
         <!-- List — matching Flutter _Item widget layout -->
         <div v-else>
-          <div v-for="item in items" :key="item.id"
+          <div v-for="item in filteredItems" :key="item.id"
             class="card" style="padding:14px 18px;margin-bottom:10px">
 
             <!-- Card body -->
@@ -167,12 +191,23 @@ const GuidePublishPage = {
 
           </div>
         </div>
+
+        <!-- Publish FAB — always visible for guides (matching Flutter my_publish FAB) -->
+        <a href="#" @click.prevent="onAddItem"
+          style="position:fixed;bottom:24px;right:24px;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:100px;background:var(--color-primary);color:#fff;text-decoration:none;box-shadow:0 4px 16px rgba(102,111,255,.4);transition:transform .2s,box-shadow .2s"
+          @mouseenter="$event.currentTarget.style.transform='scale(1.05)';$event.currentTarget.style.boxShadow='0 6px 20px rgba(102,111,255,.5)'"
+          @mouseleave="$event.currentTarget.style.transform='scale(1)';$event.currentTarget.style.boxShadow='0 4px 16px rgba(102,111,255,.4)'"
+          :title="$t('發布') + ' ' + $t(currentTab?.label || '')">
+          <span style="font-size:22px;line-height:1;font-weight:300">+</span>
+          <span style="font-size:10px;line-height:1;margin-top:1px">{{ $t('發布') }}</span>
+        </a>
       </div>
     </div>
   `,
   data() {
     return {
-      activeTab: 0, items: [], loading: true, error: null, TAB_CONFIG
+      activeTab: 0, items: [], loading: true, error: null, TAB_CONFIG,
+      searchQuery: ''
     };
   },
   computed: {
@@ -180,7 +215,17 @@ const GuidePublishPage = {
       const profile = UserStore.profile || UserStore.userInfo;
       return profile && Number(profile.identity) === 2;
     },
-    currentTab() { return TAB_CONFIG[this.activeTab]; }
+    currentTab() { return TAB_CONFIG[this.activeTab]; },
+    filteredItems() {
+      const q = (this.searchQuery || '').trim().toLowerCase();
+      if (!q) return this.items;
+      return this.items.filter(item => {
+        const name = (item.name || item.title || '').toLowerCase();
+        // Also search in address, desc, phone for broader matching
+        const desc = (item.desc || item.address || item.phone || '').toLowerCase();
+        return name.includes(q) || desc.includes(q);
+      });
+    }
   },
   mounted() {
     if (!UserStore.isLogin || !this.isGuide) { this.loading = false; return; }
@@ -206,6 +251,7 @@ const GuidePublishPage = {
     },
     switchTab(i) {
       this.activeTab = i;
+      this.searchQuery = '';
       this.fetchItems();
     },
     auditStatus(s) {

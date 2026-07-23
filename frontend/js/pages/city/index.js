@@ -27,7 +27,7 @@ const CityPage = {
           @mouseenter="$event.currentTarget.style.background='#5A5FE8';$event.currentTarget.style.transform='translateY(-1px)'"
           @mouseleave="$event.currentTarget.style.background='#666FFF';$event.currentTarget.style.transform=''">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          {{ t('發佈城市') }}
+          {{ $t('發佈城市') }}
         </a>
       </div>
 
@@ -119,6 +119,7 @@ const CityPage = {
       continentIndex: 0,
       areaIndex: -1,        // -1 = 全部, 0+ = specific area
       cities: [],           // currently displayed cities
+      areaCitiesMap: {},    // { continentId: Set of areaIds that have cities }
       loading: false,
       tabLoading: false,
       pageError: '',
@@ -130,7 +131,12 @@ const CityPage = {
   computed: {
     currentAreas() {
       const c = this.continents[this.continentIndex];
-      return c ? (c.areas || []) : [];
+      if (!c) return [];
+      const areas = c.areas || [];
+      const citySet = this.areaCitiesMap[c.id];
+      // Only filter when we've already checked which areas have cities
+      if (!citySet) return areas;
+      return areas.filter(a => citySet.has(a.id));
     },
     currentCities() {
       return this.cities;
@@ -148,7 +154,7 @@ const CityPage = {
       this.loading = true;
       this.pageError = '';
       try {
-        // Step 1: Fetch continent list only (1 API call — fast)
+        // Step 1: Fetch continent list (1 API call)
         const res = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: 0 });
         if (!res.success) {
           this.loading = false;
@@ -156,17 +162,20 @@ const CityPage = {
           return;
         }
         const continentList = res.data?.list || res.data || [];
-
-        // Show tabs immediately — areas empty, will lazy-load
         this.continents = continentList.map(c => ({ id: c.id, name: c.name, areas: [] }));
-        this.continentIndex = 0;
-        this.areaIndex = -1;  // "全部" by default
 
         if (this.continents.length > 0) {
-          // Step 2: Fetch areas ONLY for first continent (1 API call — not all)
-          await this.loadAreasForContinent(0);
-          // Step 3: Fetch cities for first continent's first area (1 API call)
-          await this.fetchCities();
+          this.continentIndex = 0;
+          this.areaIndex = -1;
+          // Step 2: Load areas ONLY for first continent (lazy-load others on click)
+          await this._loadAreasFor(this.continents[0]);
+          // Step 3: Prune if first continent has zero areas
+          if (this.continents[0].areas.length === 0) {
+            this._pruneContinent(0);
+          } else {
+            // Step 4: Load full city data for first continent
+            await this.fetchCities();
+          }
         }
       } catch (e) {
         console.error('[CityPage] fetchContinents error:', e);
@@ -175,25 +184,41 @@ const CityPage = {
       this.loading = false;
     },
 
-    /** Lazy-load areas for a continent (only when needed) */
-    async loadAreasForContinent(idx) {
-      const c = this.continents[idx];
+    /** Load areas for a continent object (shared by fetchContinents + selectContinent) */
+    async _loadAreasFor(c) {
       if (!c || c.areas.length > 0) return; // Already loaded
       try {
         const areaRes = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: c.id });
         c.areas = areaRes.success ? (areaRes.data?.list || areaRes.data || []) : [];
       } catch (e) {
-        console.error('[CityPage] loadAreasForContinent error:', e);
+        console.error('[CityPage] _loadAreasFor error:', e);
         c.areas = [];
       }
     },
 
     async selectContinent(idx) {
+      const c = this.continents[idx];
+      if (!c) return;
+
+      // Already verified empty — prune immediately
+      if (this.areaCitiesMap[c.id] && this.areaCitiesMap[c.id].size === 0) {
+        this._pruneContinent(idx);
+        return;
+      }
+
       this.continentIndex = idx;
-      this.areaIndex = -1;  // reset to "全部"
+      this.areaIndex = -1;
       this.cities = [];
-      // Lazy-load areas for this continent if not yet fetched
-      await this.loadAreasForContinent(idx);
+
+      // Lazy-load areas if not yet fetched
+      await this._loadAreasFor(c);
+
+      // Prune if zero areas (definitely no cities)
+      if (c.areas.length === 0) {
+        this._pruneContinent(idx);
+        return;
+      }
+
       this.fetchCities();
     },
 
@@ -212,9 +237,10 @@ const CityPage = {
         if (this.areaIndex === -1) {
           // 「全部」— API requires BOTH continents_id + area_id to filter correctly.
           // Fetch each area's cities in parallel, then combine (dedup by id).
-          // If a continent has no areas, return empty — we can't filter without area_id.
+          // Also record which areas actually have cities — only those get a pill.
           if (c.areas.length === 0) {
             this.cities = [];
+            this.areaCitiesMap[c.id] = new Set();
           } else {
             const results = await Promise.all(
               c.areas.map(area =>
@@ -223,17 +249,29 @@ const CityPage = {
             );
             const seen = new Set();
             const allCities = [];
-            results.forEach(res => {
+            const areaCitySet = new Set();
+            results.forEach((res, idx) => {
               if (res.success) {
                 const list = res.data?.list || (Array.isArray(res.data) ? res.data : []);
                 if (Array.isArray(list)) {
+                  if (list.length > 0) {
+                    areaCitySet.add(c.areas[idx].id);
+                  }
                   list.forEach(city => {
                     if (!seen.has(city.id)) { seen.add(city.id); allCities.push(city); }
                   });
                 }
               }
             });
+            this.areaCitiesMap[c.id] = areaCitySet;
             this.cities = allCities;
+
+            // If this continent has areas but zero cities, prune its tab
+            if (areaCitySet.size === 0 && c.areas.length > 0) {
+              this.tabLoading = false;
+              this._pruneContinent(this.continentIndex);
+              return;
+            }
           }
         } else {
           // Specific area
@@ -255,6 +293,19 @@ const CityPage = {
         this.cities = [];
       }
       this.tabLoading = false;
+    },
+
+    /** Remove a continent tab that has no cities, fall back to first continent */
+    _pruneContinent(idx) {
+      this.continents.splice(idx, 1);
+      if (this.continents.length === 0) {
+        this.cities = [];
+        return;
+      }
+      this.continentIndex = 0;
+      this.areaIndex = -1;
+      this.cities = [];
+      this.fetchCities();
     },
 
     goCityDetail(id) {

@@ -116,6 +116,7 @@ const routes = [
   // === Misc ===
   { path: '/photo', component: PhotoViewerPage, meta: { title: '查看圖片' } },
   { path: '/web', component: WebViewPage, meta: { title: '網頁' } },
+  { path: '/download', component: AppDownloadPage, meta: { title: '下載App' } },
 
   // === Catch-all ===
   { path: '/:pathMatch(.*)*', redirect: '/home' }
