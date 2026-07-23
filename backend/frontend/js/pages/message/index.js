@@ -90,10 +90,10 @@ const MessagePage = {
         if (res.success) {
           this.messageData = res.data || {};
         } else {
-          this.error = res.message || this.t('加載失敗');
+          this.error = res.message || I18n.t('加載失敗');
         }
       } catch (e) {
-        this.error = this.t('網絡錯誤');
+        this.error = I18n.t('網絡錯誤');
       }
       this.loading = false;
     },

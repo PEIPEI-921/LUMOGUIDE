@@ -133,7 +133,7 @@ const NewsPage = {
 
   computed: {
     allCategories() {
-      const list = [{ id: null, name: this.t('全部') }];
+      const list = [{ id: null, name: I18n.t('全部') }];
       return list.concat(this.categories.filter(c => c.count > 0));
     },
     isGuide() {
