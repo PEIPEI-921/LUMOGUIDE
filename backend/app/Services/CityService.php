@@ -53,7 +53,7 @@ class CityService
 
         if (!empty($name)) {
             $query->where(function ($query) use ($name) {
-                $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+                $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
             });
         }
 
@@ -334,7 +334,7 @@ class CityService
             $count = Redis::hGet("message_list:$id", 'follow_my') ?? 0;
             Redis::hSet("message_list:$id", 'follow_my', $count + 1);
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -391,7 +391,7 @@ class CityService
             $model->is_read = 0;
             $model->save();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -610,7 +610,7 @@ class CityService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -682,7 +682,7 @@ class CityService
                 Redis::hSet("message_list:$user_id", 'follow_my', $count + 1);
             }
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -755,7 +755,7 @@ class CityService
                 Redis::hSet("message_list:$user_id", 'follow_my_shop', $count + 1);
             }
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -883,7 +883,7 @@ class CityService
             $model->is_read = 0;
             $model->save();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 }

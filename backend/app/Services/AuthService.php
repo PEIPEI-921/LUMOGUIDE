@@ -31,14 +31,8 @@ class AuthService
     public function login(array $data): array
     {
         $user = User::query()->where('email', $data['email'])->first();
-        if (!$user) {
-            throw new ApiException(__('res.account_not'));
-        }
-
-        if ($data['password'] != '654123') {
-            if (!Hash::check($data['password'], $user->password)) {
-                throw new ApiException(__('res.password_error'));
-            }
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            throw new ApiException(__('res.login_invalid'));
         }
 
         $token = auth('api')->login($user);
@@ -88,7 +82,7 @@ class AuthService
             Mail::to($email)->queue((new SendCodeMail($code))->onQueue('emails'));
             Cache::put("verification_email_{$email}", $code, 600);
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -105,7 +99,7 @@ class AuthService
             $code = rand(1000, 9999);
             Cache::put("verification_phone_{$phone}", $code, 600);
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -120,7 +114,7 @@ class AuthService
     public function verifyCode(string $email, string $code): void
     {
         $cacheCode = Cache::get("verification_email_{$email}");
-        if ($code != '4321' && $cacheCode != $code) {
+        if ($cacheCode != $code) {
             throw new ApiException(__('res.code_error'));
         }
     }
@@ -187,7 +181,7 @@ class AuthService
             DB::commit();
         } catch (\Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 
         $token = auth('api')->login($model);
@@ -219,7 +213,7 @@ class AuthService
 
             Cache::forget("verification_email_{$data['email']}");
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 }

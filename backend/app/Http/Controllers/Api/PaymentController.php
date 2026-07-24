@@ -48,6 +48,12 @@ class PaymentController extends BaseController
                 if ($orderId) {
                     $order = VipOrder::query()->where('order_sn', $orderId)->first();
                     if ($order) {
+                        // Idempotency: skip if already processed (Stripe may retry webhooks)
+                        if ($order->pay_status == Vip::PayStatusPay) {
+                            Log::info("Payment already processed for order: {$orderId}");
+                            return response()->json(['received' => true]);
+                        }
+
                         DB::beginTransaction();
                         try {
                             $order->pay_time = time();

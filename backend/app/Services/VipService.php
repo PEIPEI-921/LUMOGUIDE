@@ -188,14 +188,14 @@ class VipService
                     ];
                 } catch (\Exception $e) {
                     Log::error('Stripe createPaymentIntent error: ' . $e->getMessage());
-                    throw new Exception($e->getMessage());
+                    throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
                 }
             }
             $orderModel->save();
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 
         return $payData;
@@ -292,14 +292,14 @@ class VipService
                     ];
                 } catch (\Exception $e) {
                     Log::error('Stripe createPaymentIntent error: ' . $e->getMessage());
-                    throw new Exception($e->getMessage());
+                    throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
                 }
             }
             $orderModel->save();
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 
         return $payData;

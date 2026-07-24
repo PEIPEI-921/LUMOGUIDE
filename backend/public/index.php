@@ -10,16 +10,27 @@ define('LARAVEL_START', microtime(true));
 | API Proxy for Local Dev
 |--------------------------------------------------------------------------
 |
-| When running locally without swoole_loader, API requests are proxied
-| to the production server so the frontend SPA can talk to a working API
-| without CORS issues.
+| ONLY active when APP_ENV=local — proxies /api/* requests to production
+| so the frontend SPA works without a local database.
+|
+| On staging/production, this block is skipped and requests are handled
+| by the Laravel application normally.
 |
 */
 
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $isApiRequest = str_starts_with($requestUri, '/api/');
 
-if ($isApiRequest && file_exists(__DIR__ . '/../.env')) {
+// Read APP_ENV from .env without booting Laravel
+$appEnv = 'production';
+if (file_exists(__DIR__ . '/../.env')) {
+    $envContent = file_get_contents(__DIR__ . '/../.env');
+    if (preg_match('/^APP_ENV\s*=\s*([^\s#]+)/m', $envContent, $m)) {
+        $appEnv = trim($m[1]);
+    }
+}
+
+if ($isApiRequest && $appEnv === 'local') {
     $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
     // ── Cache layer for GET requests (avoid TLS handshake per request) ──

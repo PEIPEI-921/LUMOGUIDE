@@ -81,7 +81,7 @@ cd lumo_guide
 cp .env.example .env
 php artisan key:generate
 php artisan jwt:secret
-# 编辑 .env 填入数据库密码、Stripe、邮件、IM 等密钥
+# 编辑 .env 填入数据库密码、Stripe、邮件、AUDIT_EMAIL、IM 等密钥
 
 # 2. 安装依赖
 composer install --no-dev --optimize-autoloader
@@ -162,10 +162,29 @@ php artisan config:clear && php artisan cache:clear && php artisan route:clear
 
 ## 更新日志
 
+### 2026-07-24 — 安全加固
+
+- 全面安全审查，修复 9 个漏洞（2 严重 + 2 高危 + 5 中等）
+- 删除后门密码 `654123` 和万能验证码 `4321`
+- 文件上传：MIME 类型白名单 + 扩展名校验 + 10MB 限制，防止 RCE
+- 新增 `escapeLike()` 辅助函数，所有 LIKE 查询转义通配符
+- 错误消息：所有 Service 层异常脱敏，统一返回通用错误
+- 登录：统一失败提示，防止用户枚举
+- Stripe Webhook：幂等性检查，防止重复处理
+- SSL：移除 `CURLOPT_SSL_VERIFYPEER = false`
+- `/api/common/test` 添加 `auth:api` 中间件
+
+### 2026-07-24 — 部署独立性加固 + CLAUDE.md 精简
+
+- `public/index.php` API 代理修复：增加 `APP_ENV=local` 检查
+- `.env.example` 新增 `AUDIT_EMAIL` 配置项
+- `deploy.sh` 配置提示增加 `AUDIT_EMAIL`
+- `CLAUDE.md` 从 590 行精简至 440 行
+
 ### 2026-07-22 — 代码独立化
 
 - 11 个 Service 文件从 swoole_loader 解码为明文，不再需要特殊扩展
-- API 代理从 `public/index.php` 移除，恢复标准 Laravel 入口
+- API 代理添加 `APP_ENV=local` 守卫，仅在本地开发时生效，生产环境请求由 Laravel 正常处理
 - 前端 JS 中硬编码的 `api.lumoguide.com` 改为 `window.location.origin` 同源自适应
 - `.env` 中所有生产凭据替换为占位符
 - `start.sh` 移除 SSH 密码和生产 IP
