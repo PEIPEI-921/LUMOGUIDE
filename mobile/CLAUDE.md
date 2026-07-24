@@ -287,6 +287,30 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 `StripeService.presentPaymentSheet` handles the payment flow: present sheet → verify PaymentIntent status → verify order with backend via `vipPayStatus` endpoint. Publishable key in code (live key), fallback if system config has a custom key.
 
+### Deep Link & Share QR Code（2026-07-24）
+
+**URL Scheme:** `lumoguide://share?c=INVCODE&t=<type>&i=<id>`，两端已注册。
+
+| 文件 | 用途 |
+|------|------|
+| `lib/common/services/deep_link.dart` | `DeepLinkService` — stream 监听 + 冷启动 URI，解析后跳转详情页；`ClipboardService` — 首次安装从剪贴板恢复 deep link |
+| `lib/common/widgets/share_qrcode_dialog.dart` | `ShareQrcodeDialog` — 调用 `/common/shareQrcode` API 获取 PNG 二维码并展示 |
+| `lib/common/apis/provider.dart` | 新增 `getBytes()` 方法，用于二进制图片响应（不走 JSON 解析） |
+
+**Deep link 路由映射：**
+| type | 目标页面 | 参数 |
+|------|---------|------|
+| `guide` | `/guide_detail` | `{'id': id}` |
+| `city` | `/city_detail` | `{'id': id}` |
+| `content` | `/common_detail` | `{'id': id}` |
+| `trip` | `/journey_detail` | `{'id': id}` |
+
+**分享入口：** 导游详情、城市详情、景点/餐厅等详情、工作详情 四个页面的 AppBar 均有 `qr_code` 图标。
+
+**依赖：** `app_links: ^6.4.0`（deep link 监听）
+
+**设计文档：** `flutter-share-deeplink.md`（服务端配合的完整流程，含 share.html 落地页、延迟 deep link、邀请码绑定）
+
 ## Patched dependencies
 
 `patched_packages/extended_text_field/` is a locally patched copy of `extended_text_field` 16.0.2, loaded via `dependency_overrides` in pubspec.yaml. 
@@ -308,6 +332,14 @@ See [[calendar-redesign]], [[booking-color-coding]].
 7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable`、`TableCalendar` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
 8. **macOS App Sandbox 缺网络权限导致所有 API 请求失败:** `DebugProfile.entitlements` 和 `Release.entitlements` 需要添加 `com.apple.security.network.client` 权限，否则沙箱会阻止所有 HTTP 请求。已在两个 entitlements 文件中添加。详见 [[macos-network-entitlement]]。
 9. **Journey Editor `onSubmit()` 未调用 API:** 后端 JourneyWork CRUD 接口已就绪（`/user/journeyList|Detail|Create|Update|Delete`），但前端 `lib/pages/journey_editor/controller.dart:714` 的 `onSubmit()` 和 `onSaveAsTemplate()` 仍是 stub（仅显示 toast 并关闭页面，不发送 HTTP 请求）。后续需对接 API。
+10. **Android NDK 下载损坏导致编译失败:** AGP 自动下载的 NDK 可能缺少 `source.properties`，报错 `[CXX1101] NDK at ... did not have a source.properties file`。解决方案：删除损坏的 NDK 目录（如 `~/Library/Android/sdk/ndk/28.2.13676358`），重新编译时 AGP 会自动重新下载。Flutter 也会提示具体路径和修复步骤。
+11. **Flutter 3.44.4 Android 版本要求:** Flutter 3.44.4 会警告并要求以下最低版本，否则编译会失败（不仅仅是 warning）：
+    - Gradle ≥ 8.14.0（`android/gradle/wrapper/gradle-wrapper.properties`）
+    - AGP ≥ 8.11.1（`android/settings.gradle` 中 `com.android.application`）
+    - Kotlin ≥ 2.2.20（`android/settings.gradle` 中 `org.jetbrains.kotlin.android`）
+    
+    当前已升级到这些版本（2026-07-24）。
+12. **Android APK 编译需要代理/VPN:** 国内网络环境无法直接访问 `repo.maven.apache.org`（Cloudflare 403）和 `dl.google.com`（Connection refused），导致 Gradle 插件依赖（kotlin-dsl、AGP buildscript classpath）和 Android SDK 组件无法下载。解决方案：开启系统代理后在 `android/gradle.properties` 中配置 `systemProp.java.net.useSystemProxies=true`，或配置 `systemProp.https.proxyHost/Port`。
 
 ## New machine setup
 

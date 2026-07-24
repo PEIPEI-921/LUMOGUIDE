@@ -28,5 +28,6 @@ flutter build ios       # iOS
 |------|------|
 | [CLAUDE.md](CLAUDE.md) | 架构、模式、已知问题 |
 | [SETUP.md](SETUP.md) | 新机器环境配置 |
+| [flutter-share-deeplink.md](flutter-share-deeplink.md) | 分享二维码 + 深链接设计文档 |
 | [docs/testflight-upload.md](docs/testflight-upload.md) | TestFlight 上传指南 |
 | [docs/backend-requirements.md](docs/backend-requirements.md) | 后端修改需求清单 |
