@@ -433,6 +433,9 @@ abstract class ApiUrl {
   /// 搜索
   static const search = '/common/search';
 
+  /// 分享二维码
+  static const shareQrcode = '/common/shareQrcode';
+
   /// 每日记录
   static const userRecord = '/user/loginRecord';
 }

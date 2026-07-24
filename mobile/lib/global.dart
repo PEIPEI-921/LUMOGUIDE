@@ -25,6 +25,8 @@ class Global {
 
     Loading();
 
+    DeepLinkService.init();
+
     await getPutServices();
     getPut();
   }

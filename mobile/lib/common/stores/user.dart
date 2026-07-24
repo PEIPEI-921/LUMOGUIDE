@@ -7,6 +7,7 @@ import '../apis/mixin.dart';
 import '../apis/urls.dart';
 import '../models/user.dart';
 import '../routers/names.dart';
+import '../services/deep_link.dart';
 import '../utils/loading.dart';
 import 'storage.dart';
 import 't_im.dart';
@@ -63,6 +64,7 @@ class UserStore extends GetxController with ApiMixin {
       _isLogin.value = true;
       await getProfile();
 
+      ClipboardService.checkShareParams();
       _uploadUserRecord();
     } catch (e) {
       Loading.dismiss();

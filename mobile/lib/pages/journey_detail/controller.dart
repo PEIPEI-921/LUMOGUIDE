@@ -19,12 +19,13 @@ import 'widgets/template_save_dialog.dart';
 class JourneyDetailController extends GetxController {
   final work = Rxn<JourneyWork>();
   final activeTab = 0.obs;
+  int workId = 0;
 
   @override
   void onInit() {
     super.onInit();
-    final id = Get.arguments?['id'] as int?;
-    _loadDetail(id);
+    workId = Get.arguments?['id'] as int? ?? 0;
+    _loadDetail(workId);
   }
 
   void _loadDetail(int? id) {

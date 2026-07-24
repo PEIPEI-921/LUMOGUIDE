@@ -72,6 +72,21 @@ class _CustomAppBar extends StatelessWidget {
         toolbarHeight: controller.toolbarHeight,
         pinned: true,
         foregroundColor: controller.showPinned ? Colors.black : Colors.white,
+        actions: [
+          Icon(
+            Icons.qr_code,
+            size: 20.w,
+            color: controller.showPinned ? Colors.black : Colors.white,
+          )
+              .padding(all: 12.w)
+              .gestures(
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (_) => ShareQrcodeDialog(type: 'city', id: controller.cityId),
+                ),
+                behavior: HitTestBehavior.opaque,
+              ),
+        ],
         leadingWidth: 150.w,
         leading:
             Row(

@@ -1,4 +1,5 @@
 export 'config.dart';
+export 'deep_link.dart';
 export 'storage.dart';
 export 'localization.dart';
 export 'stripe.dart';

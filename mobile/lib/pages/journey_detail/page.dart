@@ -16,6 +16,19 @@ class JourneyDetailPage extends StatelessWidget {
       appBar: IAppBar(
         title: '工作详情',
         actions: [
+          Icon(
+            Icons.qr_code,
+            size: 20.w,
+            color: AppColors.primaryText,
+          )
+              .padding(all: 12.w)
+              .gestures(
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (_) => ShareQrcodeDialog(type: 'trip', id: ctrl.workId),
+                ),
+                behavior: HitTestBehavior.opaque,
+              ),
           IconButton(
             icon: Icon(Icons.edit_outlined, size: 18.sp, color: AppColors.primary),
             onPressed: () => ctrl.onEdit(),

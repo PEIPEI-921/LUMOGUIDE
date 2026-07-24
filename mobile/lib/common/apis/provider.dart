@@ -152,4 +152,23 @@ class ApiProvider {
       return ApiResult.failure(e);
     }
   }
+
+  /// 请求二进制数据（不解析 JSON），用于下载图片/二维码等
+  Future<Response?> getBytes(
+    String path, {
+    Map<String, dynamic>? parameters,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final response = await dio.get(
+        path,
+        queryParameters: parameters,
+        options: Options(responseType: ResponseType.bytes),
+        cancelToken: cancelToken,
+      );
+      return response;
+    } on DioException {
+      return null;
+    }
+  }
 }
