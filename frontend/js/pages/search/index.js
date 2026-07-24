@@ -6,14 +6,12 @@
 const SearchPage = {
   template: `
     <div class="page-content"><div class="ds-container-960" style="padding-top:16px;padding-bottom:16px">
-      <!-- Search Input -->
-      <div class="ds-hero-search" style="margin-bottom:16px">
+      <!-- Search Input v2 -->
+      <div class="search-bar-v2" style="margin-bottom:24px;max-width:640px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0;color:var(--color-assistant-text)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" v-model="query" :placeholder="$t('搜尋城市、導遊或景點…')"
           @input="onSearchInput" @keyup.enter="doSearch">
-        <button @click="doSearch">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          {{ $t('搜尋') }}
-        </button>
+        <button class="btn btn-primary btn-sm" @click="doSearch" style="flex-shrink:0">{{ $t('搜尋') }}</button>
       </div>
 
       <!-- Result Tabs -->
@@ -21,7 +19,7 @@ const SearchPage = {
         <button v-for="tab in resultTabs" :key="tab.key"
           @click="activeResultTab = tab.key"
           :class="['ds-tab', { active: activeResultTab === tab.key }]">
-          {{ tab.label }}
+          {{ $t(tab.label) }}
           <span v-if="tab.count > 0" style="font-size:10px;opacity:.5;margin-left:4px">{{ tab.count }}</span>
         </button>
       </div>
@@ -40,7 +38,7 @@ const SearchPage = {
               class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
               <div style="aspect-ratio:4/3;overflow:hidden;background:var(--color-bg-card)">
                 <img v-if="c.first_picture" :src="c.first_picture" :alt="c.name" style="width:100%;height:100%;object-fit:cover">
-                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.3">🏙️</div>
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="6" x2="11" y2="6"/><line x1="13" y1="6" x2="15" y2="6"/><line x1="9" y1="14" x2="15" y2="14"/><path d="M9 22v-4h6v4"/></svg></div>
               </div>
               <div style="padding:14px 16px">
                 <div style="font-size:14.5px;font-weight:600">{{ c.name }}</div>
@@ -61,7 +59,7 @@ const SearchPage = {
               class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
               <div style="aspect-ratio:3/4;overflow:hidden;background:var(--color-bg-card)">
                 <img v-if="g.photo" :src="g.photo" :alt="g.name" style="width:100%;height:100%;object-fit:cover">
-                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 22c0-4.4-3.6-8-8-8s-8 3.6-8 8"/></svg></div>
               </div>
               <div style="padding:10px">
                 <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</div>

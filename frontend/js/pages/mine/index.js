@@ -35,14 +35,14 @@ const I = {
 
 const MinePage = {
   template: `
-    <div class="page-content"><div class="ds-container-640" style="padding-top:12px;padding-bottom:40px">
+    <div class="page-content"><div class="ds-container-640" style="padding-top:16px;padding-bottom:40px">
       <!-- Not logged in -->
-      <div v-if="!UserStore.isLogin" style="text-align:center;padding:80px 0">
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;color:var(--color-assistant-text)"><span v-html="I.user"></span></div>
-        <p style="font-size:15px;color:var(--color-secondary-text);margin-bottom:20px;">{{ $t('請登錄以查看個人中心') }}</p>
-        <a href="#/login" class="ds-btn ds-btn-primary" style="display:inline-flex;border-radius:100px;padding:10px 36px">
-          {{ $t('登錄') }}
-        </a>
+      <div v-if="!UserStore.isLogin" class="card" style="text-align:center;max-width:400px;margin:60px auto 0">
+        <div class="empty-state-v2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 22c0-4.4-3.6-8-8-8s-8 3.6-8 8"/></svg>
+          <div class="title">{{ $t('請登錄以查看個人中心') }}</div>
+          <a href="#/login" class="btn btn-primary" style="font-size:13px;padding:8px 28px">{{ $t('登錄') }}</a>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -52,98 +52,83 @@ const MinePage = {
 
       <!-- Logged in -->
       <template v-else>
-        <!-- Profile Header Card -->
-        <div class="ds-profile-card" style="margin-top:8px">
-          <div class="ds-profile-top">
-            <a href="#/profile" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:16px;flex:1;min-width:0">
-              <div class="ds-avatar" style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0">
-                <img v-if="profile.avatar" :src="profile.avatar" style="width:100%;height:100%;object-fit:cover">
-                <div v-else style="width:100%;height:100%;background:linear-gradient(135deg,var(--color-primary),#9B9FFF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600">
-                  {{ (profile.nickname || profile.email || '?')[0] }}
-                </div>
-              </div>
-              <div style="min-width:0">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:17px;font-weight:600;color:var(--color-primary-text)">{{ profile.nickname || profile.email || '' }}</span>
-                  <span v-if="profile.identity === 2" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#EEF2FF;color:var(--color-primary);font-weight:600">{{ $t('认证导游') }}</span>
-                  <span v-if="profile.identity === 3" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:#FFF7ED;color:var(--color-amber);font-weight:600">{{ $t('认证企业') }}</span>
-                  <span v-if="profile.vip_name" style="font-size:10.5px;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,#FFFBF0,#FFF7E0);color:#D4A017;font-weight:600;border:1px solid rgba(212,160,23,.3)">{{ profile.vip_name }}</span>
-                </div>
-                <div style="font-size:12px;color:var(--color-assistant-text);margin-top:4px">
-                  ID: {{ (profile.number || '').slice(0, 10) }}
-                </div>
-              </div>
-            </a>
-            <a href="#/settings" style="font-size:20px;text-decoration:none;padding:8px;color:var(--color-assistant-text)"><span v-html="I.settings"></span></a>
+        <!-- Profile Card v2 -->
+        <div class="profile-card-v2">
+          <a href="#/profile" class="pc-avatar" style="text-decoration:none;cursor:pointer">
+            <img v-if="profile.avatar" :src="profile.avatar" alt="" />
+            <span v-else>{{ (profile.nickname || profile.email || '?')[0] }}</span>
+          </a>
+          <div class="pc-info">
+            <div class="pc-name">
+              {{ profile.nickname || profile.email || '' }}
+              <span v-if="profile.identity === 2" class="badge-guide">{{ $t('认证导游') }}</span>
+              <span v-if="profile.identity === 3" class="badge-company">{{ $t('认证企业') }}</span>
+              <span v-if="UserStore.isVip" class="badge-vip">VIP</span>
+            </div>
+            <div class="pc-id">ID: {{ (profile.number || '').slice(0, 10) }}</div>
           </div>
+          <a href="#/settings" style="text-decoration:none;flex-shrink:0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.2 4.2l1.4 1.4m12.8 12.8l1.4 1.4M1 12h2m18 0h2M4.2 19.8l1.4-1.4m12.8-12.8l1.4-1.4"/></svg>
+          </a>
+        </div>
 
-          <!-- Stats Row -->
-          <div class="ds-stats" style="margin-top:20px">
-            <a href="#/message/follow" class="ds-stat" style="text-decoration:none">
-              <div class="ds-stat-value">{{ profile.follow_count || 0 }}</div>
-              <div class="ds-stat-label">{{ $t('關注') }}</div>
-            </a>
-            <a href="#/message/follow" class="ds-stat" style="text-decoration:none">
-              <div class="ds-stat-value">{{ profile.fan_count || 0 }}</div>
-              <div class="ds-stat-label">{{ $t('粉絲') }}</div>
-            </a>
-            <a href="#/integral" class="ds-stat" style="text-decoration:none">
-              <div class="ds-stat-value">{{ profile.integral || 0 }}</div>
-              <div class="ds-stat-label">{{ $t('積分') }}</div>
-            </a>
-          </div>
+        <!-- Stats Row v2 -->
+        <div class="stats-row-v2">
+          <a href="#/following" class="stat-card" style="text-decoration:none;color:inherit">
+            <div class="num">{{ profile.follow_count || 0 }}</div>
+            <div class="label">{{ $t('關注') }}</div>
+          </a>
+          <a href="#/followers" class="stat-card" style="text-decoration:none;color:inherit">
+            <div class="num">{{ profile.fan_count || 0 }}</div>
+            <div class="label">{{ $t('粉絲') }}</div>
+          </a>
+          <a href="#/integral" class="stat-card" style="text-decoration:none;color:inherit">
+            <div class="num">{{ profile.integral || 0 }}</div>
+            <div class="label">{{ $t('積分') }}</div>
+          </a>
         </div>
 
         <!-- VIP Status -->
-        <a v-if="UserStore.isVip" href="#/vip" class="ds-card"
-          style="display:block;text-decoration:none;color:inherit;margin-top:14px;padding:16px 18px;background:linear-gradient(135deg,#FFFDF5,#FFF9E6);border:1px solid rgba(245,184,66,.2)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:#D4A017"><span v-html="I.crown" style="font-size:16px"></span> {{ $t('VIP會員') }}</div>
-              <div style="font-size:12px;color:var(--color-secondary-text);margin-top:2px">
-                {{ $t('有效期至') }} {{ profile.vip_expiration_time ? formatDate(new Date(profile.vip_expiration_time * 1000)) : '' }}
-              </div>
-            </div>
-            <span style="font-size:12px;color:#D4A017;font-weight:500">{{ $t('延長') }} ›</span>
+        <a v-if="UserStore.isVip" href="#/vip" class="card" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;margin-bottom:16px;padding:16px 20px;background:linear-gradient(135deg,#FFFDF5,#FFF9E6);border-color:rgba(212,160,23,.15)">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#D4A017"><span v-html="I.crown" style="vertical-align:-2px"></span> {{ $t('VIP會員') }}</div>
+            <div style="font-size:12px;color:var(--color-secondary-text);margin-top:2px">{{ $t('有效期至') }} {{ profile.vip_expiration_time ? formatDate(new Date(profile.vip_expiration_time * 1000)) : '' }}</div>
           </div>
+          <span style="font-size:12px;color:#D4A017;font-weight:500">{{ $t('延長') }} ›</span>
         </a>
 
         <!-- Auth/Promotion Cards -->
-        <div v-if="UserStore.showGuideAuth || UserStore.showEnterpriseAuth" style="display:flex;gap:10px;margin-top:14px">
-          <a v-if="UserStore.showGuideAuth" href="#/guide/certify"
-            class="ds-card ds-card-hover" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#EEF0FF,#E6E8FF);border:1px solid rgba(102,111,255,.15)">
-            <div style="font-size:14px;font-weight:600;color:var(--color-primary)"><span v-html="I.compass" style="font-size:16px"></span> {{ $t('成為導遊') }}</div>
+        <div v-if="UserStore.showGuideAuth || UserStore.showEnterpriseAuth" style="display:flex;gap:12px;margin-bottom:16px">
+          <a v-if="UserStore.showGuideAuth" href="#/guide/certify" class="card" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#EEF0FF,#E6E8FF);border-color:rgba(102,111,255,.15)">
+            <div style="font-size:14px;font-weight:600;color:var(--color-primary)"><span v-html="I.compass" style="vertical-align:-2px"></span> {{ $t('成為導遊') }}</div>
             <div style="font-size:12px;color:var(--color-secondary-text);margin-top:4px">{{ $t('發布城市內容') }}</div>
           </a>
-          <a v-if="UserStore.showEnterpriseAuth" href="#/merchant/entry"
-            class="ds-card ds-card-hover" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#FFF4ED,#FFECE0);border:1px solid rgba(249,115,22,.15)">
-            <div style="font-size:14px;font-weight:600;color:var(--color-orange)"><span v-html="I.shop" style="font-size:16px"></span> {{ $t('成為商家') }}</div>
+          <a v-if="UserStore.showEnterpriseAuth" href="#/merchant/entry" class="card" style="flex:1;text-decoration:none;color:inherit;padding:16px 18px;background:linear-gradient(135deg,#FFF4ED,#FFECE0);border-color:rgba(249,115,22,.15)">
+            <div style="font-size:14px;font-weight:600;color:var(--color-orange)"><span v-html="I.shop" style="vertical-align:-2px"></span> {{ $t('成為商家') }}</div>
             <div style="font-size:12px;color:var(--color-secondary-text);margin-top:4px">{{ $t('管理店鋪預約') }}</div>
           </a>
         </div>
 
-        <!-- My Services Menu -->
-        <div class="ds-menu-group" style="margin-top:14px">
-          <div class="ds-menu-group-title">{{ $t('我的服務') }}</div>
+        <!-- Menu Card v2 -->
+        <div class="menu-card">
           <a v-for="menu in myMenus" :key="menu.key"
             :href="'#' + menu.route"
-            class="ds-menu-item" style="position:relative">
-            <span><span v-html="menuSvg(menu.key)" style="font-size:18px;vertical-align:-4px;margin-right:2px"></span>{{ $t(menu.label) }}</span>
-            <span v-if="menu.badge > 0" style="position:absolute;right:30px;min-width:20px;height:20px;border-radius:10px;background:var(--color-red);color:#fff;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 6px">{{ menu.badge > 99 ? '99+' : menu.badge }}</span>
-            <span class="ds-menu-arrow">›</span>
+            class="menu-item-v2" style="text-decoration:none;color:inherit">
+            <span class="mi-icon" v-html="menuSvg(menu.key)"></span>
+            <span class="mi-label">{{ $t(menu.label) }}</span>
+            <span v-if="menu.badge > 0" class="msg-count" style="margin-right:6px">{{ menu.badge > 99 ? '99+' : menu.badge }}</span>
+            <span class="mi-arrow">›</span>
           </a>
         </div>
 
         <!-- Invite -->
-        <a href="#/invite" class="ds-card ds-card-hover" style="display:block;text-decoration:none;color:inherit;margin-top:14px;padding:16px 18px">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:#D4A017"><span v-html="I.gift"></span></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:500">{{ $t('邀請好友') }}</div>
-              <div style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ $t('邀請碼') }}: {{ profile.inviter_code || '' }}</div>
-            </div>
-            <span style="color:var(--color-assistant-text)">›</span>
+        <a href="#/invite" class="card" style="display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;margin-top:16px;padding:16px 18px">
+          <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#D4A017"><span v-html="I.gift"></span></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500">{{ $t('邀請好友') }}</div>
+            <div style="font-size:12px;color:var(--color-assistant-text);margin-top:2px">{{ $t('邀請碼') }}: {{ profile.inviter_code || '' }}</div>
           </div>
+          <span class="mi-arrow">›</span>
         </a>
       </template>
     </div>

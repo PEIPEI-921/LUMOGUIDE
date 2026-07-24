@@ -35,7 +35,7 @@ const GuideCertifyPage = {
       <div v-else class="ds-container-600">
         <!-- Header -->
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-          <h1 style="font-family:var(--font-serif);font-size:20px;font-weight:400;margin:0">LuMo Guide 認證</h1>
+          <h1 style="font-family:var(--font-serif);font-size:20px;font-weight:400;margin:0">{{ $t('LuMo Guide 認證') }}</h1>
           <button v-if="readOnly" @click="readOnly=false" style="margin-left:auto;font-size:12px;color:var(--color-primary);background:none;border:none;cursor:pointer">✏️ {{ $t('編輯') }}</button>
         </div>
 

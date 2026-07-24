@@ -30,7 +30,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('throttle:6,1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('sendCode', [AuthController::class, 'sendCode']);
     Route::post('sendSmsCode', [AuthController::class, 'sendSmsCode']);

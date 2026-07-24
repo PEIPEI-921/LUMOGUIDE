@@ -8,7 +8,7 @@ const MessagePage = {
     <div class="page-content"><div class="ds-container-640" style="padding-top:12px;padding-bottom:40px">
       <!-- Not Logged In -->
       <div v-if="!UserStore.isLogin" style="text-align:center;padding:80px 0">
-        <div style="font-size:48px;margin-bottom:16px;opacity:.4">🔔</div>
+        <div style="font-size:48px;margin-bottom:16px;opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
         <p style="color:var(--color-secondary-text);margin-bottom:20px;font-size:15px">{{ t('請登錄以查看消息') }}</p>
         <a href="#/login" class="ds-btn ds-btn-primary" style="display:inline-flex;border-radius:100px;padding:10px 32px">
           {{ t('登錄') }}
@@ -22,43 +22,35 @@ const MessagePage = {
 
       <!-- Error -->
       <div v-else-if="error" style="text-align:center;padding:80px 0">
-        <div style="font-size:48px;margin-bottom:12px;opacity:.4">⚠️</div>
+        <div style="font-size:48px;margin-bottom:12px;opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <p style="color:var(--color-secondary-text);font-size:15px;margin-bottom:20px">{{ error }}</p>
         <button @click="fetchMessages" style="font-size:13px;color:var(--color-primary);background:none;border:none;cursor:pointer;font-weight:500">{{ t('重新載入') }}</button>
       </div>
 
       <!-- Message Categories -->
       <div v-else>
-        <div style="font-family:var(--font-serif);font-size:22px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px;padding-top:8px">
-          {{ t('消息中心') }}
-        </div>
+        <div class="h2" style="margin-bottom:20px">{{ t('消息中心') }}</div>
 
-        <div class="ds-card" style="padding:0;overflow:hidden">
-          <a v-for="(item, idx) in messageItems" :key="item.key"
+        <div class="card" style="overflow:hidden">
+          <div v-for="(item, idx) in messageItems" :key="item.key"
             @click="goItem(item)"
-            style="display:flex;align-items:center;gap:14px;padding:16px 18px;text-decoration:none;color:inherit;cursor:pointer;border-bottom:0.5px solid var(--color-border-light)"
-            :style="idx === messageItems.length - 1 ? 'border-bottom:none' : ''">
+            class="msg-item">
 
             <!-- Icon -->
-            <div :style="{width:'44px',height:'44px',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0,background:item.bg}">
-              {{ item.icon }}
-            </div>
+            <div class="msg-icon" v-html="item.icon" :style="{ background: item.bg }"></div>
 
             <!-- Text -->
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14.5px;font-weight:600;color:var(--color-primary-text)">{{ t(item.title) }}</div>
-              <div v-if="item.subtitle" style="font-size:12.5px;color:var(--color-assistant-text);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.subtitle }}</div>
+            <div class="msg-body">
+              <div class="title">{{ t(item.title) }}</div>
+              <div v-if="item.subtitle" class="preview">{{ item.subtitle }}</div>
             </div>
 
             <!-- Badge + Arrow -->
-            <div style="display:flex;align-items:center;gap:8px">
-              <span v-if="item.count > 0"
-                style="min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:var(--color-red);color:#fff;font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center">
-                {{ item.count > 99 ? '99+' : item.count }}
-              </span>
-              <span style="color:var(--color-assistant-text);font-size:16px">›</span>
-            </div>
-          </a>
+            <span v-if="item.count > 0" class="msg-count">
+              {{ item.count > 99 ? '99+' : item.count }}
+            </span>
+            <span class="msg-arrow">›</span>
+          </div>
         </div>
       </div>
     </div>
@@ -77,11 +69,11 @@ const MessagePage = {
     messageItems() {
       const d = this.messageData || {};
       return [
-        { key: 'follow', icon: '👥', bg: '#EEEDFF', title: '關注信息', subtitle: d.follow_message?.text || '', count: d.follow_my_count || 0, route: '/message/follow' },
-        { key: 'evaluate', icon: '💬', bg: '#E8F5E9', title: '評論信息', subtitle: d.evaluate_message?.text || '', count: d.evaluate_my_count || 0, route: '/message/comments' },
-        { key: 'reserve', icon: '📋', bg: '#FFF3E0', title: '預定信息', subtitle: d.reserve_message?.text || '', count: 0, route: '/message/reserves' },
-        { key: 'myReserve', icon: '📅', bg: '#E3F2FD', title: '我的預約', subtitle: d.my_reserve_message?.text || '', count: 0, route: '/my-bookings' },
-        { key: 'system', icon: '📢', bg: '#F3E5F5', title: '系統消息', subtitle: '', count: d.system_count || 0, route: '/message/system' },
+        { key: 'follow', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3"/><path d="M1 20v-1a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v1"/><circle cx="18" cy="7" r="3"/><path d="M23 20v-1a5 5 0 0 0-2.5-4.3"/></svg>', bg: '#EEEDFF', title: '關注信息', subtitle: d.follow_message?.text || '', count: d.follow_my_count || 0, route: '/message/follow' },
+        { key: 'evaluate', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>', bg: '#E8F5E9', title: '評論信息', subtitle: d.evaluate_message?.text || '', count: d.evaluate_my_count || 0, route: '/message/comments' },
+        { key: 'reserve', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><polyline points="14 2 14 8 20 8"/></svg>', bg: '#FFF3E0', title: '預定信息', subtitle: d.reserve_message?.text || '', count: 0, route: '/message/reserves' },
+        { key: 'myReserve', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1z"/><rect x="4" y="5" width="16" height="17" rx="1"/></svg>', bg: '#E3F2FD', title: '我的預約', subtitle: d.my_reserve_message?.text || '', count: 0, route: '/my-bookings' },
+        { key: 'system', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>', bg: '#F3E5F5', title: '系統消息', subtitle: '', count: d.system_count || 0, route: '/message/system' },
       ];
     }
   },
@@ -98,10 +90,10 @@ const MessagePage = {
         if (res.success) {
           this.messageData = res.data || {};
         } else {
-          this.error = res.message || this.t('加載失敗');
+          this.error = res.message || I18n.t('加載失敗');
         }
       } catch (e) {
-        this.error = this.t('網絡錯誤');
+        this.error = I18n.t('網絡錯誤');
       }
       this.loading = false;
     },

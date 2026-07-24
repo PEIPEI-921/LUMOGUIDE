@@ -231,6 +231,7 @@ const CommonDetailPage = {
   methods: {
     async load() {
       const id = this.$route.query.id;
+      const typeId = this.$route.query.type_id;
       this.type = this.$route.params.type || '';
       if (!id) { this.error = '缺少內容 ID'; this.loading = false; return; }
       this.itemId = parseInt(id, 10);
@@ -238,11 +239,10 @@ const CommonDetailPage = {
       this.error = null;
 
       const cityId = this.$route.query.city_id;
-      const res = await ApiProvider.get(ApiUrl.cityContent, {
-        id: this.itemId,
-        type: this.type,
-        city_id: cityId || ''
-      });
+      const params = { id: this.itemId };
+      if (cityId) params.city_id = cityId;
+      if (typeId) params.type_id = typeId;
+      const res = await ApiProvider.get(ApiUrl.cityContent, params);
 
       if (res.success) {
         this.item = res.data || {};

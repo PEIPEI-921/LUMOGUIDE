@@ -74,7 +74,7 @@ const GuidePublishCityPage = {
             style="border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.05);margin-bottom:10px">
 
             <!-- Card body -->
-            <div style="padding:10px;background:#fff">
+            <div style="padding:10px;background:var(--color-bg-white)">
               <!-- Row 1: Publish time + unread dot + status badge — matching Flutter -->
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                 <div style="display:flex;align-items:center;gap:6px">

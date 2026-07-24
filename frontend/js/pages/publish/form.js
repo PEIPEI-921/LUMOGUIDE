@@ -137,6 +137,12 @@ function createPublishPage(typeKey) {
               <input v-model="form.name" class="ds-input" style="margin-top:4px" :placeholder="$t('請輸入名稱')">
             </div>
 
+            <!-- English Name -->
+            <div class="ds-form-group">
+              <label class="ds-label">{{ $t('英文名稱') }}</label>
+              <input v-model="form.name_en" class="ds-input" style="margin-top:4px" :placeholder="$t('請輸入英文名稱')">
+            </div>
+
             <!-- Title (information only) -->
             <div v-if="${f.title ? 'true' : 'false'}" class="ds-form-group">
               <label class="ds-label">{{ $t('標題') }} *</label>
@@ -272,7 +278,7 @@ function createPublishPage(typeKey) {
         typeKey, typeLabel: typeConfig.label,
         isEdit: false, editId: null,
         form: {
-          name: '', title: '', desc: '', address: '', start_time: '',
+          name: '', name_en: '', title: '', desc: '', address: '', start_time: '',
           content: '', city_id: '', type_class_id: '', type_class_name: '',
           open_time: '', tickets_free: 1, price: '',
           phone: '', email: '', website: '', how_arrive: '', introduce: '',
@@ -336,6 +342,7 @@ function createPublishPage(typeKey) {
             if (result.success && result.data) {
               const d = result.data;
               this.form.name = d.name || '';
+              this.form.name_en = d.name_en || '';
               this.form.title = d.title || '';
               this.form.desc = d.desc || '';
               this.form.address = d.address || '';
@@ -384,7 +391,7 @@ function createPublishPage(typeKey) {
 
       checkDraft() {
         const draft = this.getDraftMap();
-        if (draft && (draft.name || draft.title || (draft.pictures && draft.pictures.length > 0))) {
+        if (draft && (draft.name || draft.name_en || draft.title || (draft.pictures && draft.pictures.length > 0))) {
           this.showDraftPrompt = true;
         }
       },
@@ -393,6 +400,7 @@ function createPublishPage(typeKey) {
         const draft = this.getDraftMap();
         if (!draft) { this.showDraftPrompt = false; return; }
         this.form.name = draft.name || '';
+        this.form.name_en = draft.name_en || '';
         this.form.title = draft.title || '';
         this.form.desc = draft.desc || '';
         this.form.address = draft.address || '';
