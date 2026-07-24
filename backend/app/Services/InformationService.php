@@ -95,7 +95,9 @@ class InformationService
         return [
             'id' => $data['id'],
             'title' => $data['title'],
-            'desc' => $data['content'],
+            'desc' => $data['desc'],
+            'content' => $data['content'],
+            'first_picture' => $data['first_picture'],
             'created_at' => $data['created_at'],
             'pictures' => json_decode($data['pictures'], true) ?? [],
             'view' => $data['view'],

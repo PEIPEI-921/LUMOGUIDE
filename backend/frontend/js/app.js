@@ -11,7 +11,7 @@ const AppShell = {
     <div :class="['app-shell', { 'app-shell--home': showTopBar }]">
       <!-- Top navigation bar (inline — do NOT extract to component) -->
       <header v-if="showTopBar" class="app-topbar safe-top">
-        <img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="topbar-logo-full" />
+        <a href="#/home" style="line-height:0"><img src="/images/logo_lumoguide.png" alt="LuMo Guide" class="topbar-logo-full" /></a>
 
         <div class="topbar-nav-group">
           <nav class="topbar-tabs">

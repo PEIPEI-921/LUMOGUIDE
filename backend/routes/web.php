@@ -29,6 +29,10 @@ Route::get('/', function () use ($resolveSpaIndex) {
     return response()->file($resolveSpaIndex());
 });
 
+// Deep link bridge pages — open app or fallback to app store
+Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
+Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
+
 // Protocol pages (Blade views) — must be before SPA catch-all
 Route::get('/protocol/{type}', function ($type) {
     $content = systemConfig($type);

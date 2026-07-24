@@ -39,6 +39,9 @@ Route::prefix('auth')->middleware('throttle:6,1')->group(function () {
     Route::post('resetPassword', [AuthController::class, 'resetPassword']);
 });
 
+Route::get('health', [CommonController::class, 'health']);
+Route::get('data/{lang}', [CommonController::class, 'data']);
+
 Route::prefix('common')->group(function () {
     Route::get('test', [CommonController::class, 'test'])->middleware('auth:api');
     Route::get('config', [CommonController::class, 'config']);
@@ -50,12 +53,15 @@ Route::prefix('common')->group(function () {
     Route::get('getTypeClass', [CommonController::class, 'getTypeClass']);
     Route::get('getInformationClass', [CommonController::class, 'getInformationClass']);
     Route::get('getGuideType', [CommonController::class, 'getGuideType']);
+    Route::get('guideList', [CommonController::class, 'guideList']);
+    Route::get('merchantList', [CommonController::class, 'merchantList']);
 
     Route::get('location', [CommonController::class, 'location']);
     Route::get('home', [CommonController::class, 'homeData']);
     Route::get('homeSearch', [CommonController::class, 'homeSearch']);
     Route::get('search', [CommonController::class, 'search']);
     Route::get('systemContinents', [CommonController::class, 'systemContinents']);
+    Route::get('shareQrcode', [CommonController::class, 'shareQrcode'])->middleware('auth:api');
 });
 
 Route::prefix('payment')->group(function () {

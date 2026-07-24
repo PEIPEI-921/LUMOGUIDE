@@ -35,6 +35,7 @@ const routes = [
   { path: '/city/guide-list', component: CityGuideListPage, meta: { title: '導遊列表' } },
 
   // === Guide ===
+  { path: '/guide/list', component: GuideListPage, meta: { title: '導遊列表' } },
   { path: '/guide/:id', component: GuideDetailPage, meta: { title: '導遊詳情' } },
   { path: '/guide/certify', component: GuideCertifyPage, meta: { title: '導遊認證', requiresAuth: true } },
   { path: '/guide/publish', component: GuidePublishPage, meta: { title: '我的發布', requiresAuth: true } },
@@ -87,6 +88,7 @@ const routes = [
   { path: '/publish/information', component: PublishInformationPage, meta: { title: '發布資訊', requiresAuth: true } },
 
   // === Merchant ===
+  { path: '/merchant/list', component: MerchantListPage, meta: { title: '全部商家' } },
   { path: '/merchant/manage', component: MerchantManagePage, meta: { title: '商家管理', requiresAuth: true } },
   { path: '/merchant/entry', component: MerchantEntryPage, meta: { title: '商家入駐', requiresAuth: true } },
   { path: '/merchant/bookings', component: MerchantBookingsPage, meta: { title: '商家預約', requiresAuth: true } },

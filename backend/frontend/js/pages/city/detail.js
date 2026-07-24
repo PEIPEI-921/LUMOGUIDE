@@ -94,16 +94,18 @@ const CityDetailPage = {
           <div v-if="guides.length > 0" style="text-align:right;margin-bottom:10px">
             <a :href="'#/city/guide-list?city_id=' + cityId" style="font-size:12px;color:var(--color-primary);text-decoration:none">{{ $t('查看全部導遊') }} ›</a>
           </div>
-          <div v-if="guides.length > 0" class="city-content-grid">
+          <div v-if="guides.length > 0" class="city-content-grid" style="grid-template-columns:repeat(6,1fr)">
             <a v-for="g in guides" :key="g.id" :href="'#/guide/' + g.id"
               class="ds-card ds-card-hover city-card-item" style="background:transparent;box-shadow:none">
-              <div class="city-card-img">
-                <img v-if="g.photo" :src="g.photo" :alt="g.name">
-                <div v-else class="city-card-img-placeholder">👤</div>
+              <div style="aspect-ratio:3/4;overflow:hidden;background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:4px">
+                <img v-if="g.photo" :src="g.photo" :alt="g.name" style="width:100%;height:100%;object-fit:cover;object-position:top center">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.25">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 22c0-4.4-3.6-8-8-8s-8 3.6-8 8"/></svg>
+                </div>
               </div>
-              <div class="city-card-body">
+              <div class="city-card-body" style="text-align:center">
                 <div class="city-card-title">{{ g.name }}</div>
-                <div v-if="g.language && g.language.length" class="city-card-tags">
+                <div v-if="g.language && g.language.length" class="city-card-tags" style="justify-content:center">
                   <span v-for="lang in g.language.slice(0,2)" :key="lang">{{ lang }}</span>
                 </div>
               </div>

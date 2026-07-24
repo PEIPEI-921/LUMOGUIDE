@@ -46,6 +46,9 @@ class CommonService
             'invite_rule' => systemConfig('invite_rule'),
             'stripe_key' => env('STRIPE_KEY'),
             'transport_type' => json_decode(systemConfig('transport_type'), true),
+            'ios_download_url' => systemConfig('ios_download_url') ?: 'https://apps.apple.com/cn/app/id6749853105',
+            'android_download_url' => systemConfig('android_download_url') ?: 'https://play.google.com/store/apps/details?id=com.app.lumotrip',
+            'app_url_scheme' => systemConfig('app_url_scheme') ?: 'lumoguide',
         ];
     }
 
@@ -285,11 +288,17 @@ class CommonService
                 ->where('home_recommend', 1)
                 ->where('audit_status', 1)
                 ->orderBy('order', 'asc')
-                ->get(['id', 'name', 'city_name', 'photo', 'language'])
+                ->get(['id', 'name', 'city_name', 'city_id', 'photo', 'language'])
                 ->toArray();
             if (!empty($data)) {
+                $cityIds = array_filter(array_column($data, 'city_id'));
+                $cityEnNames = [];
+                if (!empty($cityIds)) {
+                    $cityEnNames = City::query()->whereIn('id', $cityIds)->pluck('name_en', 'id')->toArray();
+                }
                 foreach ($data as &$v) {
                     $v['language'] = json_decode($v['language'], true);
+                    $v['city_name_en'] = $cityEnNames[$v['city_id']] ?? '';
                     unset($v);
                 }
                 $value['list'] = $data;
@@ -412,22 +421,35 @@ class CommonService
      * @param string $name
      * @return array
      */
-    public function homeSearch(string $name)
+    public function homeSearch(string $name, int $limit = 2)
     {
-        $city = City::query()->where('audit_status', 1)->where(function ($query) use ($name) {
-            $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
-        })->orderBy('order', 'desc')->take(2)->get(['id', 'name', 'name_en', 'first_picture'])->toArray();
+        $variants = \App\Helpers\ChineseConverter::searchVariants($name);
+
+        $city = City::query()->where('audit_status', 1)->where(function ($query) use ($name, $variants) {
+            foreach ($variants as $v) {
+                $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+            }
+            $query->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
+        })->orderBy('order', 'desc')->take($limit)->get(['id', 'name', 'name_en', 'first_picture'])->toArray();
 
         $guide = Guide::query()->where('audit_status', 1)
             ->where('city_id', '>', 0)
-            ->where('name', 'like', '%' . escapeLike($name) . '%')
-            ->orderBy('order', 'desc')->take(2)->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])->toArray();
+            ->where(function ($query) use ($variants) {
+                foreach ($variants as $v) {
+                    $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+            })
+            ->orderBy('order', 'desc')->take($limit)->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])->toArray();
 
         $city_content = CityContent::with(['city'])
             ->where('audit_status', 1)
-            ->where('name', 'like', '%' . escapeLike($name) . '%')
+            ->where(function ($query) use ($variants) {
+                foreach ($variants as $v) {
+                    $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+            })
             ->orderBy('order', 'desc')
-            ->take(2)
+            ->take($limit)
             ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture'])->toArray();
 
         $guide_type = GuideType::query()->pluck('name', 'id')->toArray();
@@ -481,6 +503,72 @@ class CommonService
     /**
      * 搜索页
      * @param string $name
+    /**
+     * 全部导游列表（支持按洲筛选）
+     * @param int $continentsId
+     * @param int $limit
+     * @return array
+     */
+    public function guideList(int $continentsId = 0, int $limit = 100, string $search = ''): array
+    {
+        $query = Guide::query()->where('audit_status', 1)->where('city_id', '>', 0);
+
+        if ($continentsId > 0) {
+            $query->where('continents_id', $continentsId);
+        }
+
+        if ($search !== '') {
+            $variants = \App\Helpers\ChineseConverter::searchVariants($search);
+            $query->where(function ($q) use ($variants, $search) {
+                foreach ($variants as $v) {
+                    $q->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+                $q->orWhere('city_name', 'like', '%' . escapeLike($search) . '%');
+            });
+        }
+
+        $res = $query->orderBy('order', 'desc')
+            ->paginate($limit, ['id', 'photo', 'name', 'city_name', 'city_id', 'continents_id', 'identity_type', 'language'])
+            ->toArray();
+
+        $cityIds = array_filter(array_column($res['data'], 'city_id'));
+        $cityData = [];
+        if (!empty($cityIds)) {
+            $cities = City::query()->whereIn('id', $cityIds)->get(['id', 'name_en', 'area_id', 'country_id'])->toArray();
+            foreach ($cities as $c) {
+                $cityData[$c['id']] = $c;
+            }
+        }
+
+        $guideType = GuideType::query()->pluck('name', 'id')->toArray();
+
+        $list = [];
+        foreach ($res['data'] as $v) {
+            $c = $cityData[$v['city_id']] ?? [];
+            $list[] = [
+                'id' => $v['id'],
+                'photo' => $v['photo'],
+                'name' => $v['name'],
+                'city_name' => $v['city_name'],
+                'city_name_en' => $c['name_en'] ?? '',
+                'city_id' => $v['city_id'],
+                'continents_id' => $v['continents_id'],
+                'area_id' => $c['area_id'] ?? 0,
+                'country_id' => $c['country_id'] ?? 0,
+                'type_name' => $guideType[$v['identity_type']] ?? '',
+                'language' => json_decode($v['language'], true) ?? [],
+            ];
+        }
+
+        // Also fetch continent list for tabs
+        $continents = SystemContinents::query()->orderBy('order')->get(['id', 'name'])->toArray();
+
+        return ['list' => $list, 'total' => $res['total'], 'continents' => $continents];
+    }
+
+    /**
+     * 搜索页
+     * @param string $name
      * @param string $type
      * @param int $type_id
      * @return array
@@ -499,7 +587,11 @@ class CommonService
                         ->where('name', 'like', '%' . escapeLike($name) . '%')
                         ->groupBy('continents_id')->pluck('continents_id')->toArray();
 
-                    $city_content_continents_id = CityContent::query()->where('audit_status', 1)->where('name', 'like', '%' . escapeLike($name) . '%')
+                    $city_content_continents_id = CityContent::query()->where('audit_status', 1)->where(function ($q) use ($variants) {
+                        foreach ($variants as $v) {
+                            $q->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                        }
+                    })
                         ->groupBy('continents_id')->pluck('continents_id')->toArray();
 
                     return array_unique(array_merge($city_continents_id, $guide_continents_id, $city_content_continents_id));
@@ -514,12 +606,20 @@ class CommonService
                 break;
             case 'city':
                 $city_continents_id = City::query()->where('audit_status', 1)->where(function ($query) use ($name) {
-                    $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
+                    $variants = \App\Helpers\ChineseConverter::searchVariants($name);
+                    foreach ($variants as $v) {
+                        $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                    }
+                    $query->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
                 })->groupBy('continents_id')->pluck('continents_id')->toArray();
                 $continents = SystemContinents::query()->whereIn('id', $city_continents_id)->get(['id', 'name'])->toArray();
                 foreach ($continents as $key => $value) {
                     $city = City::query()->where('continents_id', $value['id'])->where(function ($query) use ($name) {
-                        $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
+                        $variants = \App\Helpers\ChineseConverter::searchVariants($name);
+                        foreach ($variants as $v) {
+                            $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                        }
+                        $query->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
                     })->orderBy('order', 'desc')->get(['id', 'name', 'name_en', 'is_capital', 'first_picture'])->toArray();
 
                     $continents[$key]['data'] = $city;
@@ -527,9 +627,14 @@ class CommonService
                 $data = $continents;
                 break;
             case 'guide':
+                $variants = \App\Helpers\ChineseConverter::searchVariants($name);
                 $guide_continents_id_query = Guide::query()->where('audit_status', 1)->where('city_id', '>', 0);
                 if ($name) {
-                    $guide_continents_id_query->where('name', 'like', '%' . escapeLike($name) . '%');
+                    $guide_continents_id_query->where(function ($q) use ($variants) {
+                        foreach ($variants as $v) {
+                            $q->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                        }
+                    });
                 }
                 $guide_continents_id = $guide_continents_id_query->groupBy('continents_id')->pluck('continents_id')->toArray();
 
@@ -539,7 +644,11 @@ class CommonService
 
                 foreach ($continents as $key => $value) {
                     $guide = Guide::query()->where('continents_id', $value['id'])
-                        ->where('name', 'like', '%' . escapeLike($name) . '%')
+                        ->where(function ($q) use ($variants) {
+                            foreach ($variants as $v) {
+                                $q->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                            }
+                        })
                         ->orderBy('order', 'desc')
                         ->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])
                         ->toArray();
@@ -554,12 +663,15 @@ class CommonService
                 $data = $continents;
                 break;
             case 'city_content':
+                $variants = \App\Helpers\ChineseConverter::searchVariants($name);
                 $city_content_continents_id = CityContent::query()
                     ->where('audit_status', 1)
                     ->where('type_id', $type_id)
-                    ->where(function ($query) use ($name) {
+                    ->where(function ($query) use ($name, $variants) {
                         if ($name) {
-                            $query->where('name', 'like', '%' . escapeLike($name) . '%');
+                            foreach ($variants as $v) {
+                                $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                            }
                         }
                     })
                     ->groupBy('continents_id')
@@ -569,9 +681,11 @@ class CommonService
                 $continents = SystemContinents::query()->whereIn('id', $city_content_continents_id)->get(['id', 'name'])->toArray();
                 foreach ($continents as $key => $value) {
                     $city_content = CityContent::query()->where('continents_id', $value['id'])
-                        ->where(function ($query) use ($name) {
+                        ->where(function ($query) use ($name, $variants) {
                             if ($name) {
-                                $query->where('name', 'like', '%' . escapeLike($name) . '%');
+                                foreach ($variants as $v) {
+                                    $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                                }
                             }
                         })
                         ->where('type_id', $type_id)
@@ -596,5 +710,83 @@ class CommonService
         }
 
         return $data;
+    }
+
+    /**
+     * 全部商家列表（按分类分组）
+     * @param int $limit
+     * @return array
+     */
+    public function merchantList(int $limit = 500, string $search = ''): array
+    {
+        $query = CityContent::with(['city'])
+            ->where('audit_status', 1);
+
+        if ($search !== '') {
+            $variants = \App\Helpers\ChineseConverter::searchVariants($search);
+            $query->where(function ($q) use ($variants, $search) {
+                foreach ($variants as $v) {
+                    $q->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+            });
+        }
+
+        $all = $query->orderBy('order', 'desc')
+            ->take($limit)
+            ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture', 'address', 'phone'])
+            ->toArray();
+
+        $cityType = CityType::options();
+        $cityTypeClass = CityTypeClass::query()->pluck('name', 'id')->toArray();
+
+        // Process all items
+        $allList = [];
+        foreach ($all as $v) {
+            $allList[] = [
+                'id' => $v['id'],
+                'name' => $v['name'],
+                'first_picture' => $v['first_picture'],
+                'type_id' => $v['type_id'],
+                'type_class_id' => $v['type_class_id'],
+                'city_name' => $v['city']['name'] ?? '',
+                'address' => $v['address'] ?? '',
+                'type_name' => $cityType[$v['type_id']] ?? '',
+                'class_name' => $cityTypeClass[$v['type_class_id']] ?? '',
+            ];
+        }
+
+        // Group: type (level 1) → classes (level 2)
+        $types = [];
+        foreach ($allList as $item) {
+            $tid = $item['type_id'];
+            $cid = $item['type_class_id'];
+            if (!isset($types[$tid])) {
+                $types[$tid] = [
+                    'type_id' => $tid,
+                    'type_name' => $item['type_name'],
+                    'classes' => [],
+                ];
+            }
+            if (!isset($types[$tid]['classes'][$cid])) {
+                $types[$tid]['classes'][$cid] = [
+                    'class_id' => $cid,
+                    'class_name' => $item['class_name'],
+                    'list' => [],
+                ];
+            }
+            $types[$tid]['classes'][$cid]['list'][] = $item;
+        }
+
+        // Reindex classes arrays
+        $categories = [];
+        foreach ($types as $t) {
+            $t['classes'] = array_values($t['classes']);
+            $categories[] = $t;
+        }
+
+        return [
+            'all' => $allList,
+            'categories' => $categories,
+        ];
     }
 }

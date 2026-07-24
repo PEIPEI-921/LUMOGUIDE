@@ -142,16 +142,16 @@ class UserService
             }
         }
 
-//        // 邀请码图片
-//        $path = public_path("storage/user_invite/{$user->id}.png");
-//        if (!file_exists($path)) {
-//            // 二维码
-//            $result = Builder::create()
-//                ->writer(new PngWriter())
-//                ->data(env('WEB_URL') . '/invite.html?code=' . $user->inviter_code)
-//                ->build();
-//            $result->saveToFile($path);
-//        }
+        // 邀请码图片
+        $path = public_path("storage/user_invite/{$user->id}.png");
+        if (!file_exists($path)) {
+            // 二维码
+            $result = Builder::create()
+                ->writer(new PngWriter())
+                ->data(env('WEB_URL') . '/invite.html?code=' . $user->inviter_code)
+                ->build();
+            $result->saveToFile($path);
+        }
 
         return [
             'id' => $user->id,
@@ -185,7 +185,7 @@ class UserService
             'reg_time' => substr($user->created_at, 0, 10),
             'user_status' => $user_status,
             'invite_url' => env('WEB_URL') . '/invite.html?code=' . $user->inviter_code,
-//            'invite_img' => env('APP_URL') . "/storage/user_invite/{$user->id}.png",
+            'invite_img' => env('APP_URL') . "/storage/user_invite/{$user->id}.png",
         ];
     }
 

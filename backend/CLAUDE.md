@@ -56,6 +56,7 @@ When creating or modifying files in this project, always follow these convention
 | **Providers** | `app/Providers/` | `*ServiceProvider.php` |
 | **Console Commands** | `app/Console/` | `*.php` |
 | **Helper Functions** | `app/helpers.php` | Global PHP functions |
+| **Helper Classes** | `app/Helpers/` | Namespaced helper classes (e.g., `ChineseConverter`) |
 | **HTTP Kernel** | `app/Http/Kernel.php` | Middleware registration |
 | **Console Kernel** | `app/Console/Kernel.php` | Schedule tasks |
 
@@ -140,7 +141,8 @@ APP_ENV=production php artisan serve  # Test production mode
 9. **Is it admin CRUD?** → Controller in `app/Admin/Controllers/`, Repository in `app/Admin/Repositories/`, route in `app/Admin/routes.php`
 10. **Is it an email?** → `app/Mail/` + `resources/views/email.blade.php`
 11. **Is it a global helper function?** → `app/helpers.php`
-12. **Is it a translation string?** → `lang/en/res.php` (for response messages) or create a new file in `lang/en/`
+12. **Is it a helper class (namespace)?** → `app/Helpers/` (PSR-4 autoloaded, `App\Helpers\*`)
+13. **Is it a translation string?** → `lang/en/res.php` (for response messages) or create a new file in `lang/en/`
 
 ## Commands
 
@@ -216,8 +218,9 @@ The web frontend is a **Vue.js 3 + Vue Router** single-page application served f
 - Accent colors: `#EF4444` (red), `#F97316` (orange), `#F59E0B` (amber), `#10B981` (green), `#8B5CF6` (purple)
 - Border: `rgba(0,0,0,.06)`, shadows: `rgba(0,0,0,.03)`, Radius: 20px (large) / 12px (small)
 - Display typeface: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`; Body: system font stack
-- Header: `#7C5CFF` solid purple, 52px, no box-shadow. Logo: `logo_lumoguide.png` (36px, white via CSS filter)
-- Body gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)` — solid topbar → fade to paper-white
+- Header: `#666FFF` (CSS var `--color-topbar-bg`), 52px, no box-shadow. Logo: `logo_lumoguide.png` (36px, white via CSS filter)
+- Body gradient: `linear-gradient(180deg, #666FFF 0%, #666FFF 52px, #F9F9F6 100%)` — solid topbar → gradual fade to paper-white across full page height
+- Body font-weight: `650` (global bold)
 
 **Responsive**: 3 breakpoints — ≥861px (32px padding) / ≤860px tablet (16px) / ≤480px mobile (12px). Container classes: `.ds-container-600` (forms/lists), `.ds-container-640` (messages/addresses), `.ds-container-760` (detail/articles), `.ds-container-960` (galleries), `.ds-container-1280` (wide dashboards). `.ds-page-wrapper` (max-width 1280px, auto margin) for tab pages.
 
@@ -261,8 +264,21 @@ Key frontend directories (69 routes, 53 JS + 3 CSS files):
 
 **Backend route for SPA** (`routes/web.php`):
 ```php
+// Resolve SPA index — bundled dist in production, individual files in dev
+$resolveSpaIndex = function () {
+    if (app()->environment('production')) {
+        $dist = base_path('frontend/dist/index.html');
+        if (file_exists($dist)) return $dist;
+    }
+    return base_path('frontend/index.html');
+};
+
 // Root route serves SPA shell
-Route::get('/', fn() => response()->file(base_path('frontend/index.html')));
+Route::get('/', fn() => response()->file($resolveSpaIndex()));
+
+// Deep link bridge pages — open app or fallback to app store
+Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
+Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
 
 // Protocol pages (Blade views) — must be before SPA catch-all
 Route::get('/protocol/{type}', function ($type) {
@@ -272,10 +288,12 @@ Route::get('/protocol/{type}', function ($type) {
 });
 
 // SPA catch-all — admin prefix read dynamically from config (not hardcoded)
-Route::get('/{any}', fn() => response()->file(base_path('frontend/index.html')))
+Route::get('/{any}', fn() => response()->file($resolveSpaIndex()))
     ->where('any', '^(?!api|' . config('admin.route.prefix', 'admin') . ')[^.]*$');
 ```
-This ensures `/api/*` (mobile app), `/manage*` or `/admin*` (admin panel), and static files (`/css/...`, `/js/...`) are unaffected. Protocol pages (`/protocol/user`, `/protocol/privacy`) render Blade views with system config content, or 404 if config not found.
+This ensures `/api/*` (mobile app), `/manage*` or `/admin*` (admin panel), and static files (`/css/...`, `/js/...`) are unaffected. Protocol pages (`/protocol/user`, `/protocol/privacy`) render Blade views with system config content, or 404 if config not found. `share.html` and `invite.html` are standalone deep-link bridge pages served before the SPA catch-all.
+
+> ⚠️ **`public/index.html` sync**: `public/index.html` is served directly by Nginx (it's in the web root) and bypasses Laravel entirely. `frontend/index.html` is served by the PHP dev server via the catch-all route above. Both are SPA shells and **must be kept in sync**. The current divergence (viewport meta, fonts, script loading) means users hitting different entry URLs may get different page behavior.
 
 **69/69 routes implemented** (100%). See `plan.md` for full details.
 
@@ -298,8 +316,9 @@ All API controllers extend `BaseController`, which provides two response helpers
 Authentication: JWT via `tymon/jwt-auth` (config in `config/jwt.php`). Routes use `auth:api` middleware. The `User` model implements `JWTSubject`. TTL is set to 10080 minutes (7 days). Login sends email verification codes via Gmail SMTP.
 
 **Route groups** (prefixes in `routes/api.php`):
+- (root) — public: `health` (health check), `data/{lang}` (i18n data export)
 - `auth` — public: login, sendCode, register, resetPassword
-- `common` — public + auth: config, fileUpload, home/search, area/continent lookups, type/class lookups, systemContinents
+- `common` — public + auth: config, fileUpload, home/search, area/continent lookups, type/class lookups, systemContinents, guideList (all guides by continent), merchantList (all merchants), shareQrcode (auth-required PNG QR code for deep-link sharing)
 - `user` — auth required: profile, addresses, reservations, guide/company applications, **JourneyWork CRUD** (journeyList/Detail/Create/Update/Delete), **JourneyTemplate** (templateList/Save/Delete)
 - `city` — mixed auth: listing (includes `country_name`), detail, content by type (attraction/restaurant/shopping/accommodation/transportation/facility/activity/ticket), evaluations, follows
 - `guide` — auth required: publish/edit/delete city content, manage reservations
@@ -349,6 +368,10 @@ Global functions loaded via composer autoload:
 - `escapeLike($value)` — escape `%` and `_` for safe LIKE queries
 - `timeAgo($time)` — Chinese relative time formatting
 
+### Chinese S2T/T2S Search
+
+`App\Helpers\ChineseConverter` provides bidirectional Simplified ↔ Traditional Chinese conversion. `searchVariants('购物')` returns `['购物', '購物']`. All search queries in `CommonService` and `handleSearchData()` use `foreach ($variants as $v) { $query->orWhere('name', 'like', '%' . escapeLike($v) . '%'); }` to match both scripts. When adding new `WHERE name LIKE` queries on Chinese columns, apply this pattern.
+
 ### Middleware
 
 - `auth:api` — JWT authentication for API routes
@@ -363,6 +386,17 @@ Global functions loaded via composer autoload:
 - `InvoiceJob` / `EmailRemindJob` — email notifications
 
 Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
+
+### Share / Deep Link System (2026-07-24)
+
+Two standalone HTML pages (`frontend/share.html`, `frontend/invite.html`) act as deep-link bridges:
+- QR codes encode URLs like `https://www.lumoguide.com/share.html?c=INVCODE&t=guide&i=123`
+- The pages attempt to open the Flutter app via URL scheme `lumoguide://share?...`
+- If the app isn't installed, they fallback to the app store
+- Invite codes are tracked via `c` param to attribute new user signups
+
+API: `GET /api/common/shareQrcode?type=guide|city|content|trip&id=N` (auth required, returns PNG).
+Flutter integration docs: `docs/flutter-share-deeplink.md`.
 
 ## Key Integrations
 
@@ -424,10 +458,14 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 ### Frontend — Design/Architecture Rules
 - **Web-Flutter feature parity**: Web MUST strictly match Flutter. No features that don't exist in Flutter. Reference: Flutter app at `lumotrip/lib/pages/`.
 - **Flutter constraints**: No delete in publish content lists (`canDelete: false`). No inline confirm/reject in booking lists. No booking status filter tabs. VIP gate on add (not edit).
-- **Design system**: Primary `#666FFF`, page bg `#F9F9F6`, card `#FFFFFF`. Topbar solid `#7C5CFF` 52px no box-shadow. Body gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)`. Serif: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`.
+- **Design system**: Primary `#666FFF`, page bg `#F9F9F6`, card `#FFFFFF`. Topbar solid `#666FFF` 52px no box-shadow. Body gradient: `linear-gradient(180deg, #666FFF 0%, #666FFF 52px, #F9F9F6 100%)`. Serif: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`.
 - **Topbar visibility**: Hidden only on `/welcome`, `/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`. Must list ALL auth routes.
 - **Reuse existing styles**: Check `.filter-pills`, `.card-grid-*`, `.h-scroll`, `.ds-*` before creating new CSS.
 - **SPA architecture**: Correct choice. No multi-HTML. All content behind login wall (SEO irrelevant).
+
+### Frontend — Debugging "No Content" Issues
+
+When a detail page shows blank content (empty body, missing images), the most common cause is **backend response field name mismatch** with frontend template expectations. For example: `InformationService::info()` returned body text under `'desc'` key, but `detail.js` template looked for `news.content` → nothing rendered. **Fix**: read the backend service return array and cross-check every key against the frontend template bindings.
 
 ### Frontend — API Data Patterns
 - **Search API**: `/common/homeSearch` returns flat array with `data_type`: 1=city, 2=guide, 3=content. Filter client-side.

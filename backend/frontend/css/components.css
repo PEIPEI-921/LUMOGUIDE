@@ -3405,6 +3405,9 @@ textarea.form-input {
 }
 .search-bar-v2 input::placeholder { color: var(--color-assistant-text); }
 
+/* search page sketch-style: placeholder white */
+.sketch-search-input::placeholder { color: rgba(255,255,255,.5); }
+
 /* ── Welcome Page v2 ── */
 .welcome-page-v2 {
   min-height: 100vh;

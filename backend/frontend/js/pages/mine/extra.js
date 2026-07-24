@@ -230,6 +230,12 @@ const InvitePage = {
         </button>
       </div>
 
+      <!-- QR Code -->
+      <div v-if="inviteImg" style="text-align:center;margin-bottom:20px;padding:20px;background:var(--color-card);border-radius:var(--radius-lg)">
+        <p style="font-size:13px;color:var(--color-assistant-text);margin-bottom:12px">{{ $t('掃碼邀請好友') }}</p>
+        <img :src="inviteImg" alt="QR Code" style="width:200px;height:200px;border-radius:8px">
+      </div>
+
       <!-- Invite Records -->
       <h3 style="font-weight:600;margin-bottom:12px">{{ $t('邀請記錄') }}</h3>
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
@@ -248,16 +254,17 @@ const InvitePage = {
   `,
   data() {
     return {
-      inviteCode: '', copied: false,
-      records: [], loading: false, I
+      inviteCode: '', inviteImg: '', copied: false,
+      records: [], loading: false
     };
   },
   methods: {
     async load() {
       const user = UserStore.profile || UserStore.userInfo || {};
       this.inviteCode = user.inviter_code || '';
+      this.inviteImg = user.invite_img || '';
       this.loading = true;
-      const res = await ApiProvider.get(ApiUrl.inviteLog);
+      const res = await ApiProvider.get(ApiUrl.inviteLog, { limit: 1000 });
       if (res.success) {
         const list = res.data?.list || res.data || [];
         this.records = Array.isArray(list) ? list : [];

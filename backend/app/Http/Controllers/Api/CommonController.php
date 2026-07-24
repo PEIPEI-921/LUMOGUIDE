@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\ApiException;
 use App\Models\City;
 use App\Models\Company;
 use App\Models\Guide;
@@ -12,6 +13,8 @@ use App\Mail\SendCodeMail;
 use App\Mail\VipExpiredMail;
 use App\Models\SystemContinents;
 use App\Models\User;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Cache;
 use App\Services\CommonService;
 use Hedeqiang\TenIM\Facades\IM;
@@ -375,15 +378,39 @@ class CommonController extends BaseController
     public function homeSearch(Request $request, CommonService $service)
     {
         $name = $request->get('name', '') ?? '';
+        $limit = (int)($request->get('limit', 2) ?? 2);
 
         if (!$name) {
             $data = [];
         } else {
-            $data = $service->homeSearch($name);
+            $data = $service->homeSearch($name, $limit);
         }
         return $this->success(__('res.success'), $data);
     }
 
+
+    /**
+     * 全部导游列表（按洲分组）
+     */
+    public function guideList(Request $request, CommonService $service)
+    {
+        $continentsId = (int)($request->get('continents_id', 0) ?? 0);
+        $limit = (int)($request->get('limit', 100) ?? 100);
+        $search = $request->get('search', '') ?? '';
+        $data = $service->guideList($continentsId, $limit, $search);
+        return $this->success(__('res.success'), $data);
+    }
+
+    /**
+     * 全部商家列表（按分类分组）
+     */
+    public function merchantList(Request $request, CommonService $service)
+    {
+        $limit = (int)($request->get('limit', 500) ?? 500);
+        $search = $request->get('search', '') ?? '';
+        $data = $service->merchantList($limit, $search);
+        return $this->success(__('res.success'), $data);
+    }
 
     /**
      * 搜索页接口
@@ -436,6 +463,58 @@ class CommonController extends BaseController
         });
 
         return $this->success(__('res.success'), ['data' => $tree]);
+    }
+
+    public function health()
+    {
+        return $this->success('ok');
+    }
+
+    public function data($lang, CommonService $service)
+    {
+        $config = $service->config();
+        return $this->success('success', [
+            'appIcon' => systemConfig('app_icon') ?: '',
+            'logo' => systemConfig('system_logo') ?: '',
+            'home' => [
+                'welcome_zh' => $config['system_welcome_zh'] ?? '',
+                'welcome_en' => $config['system_welcome_en'] ?? '',
+            ],
+        ]);
+    }
+
+    /**
+     * 生成分享二维码
+     */
+    public function shareQrcode(Request $request)
+    {
+        $type = $request->get('type', '');
+        $id = (int) $request->get('id', 0);
+
+        if (!in_array($type, ['guide', 'city', 'content', 'trip']) || $id <= 0) {
+            throw new ApiException(__('res.param_error'));
+        }
+
+        $user = auth('api')->user();
+        $inviterCode = $user->inviter_code;
+        if (!$inviterCode) {
+            $inviterCode = generateUniqueInviteCode();
+            $user->inviter_code = $inviterCode;
+            $user->save();
+        }
+
+        $shareUrl = env('WEB_URL') . '/share.html?c=' . $inviterCode . '&t=' . $type . '&i=' . $id;
+
+        $result = Builder::create()
+            ->writer(new PngWriter())
+            ->data($shareUrl)
+            ->size(300)
+            ->margin(10)
+            ->build();
+
+        return response($result->getString(), 200)
+            ->header('Content-Type', 'image/png')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
 
 }

@@ -45,8 +45,8 @@ const NewsDetailPage = {
               <a v-if="news.user.city_name && news.user.city_id" :href="'#/city/detail?id=' + news.user.city_id"
                 style="font-size:12px;color:var(--color-primary);text-decoration:none;font-weight:500">{{ news.user.city_name }}</a>
               <span v-else-if="news.user.city_name" style="font-size:12px;color:var(--color-assistant-text)">{{ news.user.city_name }}</span>
-              <span v-if="news.created_at" style="font-size:12px;color:var(--color-assistant-text)">{{ formatDate(news.created_at) }}</span>
-              <span v-if="news.view" style="font-size:12px;color:var(--color-assistant-text)">👁 {{ news.view }}</span>
+              <span v-if="news.created_at" style="font-size:12px;color:#fff">{{ formatDate(news.created_at) }}</span>
+              <span v-if="news.view" style="font-size:12px;color:#fff;display:inline-flex;align-items:center;gap:2px"><svg width="13" height="9" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="8" r="3"/></svg>{{ news.view }}</span>
             </div>
           </div>
           <a v-if="news.user.guide_id" :href="'#/guide/' + news.user.guide_id"
@@ -54,8 +54,8 @@ const NewsDetailPage = {
         </div>
 
         <!-- Featured Image -->
-        <div v-if="news.first_picture" style="border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px">
-          <img :src="news.first_picture" style="width:100%;display:block">
+        <div v-if="news.first_picture" style="border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;cursor:pointer;background:var(--color-border-light)" @click="previewImage(news.first_picture)">
+          <img :src="news.first_picture" style="width:100%;max-height:360px;object-fit:contain;display:block;margin:0 auto">
         </div>
 
         <!-- Body Text -->

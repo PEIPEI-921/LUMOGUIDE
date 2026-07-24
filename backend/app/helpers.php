@@ -228,21 +228,33 @@ if (!function_exists('handleSearchData')) {
      */
     function handleSearchData(array $where, string $name, string $type)
     {
+        $variants = \App\Helpers\ChineseConverter::searchVariants($name);
         $city = [];
         $guide = [];
         $city_content = [];
         if ($type == 'all') {
-            $city = City::query()->where($where)->where(function ($query) use ($name) {
-                $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
+            $city = City::query()->where($where)->where(function ($query) use ($name, $variants) {
+                foreach ($variants as $v) {
+                    $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+                $query->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
             })->orderBy('order', 'desc')->get(['id', 'name', 'name_en', 'first_picture'])->toArray();
 
-            $guide = Guide::query()->where($where)->where('name', 'like', '%' . escapeLike($name) . '%')
+            $guide = Guide::query()->where($where)->where(function ($query) use ($variants) {
+                foreach ($variants as $v) {
+                    $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                }
+            })
                 ->where('city_id', '>', 0)
                 ->orderBy('order', 'desc')->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])->toArray();
 
             $city_content = CityContent::with(['city'])
                 ->where($where)
-                ->where('name', 'like', '%' . escapeLike($name) . '%')
+                ->where(function ($query) use ($variants) {
+                    foreach ($variants as $v) {
+                        $query->orWhere('name', 'like', '%' . escapeLike($v) . '%');
+                    }
+                })
                 ->orderBy('order', 'desc')
                 ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture'])->toArray();
         }
