@@ -44,6 +44,18 @@ if (!function_exists('user_admin_config')) {
 }
 
 
+if (!function_exists('escapeLike')) {
+    /**
+     * Escape LIKE wildcard characters to prevent wildcard injection.
+     * @param string $value
+     * @return string
+     */
+    function escapeLike(string $value): string
+    {
+        return addcslashes($value, '%_');
+    }
+}
+
 if (!function_exists('generateUniqueInviteCode')) {
     /**
      * 获取邀请码
@@ -221,16 +233,16 @@ if (!function_exists('handleSearchData')) {
         $city_content = [];
         if ($type == 'all') {
             $city = City::query()->where($where)->where(function ($query) use ($name) {
-                $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+                $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
             })->orderBy('order', 'desc')->get(['id', 'name', 'name_en', 'first_picture'])->toArray();
 
-            $guide = Guide::query()->where($where)->where('name', 'like', '%' . $name . '%')
+            $guide = Guide::query()->where($where)->where('name', 'like', '%' . escapeLike($name) . '%')
                 ->where('city_id', '>', 0)
                 ->orderBy('order', 'desc')->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])->toArray();
 
             $city_content = CityContent::with(['city'])
                 ->where($where)
-                ->where('name', 'like', '%' . $name . '%')
+                ->where('name', 'like', '%' . escapeLike($name) . '%')
                 ->orderBy('order', 'desc')
                 ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture'])->toArray();
         }
@@ -414,7 +426,6 @@ if (!function_exists('compressImage')) {
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_TIMEOUT => 15,
-                CURLOPT_SSL_VERIFYPEER => false,
             ]);
             $data = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

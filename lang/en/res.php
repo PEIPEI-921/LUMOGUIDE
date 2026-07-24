@@ -2,9 +2,11 @@
 
 return [
     'success' => 'Success',
+    'system_error' => 'System error, please try again later',
     'success_wait_audit' => 'Success, please wait for review',
     'login_success' => 'Login successful',
     'login_fail' => 'Login failed',
+    'login_invalid' => 'Invalid email or password',
     'register_success' => 'Registration successful',
     'account_in' => 'The email address has already been registered.',
 
@@ -92,6 +94,8 @@ return [
     'birthday_required' => 'Please select a birth date',
     'file_required' => 'Please upload a file',
     'file_file' => 'You must upload a valid file',
+    'file_mimes' => 'Only jpg, jpeg, png, gif, webp images are allowed',
+    'file_max' => 'File size must not exceed 10MB',
     'password_required' => 'Please enter a password',
     'password_confirmed' => 'Password confirmation does not match',
     'city_name_required' => 'Please enter the city name',

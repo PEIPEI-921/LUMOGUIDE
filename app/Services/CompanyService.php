@@ -212,7 +212,7 @@ class CompanyService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -357,7 +357,7 @@ class CompanyService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -375,7 +375,7 @@ class CompanyService
         try {
             $model->delete();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -551,7 +551,7 @@ class CompanyService
             $reserve->reason = $reason;
             $reserve->save();
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -577,7 +577,7 @@ class CompanyService
             $reserve->company_del = 1;
             $reserve->save();
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 

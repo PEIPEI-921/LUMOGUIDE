@@ -166,7 +166,7 @@ APP_ENV=production php artisan serve  # Test production mode
 # Queue worker (Redis backend)
 /opt/homebrew/bin/php artisan queue:work redis
 
-# Run tests
+# Run tests (requires phpunit.xml — create one if missing)
 /opt/homebrew/bin/php artisan test
 # Single test
 /opt/homebrew/bin/php artisan test --filter=TestClassName
@@ -230,98 +230,17 @@ The web frontend is a **Vue.js 3 + Vue Router** single-page application served f
 ```
 > ⚠️ **Do NOT use unpkg CDN or `vue.global.prod.js`**. The production build's template compiler silently fails — `app.mount('#app')` returns `null` without error, DOM unchanged. jsdelivr dev builds work correctly. Also, `app.js` (which calls `app.mount()`) **MUST be the last `<script>` at end of `<body>`**, after `<div id="app">`. If placed in `<head>`, `#app` doesn't exist yet and mount fails silently.
 
-```
-frontend/
-├── index.html                  # SPA shell (CDN links + <div id="app">)
-├── 404.html                    # Error page
-├── images/
-│   ├── logo.png                # Logo icon (small square)
-│   └── logo_lumoguide.png      # Full horizontal logo (5326×1024, transparent bg)
-├── css/
-│   ├── variables.css           # Design tokens (matches mobile AppColors)
-│   ├── app.css                 # Global layout, typography, utilities
-│   └── components.css          # .ds-* component classes, topbar, auth cards, skeleton screens, evaluation form
-└── js/
-    ├── app.js                  # Vue.createApp(), AppShell with inline topbar (indigo gradient), global components, mount
-    ├── router.js               # Hash-based routes (69 routes + auth guard)
-    ├── api/
-    │   ├── provider.js         # Fetch wrapper — never throws, returns {success, data, message}
-    │   └── urls.js             # All 183 API URL constants (mirrors Flutter ApiUrl class)
-    ├── stores/
-    │   ├── user.js             # Vue.reactive — auth state, token, profile, login/logout
-    │   └── config.js           # System config cache from /common/config
-    ├── i18n/
-    │   ├── index.js            # Translation service (detects browser lang, persists to localStorage)
-    │   ├── zh-CN.js            # Simplified Chinese (~180 keys)
-    │   ├── zh-TW.js            # Traditional Chinese (identity mapping)
-    │   └── en.js               # English
-    ├── utils/
-    │   ├── storage.js          # localStorage wrapper (mirrors Flutter StorageStone keys, incl. cityAreaMap)
-    │   └── helpers.js          # timeAgo, imageUrl, safeInt/safeString, showToast, debounce, ListPageHelper, setupInfiniteScroll
-    ├── components/
-    │   ├── app-nav.js          # Bottom tab navigation (DEPRECATED — replaced by inline topbar in app.js)
-    │   ├── app-header.js       # Sticky header with back button + title (DEPRECATED — topbar always tabs mode)
-    │   ├── app-topbar.js       # Top bar component [REFERENCE only — template inline in app.js]
-    │   ├── loading-spinner.js  # Loading indicator
-    │   └── empty-state.js      # Empty data placeholder with retry
-    └── pages/
-        ├── welcome.js              # Landing page (indigo gradient bg, white logo, glass cards, full-rounded buttons)
-        ├── auth/
-        │   ├── login.js            # Login (gradient bg + white card, full-rounded inputs, matches Flutter LoginPage)
-        │   ├── register.js         # Registration (same card style, inline verify-code send button)
-        │   └── extra.js            # ForgetPassword, VerifyCode, PasswordInput (all auth card style)
-        ├── home/index.js           # Home: search, city strategy, continent-grouped cities (auto-switch), guides (auto-switch 5s), merchants (banner carousel drives category switch), news
-        ├── city/
-        │   ├── index.js            # City list — server-driven continents + area sub-filter, 4-column grid, premium minimal design
-        │   ├── detail.js           # City detail — Banner + 10 Tabs + content grid + guide publish FAB
-        │   └── extra.js            # CityStrategy, CityGuideList
-        ├── common/
-        │   └── details.js          # GuideDetail, CommonDetail, CompanyDetail, EvaluationDetail, EvaluationList
-        ├── news/
-        │   ├── index.js            # Information/articles with category filter
-        │   └── detail.js           # News detail + evaluations
-        ├── search/
-        │   └── index.js            # Search with tabs (city/guide/content)
-        ├── message/
-        │   ├── index.js            # Message center (5 categories)
-        │   └── subpages.js         # MessageSystem, MessageFollow, MessageComments, MessageReserves
-        ├── mine/
-        │   ├── index.js            # My page — menu grid (legacy, being replaced by profile.js)
-        │   ├── profile.js          # Profile (refactored) + ProfileEdit
-        │   └── extra.js            # Settings, ModifyPassword, ModifyPhone, Feedback, Contact, Invite,
-        │                           #   Followers, Following, MyEvaluations, MyBookings, BookingDetail
-        ├── address/
-        │   └── list.js             # AddressList + AddressEdit
-        ├── guide/
-        │   ├── certify.js          # GuideCertifyPage（3步认证向导）
-        │   ├── publish.js          # GuidePublishPage（5 Tab发布管理）
-        │   ├── publish-city.js     # GuidePublishCityPage（城市管理）
-        │   ├── publish-city-form.js # GuidePublishCityFormPage（创建/编辑城市，14字段+6图+三级联动）
-        │   ├── bookings.js         # GuideBookingsPage + GuideBookingDetailPage
-        │   └── change-city.js      # GuideChangeCityPage（切换服务城市）
-        ├── publish/
-        │   └── form.js             # 5个发布表单组件（createPublishPage工厂函数）
-        └── merchant/
-            ├── entry.js            # MerchantEntryPage（4步入驻向导）
-            ├── manage.js           # MerchantManagePage（店铺CRUD）
-            └── bookings.js         # MerchantBookingsPage + MerchantBookingDetailPage
-        ├── integral/
-        │   ├── index.js            # IntegralPage（积分商城首页）
-        │   ├── goods.js            # IntegralGoodsPage（商品详情）
-        │   ├── exchange.js         # IntegralExchangePage + Result + Order
-        │   └── records.js          # IntegralRecordsPage（积分记录）
-        ├── vip/
-        │   └── index.js            # VipPage（會籍中心 / Membership Center — 付費導遊會員訂閱）
-        ├── booking/
-        │   └── form.js             # BookingGuidePage + BookingMerchantPage
-        ├── evaluation.js            # EvaluationSubmitPage（星级评价+图片上传）
-        └── misc/
-            ├── photo.js             # PhotoViewerPage（全屏图片查看器）
-            └── web.js               # WebViewPage（内嵌网页）
-```
+Key frontend directories (69 routes, 53 JS + 3 CSS files):
+- `css/` — `variables.css` (design tokens), `app.css` (layout/typography), `components.css` (`.ds-*` classes)
+- `js/api/` — `provider.js` (Fetch wrapper, never throws), `urls.js` (183 API endpoints)
+- `js/stores/` — `user.js` (auth/state), `config.js` (system config cache)
+- `js/i18n/` — `zh-CN.js`, `zh-TW.js`, `en.js`
+- `js/utils/` — `storage.js` (localStorage), `helpers.js` (timeAgo, imageUrl, debounce, etc.)
+- `js/components/` — DEPRECATED: all components inlined in parent. `app-topbar.js` kept as reference only.
+- `js/pages/` — one file per feature area: `home/`, `city/`, `common/`, `news/`, `search/`, `message/`, `mine/`, `address/`, `guide/`, `publish/`, `merchant/`, `integral/`, `vip/`, `booking/`, `misc/`
 
 **Architecture patterns**:
-- **API**: `ApiProvider.get/post(path, data)` → always returns `{success, code, message, data}`. JWT automatically attached from `Storage.token`. Never throws — matches Flutter's `ApiResult` pattern. In local dev, API proxy in `public/index.php` forwards `/api/*` to `https://api.lumoguide.com`.
+- **API**: `ApiProvider.get/post(path, data)` → always returns `{success, code, message, data}`. JWT automatically attached from `Storage.token`. Never throws — matches Flutter's `ApiResult` pattern. In local dev (`APP_ENV=local`), API proxy in `public/index.php` forwards `/api/*` to `https://api.lumoguide.com` so the frontend SPA works without a local database. On production, requests are handled by Laravel normally.
 - **Auth**: `UserStore` (Vue.reactive) manages token + profile. Login stores credentials in localStorage under keys matching Flutter's `StorageStone` (`token`, `user_number`, `user_sig`, `user_info`). 401 responses trigger logout redirect. Route guard in `router.beforeEach` checks `meta.requiresAuth`. Profile refetched via `UserStore.fetchProfile()` after edits.
 - **i18n**: Keys are Traditional Chinese characters (matching Flutter). `I18n.t('首頁')` returns locale-appropriate text. Language persisted to localStorage. Switchable via Settings page.
 - **Pages**: Each page is a Vue Options API component definition object (`{template, data, methods, mounted}`). Multiple related components per file (e.g. `pages/city/detail.js` contains `CityDetailPage`, `pages/mine/extra.js` contains 11 components). Files loaded via `<script>` tags in `index.html` — order matters: dependencies must load before dependents.
@@ -358,60 +277,15 @@ Route::get('/{any}', fn() => response()->file(base_path('frontend/index.html')))
 ```
 This ensures `/api/*` (mobile app), `/manage*` or `/admin*` (admin panel), and static files (`/css/...`, `/js/...`) are unaffected. Protocol pages (`/protocol/user`, `/protocol/privacy`) render Blade views with system config content, or 404 if config not found.
 
-**Implementation status** (updated 2026-07-06):
-| Phase | 名称 | 页面数 | 状态 |
-|-------|------|--------|------|
-| Phase 0 | 顶部导航栏 + LOGO | — | ✅ |
-| Phase 1 | 外壳 + 认证 + 5 Tab | 8 | ✅ |
-| Phase 2 | 详情页 + 设计系统刷新 | 14 | ✅ |
-| Phase 3 | 用户操作 | 18 | ✅ |
-| Phase 4 | 发布功能 | 12 | ✅ |
-| Phase 5 | 电商功能 | 13 | ✅ |
-| Phase 6 | 打磨收尾 | 2 + 全局 | ✅ (含 2026-07-06 响应式布局刷新) |
-| Phase 7 | 评价提交 + App/Web 一致性审计 | 1 + 审计 | ✅ (2026-07-06) |
-| Phase 8 | 导航栏+认证页+商家区块改造 | 全局 | ✅ (2026-07-06) |
-| Phase 9 | 城市攻略 + 卡片系统 + 全局渐变 + 城市详情重构 + 交叉导航 + 页面改造 | 2 + 全局 | ✅ (2026-07-06) |
-
-**69/69 routes implemented** (100%). See `plan.md` for full details. Top nav bar uses solid `#7C5CFF` purple (no shadow), body gradient seamlessly matches, all pages share unified gradient background, auth pages match Flutter mobile layout, shop section has banner carousel driving category auto-switch, city strategy page uses GPS location to find nearest city with rectangular pill type navigation.
+**69/69 routes implemented** (100%). See `plan.md` for full details.
 
 ### App-Web Feature Parity
 
-The web frontend replicates all Flutter mobile app features that are feasible in a browser environment. A comprehensive audit (2026-07-06) confirmed functional alignment across all 71 Flutter pages vs 69 Web routes.
-
-**Mobile-only features (not applicable to Web):**
-- Chat/IM (Tencent Cloud Chat SDK — native only)
-- QR code scanning (requires camera hardware)
-- Group chat management (select members, group profiles, group QR codes)
-
-**Key feature alignment validations:**
-- **Evaluation submission** (Phase 7): Star rating (1-5★) + text content + image upload (up to 9), matching Flutter's `EvaluationPage`. Entry points added to news detail and common detail pages. Uses `addContentEvaluate` and `addInformationEvaluate` APIs.
-- **Booking rejection**: Web uses `prompt()` dialog for rejection reason vs Flutter's dedicated `RejectReservationPage` — functionally equivalent.
-- **All other features** (auth, city browsing, guide/merchant profiles, content publishing, bookings, points/VIP, search, messages, address management, etc.) are fully aligned.
-
-**Audit findings & fixes (2026-07-06):**
-- ✅ Added evaluation submission page (critical gap)
-- ✅ Added "Write Evaluation" buttons to news detail & common detail pages
-- ✅ Fixed integral exchange result page hardcoded `order/0` → dynamic `order_id` from route query
-
-**API coverage**: 183 API endpoints defined in `urls.js`, mirroring Flutter's `ApiUrl` class. A few endpoints are intentionally unused in Web (e.g., `getContinents`, `getLocation`) — they serve mobile-specific flows.
+The web frontend replicates all Flutter mobile app features feasible in a browser. 69 Web routes = 71 Flutter pages (minus Chat/IM, QR scanning, group chat — mobile-only). All features aligned as of 2026-07-06 audit.
 
 ### Mobile Frontend Reference
 
-The Flutter mobile app working copy is at `/Users/xuejingchen/Desktop/vscode/lumotrip/` (this project). The original reference source is at `/Users/guanpei/Downloads/LUMOGUIDE- Front/LUMOGUIDE-frontend/`. All API endpoints and data models are defined there — use as reference when building web pages. See `[[mobile-frontend-reference]]` in memory for full details.
-
-## Server Connection (legacy — project now independent)
-
-| Item | Value |
-|------|-------|
-| Cloud | Alibaba Cloud ECS (杭州) |
-| Domain | easyname (DNS only) |
-| IP | 47.76.27.105 |
-| SSH user | root |
-| SSH auth | password (see administrator) |
-| Web root | `/www/wwwroot/lumo/public/` |
-| MySQL DB | lumo_guide (MySQL 5.7.44, localhost:3306) |
-
-**2026-07-22**: Codebase fully decoupled. All source code plaintext. Database dump + upload files included in repo. Use `./deploy.sh` on any Ubuntu server.
+Flutter app at `/Users/xuejingchen/Desktop/vscode/lumotrip/`. Use as reference for API endpoints and data models when building web pages.
 
 ## Architecture
 
@@ -438,7 +312,7 @@ Authentication: JWT via `tymon/jwt-auth` (config in `config/jwt.php`). Routes us
 
 ### Service Layer (`app/Services/`)
 
-Business logic is extracted into service classes — one per domain (`AuthService`, `CityService`, `GuideService`, `CompanyService`, `InformationService`, `IntegralService`, `UserService`, `VipService`, `MessageService`, `CommonService`). API controllers call services rather than models directly.
+Business logic is extracted into service classes — one per domain (`AuthService`, `CityService`, `GuideService`, `CompanyService`, `InformationService`, `IntegralService`, `UserService`, `VipService`, `MessageService`, `CommonService`, `TripService`). API controllers call services rather than models directly.
 
 ### Admin Panel (`app/Admin/`)
 
@@ -472,6 +346,7 @@ Global functions loaded via composer autoload:
 - `handleGuideVip($user)` / `handleUserVip($user)` — VIP status check, throws `ApiException` on failure
 - `handleSearchData($where, $name, $type)` — unified search across cities/guides/content
 - `compressImage($source, $dest, $quality)` — JPEG compression with EXIF rotation fix
+- `escapeLike($value)` — escape `%` and `_` for safe LIKE queries
 - `timeAgo($time)` — Chinese relative time formatting
 
 ### Middleware
@@ -521,70 +396,54 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 ## Critical Rules
 
 ### Backend
-- **All source code is plaintext** — Services decoded 2026-07-22. No special extensions required.
-- **Admin panel**: at `/manage` (not `/admin`), set by `ADMIN_ROUTE_PREFIX=manage` in `.env`.
-- **Stripe**: `.env` keys must be configured per deployment. Do not commit `.env`.
+- **All source code is plaintext** (2026-07-22). No swoole_loader needed.
+- **Admin panel** at `/manage` (not `/admin`), set by `ADMIN_ROUTE_PREFIX=manage` in `.env`.
 - **Response format**: All API responses are `{code: int, message: string, data: object/array}`.
 - **Queue driver**: Redis (`QUEUE_CONNECTION=redis`).
-- **Bug report**: 62 known bugs documented in `.claude/bug-report-2026-07-07.md` (4 rounds: critical→high→medium→minor).
+- **API parameter types**: PHP methods have strict types (`int $city_id`). Never send empty string `""` for numeric params — use `if (value) params.key = value` to omit empty values entirely. Route query params are always strings — use `parseInt()` before passing to APIs.
+- **Bug report**: 62 known bugs documented in `bug-report-2026-07-07.md` (all fixed).
 
-### Frontend — Hard Pitfalls
-- **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component. `app-topbar.js` is kept only as reference.
-- **API response snake_case**: Access fields exactly as the API returns them (`guide_type`, `city_id`, `first_picture`). Never use camelCase — JS silently returns `undefined` with no errors.
+### Backend — Security Rules (2026-07-24 security review)
+- **File uploads**: MUST validate MIME type (whitelist: jpg/jpeg/png/gif/webp) and max size (10MB). File extension MUST be whitelisted as defense-in-depth. Uploaded files stored via `storage:link` are publicly accessible — never allow executable extensions.
+- **LIKE queries**: ALWAYS escape user input with `escapeLike()` before using in LIKE patterns. Unescaped `%` and `_` wildcards allow bulk data extraction.
+- **Error messages**: NEVER expose raw exception messages to API responses. Use generic `__('res.system_error')` in catch blocks. Log the real error server-side.
+- **Login responses**: Return the same message for "account not found" and "wrong password" to prevent user enumeration.
+- **Stripe webhooks**: Check `pay_status` before processing to ensure idempotency. Stripe may retry webhooks.
+- **SSL verification**: NEVER disable `CURLOPT_SSL_VERIFYPEER` in production code.
+- **Debug endpoints**: All debug/test routes MUST have `auth:api` middleware. The `/api/common/test` endpoint was secured 2026-07-24.
+
+### Frontend — Hard Pitfalls (will silently break with no errors)
+- **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component.
+- **API response snake_case**: Access fields as the API returns them (`guide_type`, `city_id`, `first_picture`). Never use camelCase — JS returns `undefined` with no error.
 - **i18n reactivity**: I18n MUST be `Vue.reactive()` and `I18n.init()` MUST run before `app.mount('#app')`.
-- **File upload blob trap**: Store both the `File` object AND blob URL. Blob URLs are preview-only — upload File objects on submit. Revoke blob URLs in `beforeUnmount`.
-- **Timer cleanup**: Every `setInterval`/`setTimeout` must store its handle on `this._timer` and be cleared in `beforeUnmount`.
-- **CSS constraints**: `font-weight` must be multiples of 100. All `var(--xxx)` must match `variables.css` definitions. Use centralized z-index variables.
-- **Topbar visibility**: `showTopBar` must list ALL auth routes (`/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`).
+- **File upload blob trap**: Store both `File` object AND blob URL for preview. Blob URLs are preview-only — upload File objects on submit. Revoke blob URLs in `beforeUnmount`.
+- **Timer cleanup**: Every `setInterval`/`setTimeout` must be stored on `this._timer` and cleared in `beforeUnmount`.
+- **CSS constraints**: `font-weight` must be multiples of 100. All `var(--xxx)` must match `variables.css`. Use centralized z-index variables.
+- **JS block comment glob trap**: `/* */` blocks must NOT contain `*/` — common in glob patterns like `publish_*/controller.dart`. Use `//` line comments or `publish_<type>/controller.dart`.
 
-- **Source code is encoded**: Most `.php` files in `app/` require `swoole_loader` extension. Attempting to read them returns garbled content. The plaintext files are: `helpers.php`, route files, config files, language files, migrations, and the `public/` directory.
-- **Custom admin prefix**: Admin panel is at `/manage`, not `/admin` (set via `ADMIN_ROUTE_PREFIX=manage` in `.env`).
-- **API base URL**: `https://api.lumoguide.com` (local dev overrides via `.env` `APP_URL`).
-- **Stripe is live**: `.env` contains production Stripe keys. Webhook secret is `whsec_ia...`. Test keys are commented out.
-- **System config Redis caching**: Config loaded via `systemConfig()` caches all `system_config` table rows into a Redis hash, refreshing on cache miss.
-- **Response format**: All API responses follow `{code: int, message: string, data: object/array}`.
-- **Claude Code Skills**: 18 skills installed via `npx skills add anthropics/skills` in `.agents/skills/`, including `frontend-design` for UI work. Use `Skill` tool to invoke (e.g., `/frontend-design`). See also [[frontend-design-skill]] in memory.
-- **Web-standard layout patterns**: The web frontend follows web-standard patterns, not mobile patterns. Key rules: (1) Never extract inline templates into separate component files in Vue 3 CDN build — the component will silently render blank; (2) Use `.ds-container-*` + `.ds-page-wrapper` for content centering, not inline `max-width`; (3) Top navigation bar (not bottom tabs) — `AppNav` is deprecated; (4) New pages should be audited against the Flutter app for feature parity. See [[web-standard-layout-patterns]] in memory.
-- **Feature parity audit** (updated 2026-07-08, repass 2026-07-08): The web frontend MUST strictly match the Flutter mobile app. **Web cannot have features that don't exist in Flutter.** If Flutter disabled a feature (e.g. `canDelete: false`), Web must also disable it. Key rules: (1) No delete in publish content lists (Flutter `canDelete: false`); (2) No inline confirm/reject in booking lists; (3) No booking status filter tabs; (4) VIP gate on add, not edit; (5) API response format varies — always use defensive parsing. **2026-07-08 publish page realignment**: Rewrote `publish.js` cards to match Flutter my_publish widgets — type-specific fields (attraction: opening time+address; transportation/facility: phone+address; activity: start/end time; information: title+desc), bordered status badges (0=primary/1=green/2=red), unread dot, rejection reason (red text), pill-style tabs, operate bar (edit only, no delete). **2026-07-08 publish-city realignment**: Rewrote `publish-city.js` cards to match Flutter my_publish_city — 180px cover image with primary gradient overlay (city name + capital badge + English name), info banner, city selector panel, FAB, delete limited to audit_status==2 only. Flutter reference at `/tmp/lumotrip_ref/lumotrip/lib/pages/`. See [[flutter-web-feature-parity]], [[guide-publish-city-alignment]], and [[mobile-frontend-reference]] in memory.
-- **Home page city continents**: Recommended cities from `homeData.city` don't include `area_name`. Use `cityList` API in parallel (`Promise.all`) to enrich with continent data. Process `cityAreaMap` first, then update `homeData` so `continentGroups` computed renders correctly on first trigger. See [[home-page-city-continents]] and [[parallel-api-data-enrichment]] in memory.
-- **Home page guide auto-switch**: Guide categories auto-switch every 5s (matching Flutter's `_guideAutoScrollTimer`). Manual tap resets the timer. Keep original `.h-scroll` layout — do NOT change guide card visual style.
-- **Reuse existing styles**: Before creating new CSS classes, check if existing utility classes (`.filter-pills`, `.filter-pill`, `.card-grid-*`, `.h-scroll`, `.ds-*`) already provide the needed style. Creating custom styles when existing ones suffice causes visual inconsistency. See [[reuse-existing-styles]] in memory.
-- **Layout stability during auto-switch**: Use placeholder slots (invisible cards with `visibility: hidden`) to pad to the max row count across all categories, preventing page height from jumping. City placeholders work via `aspect-ratio: 16/9`; Guide/Shop placeholders MUST have full DOM structure (image + info + text) — an empty `<div>` collapses to zero height because there's no content to push it open. See [[shop-banner-carousel]] and [[home-page-city-continents]] in memory.
-- **Topbar (top navigation bar)**: Redesigned 2026-07-06 — solid `#7C5CFF` purple background, height 52px, **no box-shadow**（2026-07-06 移除以实现与渐变无缝融合）. Logo uses `logo_lumoguide.png` with `filter: brightness(0) invert(1)` to appear white on dark bg (36px high, far left). Tabs (首頁/城市/資訊 + SVG 简笔画图标 for 消息/我的) are left-aligned after logo. Search button with magnifying glass SVG icon at far right. **Auth toggle button** (2026-07-08): login/logout SVG icon to the right of search — shows login arrow when logged out, logout arrow when logged in; click logs out and redirects to `/login`. `topBarMode` always `'tabs'` — nav bar visible on ALL pages except welcome/login/register. See [[topbar-redesign]] and [[topbar-auth-button]] in memory.
-- **Auth pages**: Redesigned 2026-07-06 to match Flutter mobile layout — full-screen indigo gradient bg + centered white `.auth-card` (max-width 400px, border-radius 20px) + full-rounded inputs (border-radius 100px). **Login page** (updated 2026-07-08): title replaced by app icon image (`logo-app-icon.png`, 100×100px, purple rounded square), email/password icons use SVG line icons (not emoji), password visibility toggle uses SVG eye icons, form uses `<form @submit.prevent>` to trigger browser password manager. **Remember password** (2026-07-08): checkbox actually saves password to localStorage; credentials survive explicit logout and token expiry; only cleared when user unchecks the box. Login/Register/Welcome/ForgetPassword/VerifyCode/PasswordInput all use this unified style. See [[auth-pages-redesign]], [[login-page-app-icon]], and [[remember-password-feature]] in memory.
-- **Shop/Business section**: Banner carousel from `cat.banner` drives category switching — all banner slides shown (4s each), then auto-advance to next category. Categories with no banner AND no list are filtered out. Placeholder padding prevents layout jumping between categories. Merchant card images use `aspect-ratio: 16/9` (same as city cards). List: 4 columns on desktop, 2 on mobile. See [[shop-banner-carousel]] in memory.
-- **Spacing (web traditional)**: Card grids (`.card-grid-*`) and horizontal scroll (`.h-scroll`) use `--spacing-lg` (16px) gap — the web standard, not the tight 8px mobile-native spacing. On mobile ≤480px, reduced to `--spacing-md` (12px). See [[reuse-existing-styles]] in memory.
-- **City strategy GPS location**: Clicking any city strategy category navigates to `/city/strategy?type=X`. Page uses browser Geolocation API → `/common/location` API to find the nearest city, then filters content by `city_id`. Manual city switching via picker panel. City name displayed in white text, right-aligned. Falls back to first city from `cityList` if GPS denied. **API endpoint fix (2026-07-06)**: Guide type uses `cityGuide` (`/city/guide`), NOT `guideCityList` (`/guide/cityList` — that's for guides managing their own cities). Guide detail links use `#/guide/:id`, not `#/detail/guide`. Image field: `item.photo || item.first_picture` (guides return `photo`, others return `first_picture`). See [[city-strategy-gps-location]] in memory.
-- **Strategy cards design**: Home page city strategy uses 6-column CSS Grid, always one row (never wraps — icons/text shrink on narrow screens). Cards: square, pastel macaron backgrounds, 14px border radius, flat no-shadow. Icons: thin line SVG (`#162539`, 1.6px stroke) + small solid color accents. Text: 24px bold below icon. **City strategy page variant**: 9 type pills — rectangular (icon left of text), not square — using `.strategy-pills` / `.strategy-pill` classes. See [[strategy-cards-design]] and [[city-strategy-gps-location]] in memory.
-- **Global gradient background** (2026-07-06): All pages share `body` gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)`. First 52px is solid `#7C5CFF` — seamlessly matches topbar. Then fades to `#F9F9F6` (warm paper-white). `.app-shell` is `transparent` to let it through. Replaced the old messy multi-layer radial blob approach. Auth/welcome pages unaffected (full-screen overlays). Do NOT add radial blobs or textures — they clash with the solid topbar. See [[global-gradient-background]] in memory.
-- **City list page continent grouping** (2026-07-06): City list page (`city/index.js`) fetches `/city/lists` API (139 cities), then groups by continent using `AREA_TO_CONTINENT` mapping from home page. The API returns `{total, list}` with `area_name` field per city — must extract `res.data.list`, NOT treat `res.data` as array. Continent tabs in order: 亚洲→欧洲→北美洲→南美洲→非洲→大洋洲. Uses `card-grid-2` (2 columns). Fallback empty state with retry button for API failures. See [[home-page-city-continents]] in memory.
-- **City detail page design** (2026-07-06): Redesigned with 4-column grid (`.city-content-grid`), smaller images (100px height), and two-level classification. **一级分类**: `.ds-tabs` underline tabs (概覽/導遊/景點/餐廳/購物/票務/住宿/交通/設施/活動, matching Flutter order). **二级分类**: `.ds-type-tab` pills with **「全部」as default** (`subTabIndex: -1` means no sub-category filter). Responsive: 4 cols→3 cols (≤860px)→2 cols (≤480px). Image height: 100px→90px→80px. Container: `ds-container-1280`. **Activity API fix**: activity type uses `category_id` parameter, NOT `type_class_id` (all other types use `type_class_id`). See [[city-detail-page-design]] in memory.
-- **Cross-navigation links** (2026-07-06): All detail pages link to related entities — clicking a city name anywhere navigates to city detail, clicking an author/guide name navigates to guide detail. Guide detail → city (via `guide.city_id`), News detail → guide (via `news.user.guide_id`) + city (via `news.user.city_id`), Common/Company detail → city (via `item.city_id` or route query). City names styled in primary color when clickable. List APIs within city context don't return `city_id` (already filtered), so no cross-links needed in city-internal lists. See [[cross-navigation-links]] in memory.
-- **News/Message/Mine page redesign** (2026-07-06): All three tab pages redesigned for clean web feel. **News**: cover image card layout, `.ds-container-760`, serif titles, meta row (author avatar + date + views + comments), load-more button with 100px radius. **Messages**: card-based category list with colored icon backgrounds + red count badges, serif page headings, better empty states (large contextual icons). **Mine**: `.ds-profile-card` with avatar gradient fallback, `.ds-menu-group` for service menus, warm gradient VIP card, promotion cards with subtle borders. All pages use inline empty/error states (no reliance on `<empty-state>` component which may not resolve in CDN build). See [[web-standard-layout-patterns]] and [[vue3-cdn-component-pitfall]] in memory.
-- **SPA architecture confirmed**: SPA is the correct choice for this project (not multi-HTML). All content is behind login wall so SEO is irrelevant. The SPA advantages — no-refresh navigation between 69 routes, shared topbar/design-system, in-memory UserStore/ConfigStore — outweigh the CDN component registration pitfalls. See [[spa-architecture-decision]] in memory.
-- **Comprehensive bug scan (2026-07-07)**: Full project scan found 62 bugs across 53 frontend + 9 backend files → **all 62 fixed (2026-07-07)** in 4 rounds (5 critical / 13 high / 29 medium / 15 minor). Report at `bug-report-2026-07-07.md` in project root. See [[bug-scan-2026-07-07]] in memory.
-- **i18n reactivity**: I18n object MUST be wrapped in `Vue.reactive()` and `I18n.init()` MUST run before `app.mount('#app')`. Otherwise locale changes don't trigger re-renders and first render always uses default `zh-CN`. See [[i18n-reactivity]] in memory.
-- **File upload pattern (blob URL trap)**: When previewing local files with `URL.createObjectURL()`, you MUST also store the `File` object itself. The blob URL is only for preview — it cannot be uploaded to the server. On submit, upload the stored File objects individually, then collect server URLs. Also, revoke old blob URLs with `URL.revokeObjectURL()` in `beforeUnmount` to prevent memory leaks. See [[file-upload-blob-pattern]] in memory.
-- **Timer cleanup**: Every `setInterval` / `setTimeout` MUST store its handle on the component instance (`this._timer`) and be cleared in `beforeUnmount`. Uncancelled timers on unmounted components cause memory leaks and console errors. See [[timer-cleanup]] in memory.
-- **CSS constraints**: (1) `font-weight` values must be multiples of 100 — non-standard values like 530/650 render inconsistently across browsers; (2) All `var(--xxx)` references must match variables defined in `variables.css` — typos like `--color-text-primary` vs actual `--color-primary-text` silently fall back to browser defaults; (3) z-index values should use centralized variables, not raw numbers. See [[css-constraints]] in memory.
-- **API URL naming**: API URL constant names in `urls.js` MUST match the business object they operate on. Never use `messageUnFollowShop` to unfollow a user, or `guideRejectReserve` to mark a booking as completed. Wrong endpoint names cause silent incorrect behavior that is hard to debug.
-- **Topbar visibility**: The `showTopBar` computed in `AppShell` must list ALL auth-related routes (not just `/login`, `/register`). Missing `/forget-password`, `/verify-code`, `/password-input` — users see nav tabs on auth pages.
-- **API response field names**: API returns snake_case keys (`guide_type`, `city_id`, `first_picture`). The Web frontend's `ApiProvider` does NOT transform key names — access fields exactly as the API returns them. Never use camelCase (`guideType`, `cityId`) to access API response data. JavaScript silently returns `undefined` for missing keys, making these bugs invisible (no errors, just empty/filtered-out data). **Always verify with `curl`** when unsure about an API response format. See [[api-snake-case-keys]] in memory.
-- **API parameter type safety** (2026-07-22): PHP backend methods have strict type declarations (`int $city_id`, `int $type_id`). **Never send empty string `""` for numeric parameters** — it causes PHP type errors (500). Three rules: (1) Don't use `|| ''` fallback on numeric API params — use `if (value) params.key = value` to omit empty values entirely; (2) Route query params are always strings — use `parseInt()` before passing to APIs; (3) When building URLs, guard against `undefined` values — `item.city_id || item.cityId` produces literal `"undefined"` string when both are missing. See [[api-param-type-safety]] and [[content-type-to-id-mapping]] in memory.
-- **Content type to type_id mapping**: `/city/contentInfo` API requires numeric `type_id`, not string type name. Mapping: attraction→1, restaurant→2, shopping→3, accommodation→4, transportation→5, facility→6, activity→7, ticket→8. Items from city list endpoints (e.g. `/city/attraction`) don't include `city_id` field — use the page's current city ID as fallback in detail page links. See [[content-type-to-id-mapping]] in memory.
-- **Router parameter naming**: When passing query params between pages (e.g., search keyword), define the param name as a shared constant. Mismatches like `?keyword=` vs `query.q` cause silent data loss on navigation.
-- **Web-Flutter data parity** (audited 2026-07-07, updated 2026-07-07): 15 differences found between Web and Flutter data display. Key gaps FIXED: (1) Web lacks city detail authorization check for non-guide users, (2) ~~city list continent grouping is client-side hardcoded~~ → FIXED: now server-driven via `getContinentsList` API with area sub-filtering, (3) guide cards missing `city_name`, (4) info cards missing `user_avatar`/`guide_type`/`pictures`/`created_at`, (5) `have_vehicle`/`vehicle_rent` type mismatch (`=== 1` vs `String?`). See [[web-flutter-data-comparison]] and [[city-list-server-driven]] in memory.
-- **Guide feature parity** (audited & fixed 2026-07-07, realigned 2026-07-08): Full Flutter-Web guide feature comparison. CRITICAL fix: created `publish-city-form.js` (city creation/editing form, 14 fields + 3-level cascade + 6-image upload). HIGH fixes: profile menu navigation (3 broken links), publish form expansion (category selectors, phone/email/website/tickets/images). **2026-07-08 realignment**: Removed Web-only features not in Flutter — publish content delete buttons (Flutter `canDelete: false`), booking list inline confirm/reject, booking status filter tabs, 「申請已有城市」panel (replaced with VIP gate → form navigation). Fixed guideCityList API data format (flat array vs wrapped). **2026-07-08 UI realignment**: Publish page (`publish.js`) and publish-city page (`publish-city.js`) card designs fully rewritten to match Flutter — type-specific fields, status colors, unread dots, rejection reasons, cover images with overlays, operate bars, FABs, pill-style tabs. Delete on city cards limited to `auditStatus == 2` only (matching Flutter). See [[guide-feature-parity-2026-07-07]] and [[flutter-web-feature-parity]] in memory.
-- **Member center page (會籍中心)** (rewritten 2026-07-08): The `/vip` page was completely rewritten to match Flutter `member_center` — it's a **paid guide/merchant membership subscription page**, not a generic "VIP lounge". Key changes: (1) Top section — user info card with avatar, identity badge (guide/company), VIP name badge, membership expiry status (NOT dark gradient + emoji); (2) Products — selectable card grid (2 cols guide / 3 cols company) with 月/年 tags, using a unified 「立即訂閱」 button (NOT per-plan buttons); (3) Benefits — dynamic from `vipAbility` API (NOT hardcoded emoji); (4) Agreement links above subscribe button. **Critical API parsing fix**: `/vip/guide` and `/vip/company` return flat arrays `[{id, name, ...}]` — use `Array.isArray(d) ? d : (d.list || d.data || [])` defensive parsing (NOT `data?.list || data?.data` which always returns `[]` for arrays). **vipExpired bug**: Must split into `vipExpiredDate` (display string) and `isVipExpired` (boolean: `ts < Date.now()/1000`). **UserStore method**: `getProfile()` not `fetchProfile()`. Integral icon: `fotos/O.png` → `frontend/images/icon-integral.png`. See [[member-center-page]] in memory.
-- **VIP gate pattern**: Guide publishing features require VIP membership for NEW content only, not editing. Gate in template: `v-else-if="!isEdit && !UserStore.isVip"`. `UserStore.isVip` computed checks `vip_type > 0 && vip_expiration_time > 0` (paid) OR `vip_free === 1 && vip_free_day > 0` (free). Aligns with Flutter `VIPCheckUtils.check()` called before navigating to publish forms. Editing existing content bypasses VIP check — matches Flutter behavior.
-- **Draft save/restore pattern**: Publish forms save draft to `localStorage` keyed by type (e.g., `publish_attraction_draft`). Save in `beforeUnmount` when `!isEdit && !success`. Check in `init()` after determining edit mode. Clear on success. Draft includes all `form` fields + picture URLs (not File objects — those can't be serialized). City form uses same pattern with key `publish_city_draft`.
-- **Three-level cascade selector (continent→area→country)**: Uses `getContinentsList` API with `parent_id` param: `parent_id=0` returns continents, `=<continent_id>` returns areas, `=<area_id>` returns countries. Selection resets downstream selectors and their values. Edit mode: after loading saved IDs, cascade-fetch each level to populate option lists.
-- **Publish form factory pattern**: `createPublishPage(typeKey)` generates 5 type-specific forms from one factory. `PUBLISH_TYPES[typeKey].has` config object controls which fields render via template literal `${f.fieldName ? 'true' : 'false'}` in `v-if`. This avoids 5 separate page files while supporting different field sets per content type.
-- **JS block comment glob trap**: `/* */` block comments MUST NOT contain `*/` character sequence — it prematurely closes the comment. Common culprit: glob patterns like `publish_*/controller.dart`. Fix: use `publish_<type>/controller.dart` or `//` line comments. Use `node -c <file>` to catch this. See [[js-block-comment-glob-trap]] in memory.
-- **City list page server-driven** (refactored 2026-07-07): Replaced client-side `AREA_TO_CONTINENT` hardcoded grouping with server-driven architecture: (1) `getContinentsList?parent_id=0` → continents, (2) `getContinentsList?parent_id=<id>` → areas, (3) `cityList?continents_id=X&area_id=Y` → cities. Area sub-filter pills within each continent tab. Cards: 4-column grid, 1:1 aspect ratio, bottom gradient overlay, minimal underline-style continent tabs. See [[city-list-server-driven]] in memory.
-- **City detail publish FAB** (added 2026-07-07): Floating action button on city detail page for guides to publish content. Visible when user is guide on tabs: 景點→`/publish/attraction`, 交通→`/publish/transportation`, 設施→`/publish/facility`, 活動→`/publish/activity`. FAB visible for ALL guides (not just VIP); VIP gate checked on click with redirect to `/vip`. Matching Flutter `CityDetailPage.floatingActionButton`. See [[city-detail-publish-fab]] in memory.
-- **City list publish city entry** (added 2026-07-07): Two entry points for guides to add cities: (1) prominent solid primary button at top-right of city list page, (2) entry via profile menu "我的城市". Both gate VIP on click → redirect `/vip` if not VIP. Matching Flutter `CityPage` FAB.
-- **Search API response format** (fixed 2026-07-07): `/common/homeSearch` returns a **flat array** where each item has `data_type`: 1=city, 2=guide, 3=content. Must filter by `data_type` to group results. The API does NOT return `{city: [], guide: [], content: []}` structure. See [[search-api-flat-array]] in memory.
-- **UserStore identity getters** (fixed 2026-07-07): `isGuide`/`isEnterprise`/`isUser` must use `Number(this.userInfo?.identity)` — the API returns identity as a string. All other pages use `Number(profile.identity) === 2` pattern; UserStore was the only place using strict `=== 2` which fails for string `"2"`. See [[userstore-identity-type-fix]] in memory.
-- **City card overlay redesign** (2026-07-07): Changed from top-aligned gradient (`to bottom`) to bottom-aligned (`to top`), matching Flutter design. Name + area badge side-by-side in `.city-name-row`, english name below. Text: white with subtle shadow, no heavy background. CSS in `components.css` affects both home page and city list page. See [[city-list-server-driven]] in memory.
+### Frontend — Design/Architecture Rules
+- **Web-Flutter feature parity**: Web MUST strictly match Flutter. No features that don't exist in Flutter. Reference: Flutter app at `lumotrip/lib/pages/`.
+- **Flutter constraints**: No delete in publish content lists (`canDelete: false`). No inline confirm/reject in booking lists. No booking status filter tabs. VIP gate on add (not edit).
+- **Design system**: Primary `#666FFF`, page bg `#F9F9F6`, card `#FFFFFF`. Topbar solid `#7C5CFF` 52px no box-shadow. Body gradient: `linear-gradient(180deg, #7C5CFF 0%, #7C5CFF 52px, #F9F9F6 400px)`. Serif: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`.
+- **Topbar visibility**: Hidden only on `/welcome`, `/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`. Must list ALL auth routes.
+- **Reuse existing styles**: Check `.filter-pills`, `.card-grid-*`, `.h-scroll`, `.ds-*` before creating new CSS.
+- **SPA architecture**: Correct choice. No multi-HTML. All content behind login wall (SEO irrelevant).
+
+### Frontend — API Data Patterns
+- **Search API**: `/common/homeSearch` returns flat array with `data_type`: 1=city, 2=guide, 3=content. Filter client-side.
+- **VIP APIs**: `/vip/guide` and `/vip/company` return flat arrays — use `Array.isArray(d) ? d : (d.list || [])`.
+- **City list API**: Returns `{total, list}` — extract `res.data.list`, NOT `res.data` as array.
+- **Content type_id mapping**: attraction→1, restaurant→2, shopping→3, accommodation→4, transportation→5, facility→6, activity→7, ticket→8.
+- **Activity API**: Uses `category_id` param (not `type_class_id` like other types).
+- **UserStore identity**: Use `Number(this.userInfo?.identity)` — API returns identity as string.
+- **Guide images**: Guides return `photo`, others return `first_picture`. Use `item.photo || item.first_picture`.
+
+### Frontend — Key Patterns
+- **VIP gate**: `v-else-if="!isEdit && !UserStore.isVip"`. `isVip` = `vip_type > 0 && vip_expiration_time > 0` OR `vip_free === 1 && vip_free_day > 0`.
+- **Draft save/restore**: Save to `localStorage` keyed by type in `beforeUnmount` when `!isEdit && !success`. Clear on success.
+- **Three-level cascade (continent→area→country)**: `getContinentsList` with `parent_id` param. Selection resets downstream.
+- **Publish form factory**: `createPublishPage(typeKey)` with `PUBLISH_TYPES[typeKey].has` config for conditional fields.
+- **Cross-navigation**: All detail pages link to related entities. Guide detail → city (`guide.city_id`), News detail → guide (`news.user.guide_id`) + city.
+- **Home page auto-switch**: Guide categories auto-switch 5s, manual tap resets timer. Use placeholder slots (`visibility: hidden`) for layout stability.
+- **City detail FAB**: Visible for guides on 景點/交通/設施/活動 tabs. VIP gate checked on click.
 - **Publish form city_id pre-fill** (2026-07-07): `publish/form.js` reads `$route.query.city_id` in `init()` to pre-select city dropdown when navigating from city detail FAB. Enables seamless "add content from city page" flow.

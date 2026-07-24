@@ -495,7 +495,7 @@ class MessageService
                 $count = Redis::hGet("message_list:$followed_id", 'follow_my') ?? 0;
                 Redis::hSet("message_list:$followed_id", 'follow_my', $count + 1);
             } catch (Throwable $exception) {
-                throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+                throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
             }
         }
     }

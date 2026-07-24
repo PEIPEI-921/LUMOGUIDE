@@ -165,7 +165,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -241,7 +241,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -400,7 +400,7 @@ class GuideService
             $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/city?status=1";
             Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -546,7 +546,7 @@ class GuideService
 
             Log::debug('Content-' . json_encode($model->toArray(), JSON_UNESCAPED_UNICODE));
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -712,7 +712,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -731,7 +731,7 @@ class GuideService
         try {
             $model->delete();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -784,7 +784,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -871,7 +871,7 @@ class GuideService
             $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/information";
             Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -891,7 +891,7 @@ class GuideService
         try {
             $res->delete();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -1086,7 +1086,7 @@ class GuideService
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -1115,7 +1115,7 @@ class GuideService
             $reserve->reason = $reason;
             $reserve->save();
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -1142,7 +1142,7 @@ class GuideService
             $reserve->guide_del = 1;
             $reserve->save();
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 }

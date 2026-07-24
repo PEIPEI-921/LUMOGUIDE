@@ -187,7 +187,7 @@ class IntegralService
             return ['id' => $orderModel->id, 'order_sn' => $orderModel->order_sn, 'pay_time' => $orderModel->created_at->format('Y-m-d H:i:s'), 'create_time' => $orderModel->created_at->format('Y-m-d H:i:s')];
         } catch (Throwable $e) {
             DB::rollBack();
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 

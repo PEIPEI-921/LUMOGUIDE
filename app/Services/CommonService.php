@@ -61,7 +61,13 @@ class CommonService
         // 保存上传文件
         try {
             $randomName = Str::random(20);
-            $extension = $request->file('file')->getClientOriginalExtension();
+            $extension = strtolower($request->file('file')->getClientOriginalExtension());
+
+            // Whitelist allowed extensions (defense-in-depth)
+            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            if (!in_array($extension, $allowed)) {
+                throw new ApiException(__('res.file_mimes'));
+            }
 
             // 拼接随机文件名和扩展名
             $fileName = $randomName . '.' . $extension;
@@ -77,7 +83,7 @@ class CommonService
                 'url' => env('APP_URL') . $filePath,
             ];
         } catch (\Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -409,17 +415,17 @@ class CommonService
     public function homeSearch(string $name)
     {
         $city = City::query()->where('audit_status', 1)->where(function ($query) use ($name) {
-            $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+            $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
         })->orderBy('order', 'desc')->take(2)->get(['id', 'name', 'name_en', 'first_picture'])->toArray();
 
         $guide = Guide::query()->where('audit_status', 1)
             ->where('city_id', '>', 0)
-            ->where('name', 'like', '%' . $name . '%')
+            ->where('name', 'like', '%' . escapeLike($name) . '%')
             ->orderBy('order', 'desc')->take(2)->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])->toArray();
 
         $city_content = CityContent::with(['city'])
             ->where('audit_status', 1)
-            ->where('name', 'like', '%' . $name . '%')
+            ->where('name', 'like', '%' . escapeLike($name) . '%')
             ->orderBy('order', 'desc')
             ->take(2)
             ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture'])->toArray();
@@ -486,14 +492,14 @@ class CommonService
             case 'all':
                 $continents_id = Cache::remember("continents_search_{$name}", 60, function () use ($name) {
                     $city_continents_id = City::query()->where('audit_status', 1)->where(function ($query) use ($name) {
-                        $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+                        $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
                     })->groupBy('continents_id')->pluck('continents_id')->toArray();
 
                     $guide_continents_id = Guide::query()->where('audit_status', 1)->where('city_id', '>', 0)
-                        ->where('name', 'like', '%' . $name . '%')
+                        ->where('name', 'like', '%' . escapeLike($name) . '%')
                         ->groupBy('continents_id')->pluck('continents_id')->toArray();
 
-                    $city_content_continents_id = CityContent::query()->where('audit_status', 1)->where('name', 'like', '%' . $name . '%')
+                    $city_content_continents_id = CityContent::query()->where('audit_status', 1)->where('name', 'like', '%' . escapeLike($name) . '%')
                         ->groupBy('continents_id')->pluck('continents_id')->toArray();
 
                     return array_unique(array_merge($city_continents_id, $guide_continents_id, $city_content_continents_id));
@@ -508,12 +514,12 @@ class CommonService
                 break;
             case 'city':
                 $city_continents_id = City::query()->where('audit_status', 1)->where(function ($query) use ($name) {
-                    $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+                    $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
                 })->groupBy('continents_id')->pluck('continents_id')->toArray();
                 $continents = SystemContinents::query()->whereIn('id', $city_continents_id)->get(['id', 'name'])->toArray();
                 foreach ($continents as $key => $value) {
                     $city = City::query()->where('continents_id', $value['id'])->where(function ($query) use ($name) {
-                        $query->where('name', 'like', '%' . $name . '%')->orWhere('name_en', 'like', '%' . $name . '%');
+                        $query->where('name', 'like', '%' . escapeLike($name) . '%')->orWhere('name_en', 'like', '%' . escapeLike($name) . '%');
                     })->orderBy('order', 'desc')->get(['id', 'name', 'name_en', 'is_capital', 'first_picture'])->toArray();
 
                     $continents[$key]['data'] = $city;
@@ -523,7 +529,7 @@ class CommonService
             case 'guide':
                 $guide_continents_id_query = Guide::query()->where('audit_status', 1)->where('city_id', '>', 0);
                 if ($name) {
-                    $guide_continents_id_query->where('name', 'like', '%' . $name . '%');
+                    $guide_continents_id_query->where('name', 'like', '%' . escapeLike($name) . '%');
                 }
                 $guide_continents_id = $guide_continents_id_query->groupBy('continents_id')->pluck('continents_id')->toArray();
 
@@ -533,7 +539,7 @@ class CommonService
 
                 foreach ($continents as $key => $value) {
                     $guide = Guide::query()->where('continents_id', $value['id'])
-                        ->where('name', 'like', '%' . $name . '%')
+                        ->where('name', 'like', '%' . escapeLike($name) . '%')
                         ->orderBy('order', 'desc')
                         ->get(['id', 'photo as first_picture', 'city_name', 'identity_type', 'name', 'language'])
                         ->toArray();
@@ -553,7 +559,7 @@ class CommonService
                     ->where('type_id', $type_id)
                     ->where(function ($query) use ($name) {
                         if ($name) {
-                            $query->where('name', 'like', '%' . $name . '%');
+                            $query->where('name', 'like', '%' . escapeLike($name) . '%');
                         }
                     })
                     ->groupBy('continents_id')
@@ -565,7 +571,7 @@ class CommonService
                     $city_content = CityContent::query()->where('continents_id', $value['id'])
                         ->where(function ($query) use ($name) {
                             if ($name) {
-                                $query->where('name', 'like', '%' . $name . '%');
+                                $query->where('name', 'like', '%' . escapeLike($name) . '%');
                             }
                         })
                         ->where('type_id', $type_id)

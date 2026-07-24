@@ -97,6 +97,7 @@ else
     echo "  - DB_HOST / DB_PORT / DB_DATABASE / DB_USERNAME / DB_PASSWORD"
     echo "  - REDIS_HOST / REDIS_PORT / REDIS_PASSWORD (队列必需)"
     echo "  - MAIL_USERNAME / MAIL_PASSWORD (邮件发送)"
+    echo "  - AUDIT_EMAIL (审核通知接收邮箱)"
     echo "  - STRIPE_KEY / STRIPE_SECRET / STRIPE_WEBHOOK_SECRET"
     echo "  - SDK_APP_ID / SECRET_KEY (腾讯 IM)"
 

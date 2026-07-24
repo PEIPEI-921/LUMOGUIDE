@@ -207,7 +207,7 @@ class UserService
             }
             $user->save();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -224,7 +224,7 @@ class UserService
         try {
             User::destroy($user_id);
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -266,7 +266,7 @@ class UserService
             $model->content = $data['content'];
             $model->save();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -290,7 +290,7 @@ class UserService
             }
             $model->save();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -347,7 +347,7 @@ class UserService
             $model->default = $data['default'] ?? 0;
             $model->save();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -395,7 +395,7 @@ class UserService
             $address->default = $data['default'] ?? 0;
             $address->save();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -416,7 +416,7 @@ class UserService
         try {
             $address->delete();
         } catch (Throwable $e) {
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -589,7 +589,7 @@ class UserService
             $reserve->status = ReserveCode::StatusNew;
             $reserve->save();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -835,7 +835,7 @@ class UserService
             $reserve->status = ReserveCode::StatusNew;
             $reserve->save();
         } catch (Throwable $exception) {
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -1021,7 +1021,7 @@ class UserService
             DB::commit();
         } catch (Throwable $e) {
             Db::rollBack();
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -1215,7 +1215,7 @@ class UserService
             DB::commit();
         } catch (Throwable $e) {
             Db::rollBack();
-            throw new ApiException($e->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 

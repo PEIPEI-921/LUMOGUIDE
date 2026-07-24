@@ -297,7 +297,7 @@ class TripService
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -541,7 +541,7 @@ class TripService
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 
@@ -563,7 +563,7 @@ class TripService
             DB::commit();
         } catch (\Throwable $exception) {
             DB::rollBack();
-            throw new ApiException($exception->getMessage(), System::SYSTEM_ERROR);
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
 }

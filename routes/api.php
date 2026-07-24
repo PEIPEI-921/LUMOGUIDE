@@ -40,7 +40,7 @@ Route::prefix('auth')->middleware('throttle:6,1')->group(function () {
 });
 
 Route::prefix('common')->group(function () {
-    Route::get('test', [CommonController::class, 'test']);
+    Route::get('test', [CommonController::class, 'test'])->middleware('auth:api');
     Route::get('config', [CommonController::class, 'config']);
     Route::post('fileUpload', [CommonController::class, 'fileUpload'])->middleware('auth:api');
     Route::get('getArea', [CommonController::class, 'getArea']);
