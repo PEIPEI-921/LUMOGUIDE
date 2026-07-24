@@ -162,7 +162,7 @@ php artisan config:clear && php artisan cache:clear && php artisan route:clear
 
 ## 更新日志
 
-### 2026-07-24 — 安全加固
+### 2026-07-24 — 安全加固 + 部署独立性
 
 - 全面安全审查，修复 9 个漏洞（2 严重 + 2 高危 + 5 中等）
 - 删除后门密码 `654123` 和万能验证码 `4321`
@@ -173,10 +173,7 @@ php artisan config:clear && php artisan cache:clear && php artisan route:clear
 - Stripe Webhook：幂等性检查，防止重复处理
 - SSL：移除 `CURLOPT_SSL_VERIFYPEER = false`
 - `/api/common/test` 添加 `auth:api` 中间件
-
-### 2026-07-24 — 部署独立性加固 + CLAUDE.md 精简
-
-- `public/index.php` API 代理修复：增加 `APP_ENV=local` 检查
+- `public/index.php` API 代理增加 `APP_ENV=local` 检查，防止部署后转发到生产服务器
 - `.env.example` 新增 `AUDIT_EMAIL` 配置项
 - `deploy.sh` 配置提示增加 `AUDIT_EMAIL`
 - `CLAUDE.md` 从 590 行精简至 440 行
