@@ -16,7 +16,7 @@ const CityDetailPage = {
             :style="{ opacity: idx === bannerIndex ? 1 : 0 }">
         </div>
         <div v-else style="width:100%;height:100%;background:linear-gradient(135deg,var(--color-accent-soft),transparent);display:flex;align-items:center;justify-content:center">
-          <span style="font-size:48px;opacity:0.3">🏙️</span>
+          <span style="font-size:48px;opacity:0.3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="6" x2="11" y2="6"/><line x1="13" y1="6" x2="15" y2="6"/><line x1="9" y1="14" x2="15" y2="14"/><path d="M9 22v-4h6v4"/></svg></span>
         </div>
         <!-- Overlay -->
         <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.6), transparent);pointer-events:none"></div>
@@ -61,24 +61,22 @@ const CityDetailPage = {
 
         <!-- Overview Tab -->
         <div v-else-if="activeTab === 0">
-          <div class="ds-card" style="padding:18px 20px;margin-bottom:10px;background:transparent;box-shadow:none">
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;font-size:14px">
-              <div v-if="city.currency" style="text-align:center">
-                <span style="font-size:11px;color:var(--color-assistant-text)">{{ $t('貨幣') }}</span>
-                <p style="font-size:14px;font-weight:600;margin-top:4px">{{ city.currency }}</p>
-              </div>
-              <div v-if="city.language" style="text-align:center">
-                <span style="font-size:11px;color:var(--color-assistant-text)">{{ $t('語言') }}</span>
-                <p style="font-size:14px;font-weight:600;margin-top:4px">{{ city.language }}</p>
-              </div>
-              <div v-if="city.population" style="text-align:center">
-                <span style="font-size:11px;color:var(--color-assistant-text)">{{ $t('人口') }}</span>
-                <p style="font-size:14px;font-weight:600;margin-top:4px">{{ city.population }}</p>
-              </div>
-              <div v-if="city.race" style="text-align:center">
-                <span style="font-size:11px;color:var(--color-assistant-text)">{{ $t('種族') }}</span>
-                <p style="font-size:14px;font-weight:600;margin-top:4px">{{ city.race }}</p>
-              </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:10px">
+            <div v-if="city.currency" class="card" style="text-align:center;padding:18px 14px">
+              <div class="tiny" style="margin-bottom:4px">{{ $t('貨幣') }}</div>
+              <div style="font-size:14px;font-weight:600">{{ city.currency }}</div>
+            </div>
+            <div v-if="city.language" class="card" style="text-align:center;padding:18px 14px">
+              <div class="tiny" style="margin-bottom:4px">{{ $t('語言') }}</div>
+              <div style="font-size:14px;font-weight:600">{{ city.language }}</div>
+            </div>
+            <div v-if="city.population" class="card" style="text-align:center;padding:18px 14px">
+              <div class="tiny" style="margin-bottom:4px">{{ $t('人口') }}</div>
+              <div style="font-size:14px;font-weight:600">{{ city.population }}</div>
+            </div>
+            <div v-if="city.race" class="card" style="text-align:center;padding:18px 14px">
+              <div class="tiny" style="margin-bottom:4px">{{ $t('種族') }}</div>
+              <div style="font-size:14px;font-weight:600">{{ city.race }}</div>
             </div>
           </div>
           <div v-if="city.overview" class="ds-card" style="padding:16px 20px;margin-bottom:10px;background:transparent;box-shadow:none">
@@ -118,7 +116,7 @@ const CityDetailPage = {
         <div v-else>
           <div v-if="contentItems.length > 0" class="city-content-grid">
             <a v-for="item in contentItems" :key="item.id"
-              :href="'#/detail/' + currentTabKey + '?id=' + item.id + '&city_id=' + cityId"
+              :href="'#/detail/' + currentTabKey + '?id=' + item.id + (cityId ? '&city_id=' + cityId : '') + '&type_id=' + getTypeId(currentTabKey)"
               class="ds-card ds-card-hover city-card-item" style="background:transparent;box-shadow:none">
               <div class="city-card-img">
                 <img v-if="item.first_picture" :src="item.first_picture" :alt="item.name">
@@ -250,6 +248,10 @@ const CityDetailPage = {
   },
 
   methods: {
+    getTypeId(key) {
+      const tab = this.contentTabs.find(t => t.key === key);
+      return tab ? tab.typeId : 0;
+    },
     async loadCity() {
       const id = this.$route.query.id;
       if (!id) {

@@ -8,7 +8,7 @@ const PhotoViewerPage = {
   template: `
     <div class="photo-viewer" @click.self="close">
       <!-- Close button -->
-      <button class="photo-close" @click="close" title="关闭">
+      <button class="photo-close" @click="close" :title="t('關閉')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -26,15 +26,15 @@ const PhotoViewerPage = {
       <!-- Error -->
       <div v-else-if="error" class="photo-error" @click.stop>
         <div style="font-size:48px;margin-bottom:12px">🖼️</div>
-        <p style="color:rgba(255,255,255,.7);margin-bottom:16px">图片加载失败</p>
-        <button @click="retry" class="ds-btn ds-btn-primary">重试</button>
+        <p style="color:rgba(255,255,255,.7);margin-bottom:16px">{{ t('圖片加載失敗') }}</p>
+        <button @click="retry" class="ds-btn ds-btn-primary">{{ t('重試') }}</button>
       </div>
 
       <!-- Image -->
       <img
         v-show="!loading && !error"
         :src="currentUrl"
-        :alt="'图片 ' + (currentIndex + 1)"
+        :alt="t('圖片') + ' ' + (currentIndex + 1)"
         class="photo-img"
         :class="{ loaded: imgLoaded }"
         @load="onImgLoad"
@@ -59,7 +59,7 @@ const PhotoViewerPage = {
       </button>
 
       <!-- Hint -->
-      <div v-if="imgLoaded && urls.length <= 1" class="photo-hint">点击空白处关闭</div>
+      <div v-if="imgLoaded && urls.length <= 1" class="photo-hint">{{ t('點擊空白處關閉') }}</div>
     </div>
   `,
 

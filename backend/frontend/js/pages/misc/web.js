@@ -14,7 +14,7 @@ const WebViewPage = {
           </svg>
         </button>
         <h1 class="webview-title font-display">{{ title }}</h1>
-        <button class="webview-close" @click="goBack" title="关闭">
+        <button class="webview-close" @click="goBack" :title="t('關閉')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -44,7 +44,7 @@ const WebViewPage = {
           <p style="color:var(--color-secondary-text);margin-bottom:12px">{{ error }}</p>
           <div style="display:flex;gap:8px;justify-content:center">
             <button @click="retry" class="ds-btn ds-btn-primary">{{ $t('重試') }}</button>
-            <button @click="openExternal" class="ds-btn ds-btn-outline">在浏览器中打开</button>
+            <button @click="openExternal" class="ds-btn ds-btn-outline">{{ t('在瀏覽器中打開') }}</button>
           </div>
         </div>
       </div>
@@ -87,7 +87,7 @@ const WebViewPage = {
 
     onError() {
       this.loading = false;
-      this.error = '网页加载失败，请检查链接是否有效';
+      this.error = I18n.t('網頁加載失敗，請檢查鏈接是否有效');
     },
 
     retry() {
