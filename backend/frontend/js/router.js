@@ -141,8 +141,13 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-// Track active tab
+// Track active tab + update page title
 router.afterEach((to) => {
+  // Update document title (meta.title uses i18n keys in Traditional Chinese)
+  if (to.meta.title) {
+    document.title = I18n.t(to.meta.title) + ' — LUMO GUIDE';
+  }
+
   const tab = to.meta.tab;
   if (tab) {
     const app = document.querySelector('#app').__vue_app__;
