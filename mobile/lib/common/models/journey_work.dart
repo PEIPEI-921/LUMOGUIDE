@@ -1,4 +1,5 @@
 import '../extensions/map.dart';
+import 'journey_template.dart';
 
 /// 工作行程状态
 enum JourneyWorkStatus {
@@ -162,6 +163,10 @@ class JourneyWork {
   String? createdAt;
   String? updatedAt;
 
+  // ========== 模板标识 ==========
+  bool isTemplate; // 是否来自模板（直接显示在列表中）
+  JourneyTemplate? templateSource; // 原始模板数据（点击时用于跳转编辑器）
+
   JourneyWorkStatus get statusEnum => JourneyWorkStatus.fromValue(status);
 
   /// 根据日期动态计算实际状态
@@ -238,6 +243,8 @@ class JourneyWork {
     this.clientItineraryShareCode,
     this.createdAt,
     this.updatedAt,
+    this.isTemplate = false,
+    this.templateSource,
   });
 
   factory JourneyWork.fromJson(Map<String, dynamic> json) {
@@ -386,6 +393,30 @@ class JourneyWork {
     );
   }
 
+  /// 从模板创建展示用的 JourneyWork（显示在历程列表中）
+  factory JourneyWork.fromTemplate(JourneyTemplate template) {
+    // 将 dynamic 类型的 itineraryDays/hotels 转为强类型
+    final days = (template.itineraryDays ?? [])
+        .map((e) => ItineraryDay.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final hotels = (template.hotels ?? [])
+        .map((e) => HotelInfo.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    return JourneyWork(
+      title: template.title,
+      region: template.region,
+      peopleCount: template.defaultPeopleCount,
+      cities: List.from(template.cities),
+      itineraryDays: days,
+      hotels: hotels,
+      sourceType: 'template',
+      createdAt: template.createdAt,
+      isTemplate: true,
+      templateSource: template,
+    );
+  }
+
   /// TODO: 对接后端 API 后移除 mock 数据
   static List<JourneyWork> mockData() {
     return [
@@ -470,25 +501,27 @@ class JourneyWork {
             dayNumber: 1,
             date: '2026-09-05',
             theme: '抵达萨尔茨堡',
-            items: [
-              ItineraryItem(
-                time: '06:30',
-                title: '抵达慕尼黑机场',
-                type: 'transport',
-                description: 'CA841 航班抵达，导游机场接机',
-              ),
-              ItineraryItem(
-                time: '10:00',
-                title: '萨尔茨堡老城观光',
-                type: 'attraction',
-                description: '米拉贝尔花园、莫扎特故居、粮食胡同',
-              ),
-              ItineraryItem(
-                time: '12:30',
-                title: 'StPeter Stiftskulinarium',
-                type: 'meal',
-                description: '欧洲最古老餐厅，午餐',
-              ),
+            cityBlocks: [
+              DayCityBlock(cityName: '萨尔茨堡', items: [
+                ItineraryItem(
+                  time: '06:30',
+                  title: '抵达慕尼黑机场',
+                  type: 'transport',
+                  description: 'CA841 航班抵达，导游机场接机',
+                ),
+                ItineraryItem(
+                  time: '10:00',
+                  title: '萨尔茨堡老城观光',
+                  type: 'attraction',
+                  description: '米拉贝尔花园、莫扎特故居、粮食胡同',
+                ),
+                ItineraryItem(
+                  time: '12:30',
+                  title: 'StPeter Stiftskulinarium',
+                  type: 'meal',
+                  description: '欧洲最古老餐厅，午餐',
+                ),
+              ]),
             ],
             hotelName: 'Hotel Sacher Salzburg',
           ),
@@ -496,19 +529,23 @@ class JourneyWork {
             dayNumber: 2,
             date: '2026-09-06',
             theme: '湖区一日游',
-            items: [
-              ItineraryItem(
-                time: '08:00',
-                title: '哈尔施塔特',
-                type: 'attraction',
-                description: '世界最美小镇，盐矿缆车',
-              ),
-              ItineraryItem(
-                time: '14:00',
-                title: '圣沃尔夫冈',
-                type: 'attraction',
-                description: '白马酒店、夏夫山小火车',
-              ),
+            cityBlocks: [
+              DayCityBlock(cityName: '哈尔施塔特', items: [
+                ItineraryItem(
+                  time: '08:00',
+                  title: '哈尔施塔特',
+                  type: 'attraction',
+                  description: '世界最美小镇，盐矿缆车',
+                ),
+              ]),
+              DayCityBlock(cityName: '圣沃尔夫冈', items: [
+                ItineraryItem(
+                  time: '14:00',
+                  title: '圣沃尔夫冈',
+                  type: 'attraction',
+                  description: '白马酒店、夏夫山小火车',
+                ),
+              ]),
             ],
             hotelName: 'Hotel Sacher Salzburg',
           ),
@@ -603,15 +640,47 @@ class ItineraryItem {
       );
 }
 
+/// 每日行程中的单个城市块（独立城市 + 其下的活动列表）
+class DayCityBlock {
+  int? cityId;
+  String? cityName;
+  List<ItineraryItem> items;
+
+  DayCityBlock({
+    this.cityId,
+    this.cityName,
+    this.items = const [],
+  });
+
+  factory DayCityBlock.fromJson(Map<String, dynamic> json) => DayCityBlock(
+        cityId: json.safeInt('city_id'),
+        cityName: json.safeString('city_name'),
+        items: (json['items'] as List<dynamic>?)
+                ?.map((e) => ItineraryItem.fromJson(e))
+                .toList() ??
+            [],
+      );
+
+  Map<String, dynamic> toJson() => {
+        'city_id': cityId,
+        'city_name': cityName,
+        'items': items.map((e) => e.toJson()).toList(),
+      };
+
+  DayCityBlock toTemplate() => DayCityBlock(
+        cityId: cityId,
+        cityName: cityName,
+        items: items.map((i) => i.toTemplate()).toList(),
+      );
+}
+
 /// 行程中的一天
 class ItineraryDay {
   int? id;
   int dayNumber;
   String? date;
   String? theme;
-  int? cityId;        // 当天城市ID（站内）
-  String? cityName;   // 当天城市名
-  List<ItineraryItem> items;
+  List<DayCityBlock> cityBlocks; // 每个城市一个独立块
   String? hotelName;
   String? hotelAddress;
   String? hotelPhone;
@@ -627,9 +696,7 @@ class ItineraryDay {
     required this.dayNumber,
     this.date,
     this.theme,
-    this.cityId,
-    this.cityName,
-    this.items = const [],
+    this.cityBlocks = const [],
     this.hotelName,
     this.hotelAddress,
     this.hotelPhone,
@@ -641,36 +708,78 @@ class ItineraryDay {
     this.dayNote,
   });
 
-  factory ItineraryDay.fromJson(Map<String, dynamic> json) => ItineraryDay(
-        id: json.safeInt('id'),
-        dayNumber: json.safeInt('day_number') ?? 1,
-        date: json.safeString('date'),
-        theme: json.safeString('theme'),
-        cityId: json.safeInt('city_id'),
-        cityName: json.safeString('city_name'),
-        items: (json['items'] as List<dynamic>?)
-                ?.map((e) => ItineraryItem.fromJson(e))
-                .toList() ??
-            [],
-        hotelName: json.safeString('hotel_name'),
-        hotelAddress: json.safeString('hotel_address'),
-        hotelPhone: json.safeString('hotel_phone'),
-        meals: json.safeString('meals'),
-        weatherTip: json.safeString('weather_tip'),
-        transportTip: json.safeString('transport_tip'),
-        drivingHours: json.safeString('driving_hours'),
-        optionalItems: json.safeString('optional_items'),
-        dayNote: json.safeString('day_note'),
-      );
+  factory ItineraryDay.fromJson(Map<String, dynamic> json) {
+    List<DayCityBlock> blocks;
+
+    // 优先解析新版 city_blocks
+    if (json['city_blocks'] != null) {
+      blocks = (json['city_blocks'] as List<dynamic>)
+          .map((e) => DayCityBlock.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      // 兼容旧版数据：从 city_ids / city_names / items 迁移
+      final List<int> oldCityIds;
+      final dynamic rawCityIds = json['city_ids'] ?? json['city_id'];
+      if (rawCityIds is List) {
+        oldCityIds = rawCityIds.map<int>((e) => e as int).toList();
+      } else if (rawCityIds is int) {
+        oldCityIds = [rawCityIds];
+      } else {
+        oldCityIds = [];
+      }
+
+      final List<String> oldCityNames;
+      final dynamic rawCityNames = json['city_names'] ?? json['city_name'];
+      if (rawCityNames is List) {
+        oldCityNames = rawCityNames.map<String>((e) => e.toString()).toList();
+      } else if (rawCityNames is String && rawCityNames.isNotEmpty) {
+        oldCityNames = [rawCityNames];
+      } else {
+        oldCityNames = [];
+      }
+      final oldItems = (json['items'] as List<dynamic>?)
+              ?.map((e) => ItineraryItem.fromJson(e))
+              .toList() ??
+          [];
+
+      // 迁移：每个旧城市建一个 block，items 归入第一个有城市的 block
+      if (oldCityNames.isNotEmpty) {
+        blocks = List.generate(oldCityNames.length, (i) => DayCityBlock(
+          cityId: i < oldCityIds.length ? oldCityIds[i] : null,
+          cityName: oldCityNames[i],
+          items: i == 0 ? oldItems : [],
+        ));
+      } else if (oldItems.isNotEmpty) {
+        blocks = [DayCityBlock(items: oldItems)];
+      } else {
+        blocks = [];
+      }
+    }
+
+    return ItineraryDay(
+      id: json.safeInt('id'),
+      dayNumber: json.safeInt('day_number') ?? 1,
+      date: json.safeString('date'),
+      theme: json.safeString('theme'),
+      cityBlocks: blocks,
+      hotelName: json.safeString('hotel_name'),
+      hotelAddress: json.safeString('hotel_address'),
+      hotelPhone: json.safeString('hotel_phone'),
+      meals: json.safeString('meals'),
+      weatherTip: json.safeString('weather_tip'),
+      transportTip: json.safeString('transport_tip'),
+      drivingHours: json.safeString('driving_hours'),
+      optionalItems: json.safeString('optional_items'),
+      dayNote: json.safeString('day_note'),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'day_number': dayNumber,
         'date': date,
         'theme': theme,
-        'city_id': cityId,
-        'city_name': cityName,
-        'items': items.map((e) => e.toJson()).toList(),
+        'city_blocks': cityBlocks.map((e) => e.toJson()).toList(),
         'hotel_name': hotelName,
         'hotel_address': hotelAddress,
         'hotel_phone': hotelPhone,
@@ -686,10 +795,14 @@ class ItineraryDay {
   ItineraryDay toTemplate() => ItineraryDay(
         dayNumber: dayNumber,
         theme: theme,
-        items: items.map((i) => i.toTemplate()).toList(),
+        cityBlocks: cityBlocks.map((b) => b.toTemplate()).toList(),
         hotelName: hotelName,
         hotelAddress: hotelAddress,
         hotelPhone: hotelPhone,
         drivingHours: drivingHours,
       );
+
+  /// 便捷获取所有城市名
+  List<String> get allCityNames =>
+      cityBlocks.map((b) => b.cityName ?? '').where((n) => n.isNotEmpty).toList();
 }

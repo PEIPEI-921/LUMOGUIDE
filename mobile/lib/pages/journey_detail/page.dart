@@ -382,9 +382,20 @@ class _DayDetailCard extends StatelessWidget {
             Text('· ${day.theme}', style: TextStyle(fontSize: 12.sp, color: AppColors.primaryText, fontWeight: FontWeight.w500)),
           ],
         ]),
-        if (day.items.isNotEmpty) ...[
+        if (day.cityBlocks.any((b) => b.items.isNotEmpty)) ...[
           SizedBox(height: 10.w),
-          ...day.items.map((item) => Padding(
+          ...day.cityBlocks.expand((block) => [
+            if (block.cityName?.isNotEmpty == true)
+              Padding(
+                padding: EdgeInsets.only(top: 2.w, bottom: 4.w),
+                child: Row(children: [
+                  Container(width: 6.w, height: 6.w,
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(3.w))),
+                  SizedBox(width: 6.w),
+                  Text(block.cityName!, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                ]),
+              ),
+            ...block.items.map((item) => Padding(
             padding: EdgeInsets.only(bottom: 6.w),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(width: 40.w, child: Text(item.time ?? '', style: TextStyle(
@@ -400,6 +411,7 @@ class _DayDetailCard extends StatelessWidget {
               ])),
             ]),
           )),
+          ]),
         ],
         // 底部信息
         if (day.hotelName?.isNotEmpty == true || day.drivingHours?.isNotEmpty == true || day.dayNote?.isNotEmpty == true) ...[

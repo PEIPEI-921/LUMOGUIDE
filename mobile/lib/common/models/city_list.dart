@@ -23,7 +23,7 @@ class CityList {
         nameEn: json.safeString('name_en'),
         firstPicture: json.safeString('first_picture'),
         areaName: json.safeString('area_name'),
-        country: json.safeString('country'),
+        country: json.safeString('country_name') ?? json.safeString('country'),
       );
 
   Map<String, dynamic> toJson() {

@@ -133,8 +133,16 @@ class _DaySection extends StatelessWidget {
             ),
           ],
           SizedBox(height: 8.w),
-          // 时间线 items
-          ...day.items.map((item) => _TimelineItem(item: item)),
+          // 时间线 items（含城市块标题）
+          ...day.cityBlocks.expand((block) => [
+            if (block.cityName?.isNotEmpty == true)
+              Padding(
+                padding: EdgeInsets.only(top: 2.w, bottom: 2.w),
+                child: Text('📍 ${block.cityName}',
+                  style: TextStyle(fontSize: 11.sp, color: AppColors.primary, fontWeight: FontWeight.w600)),
+              ),
+            ...block.items.map((item) => _TimelineItem(item: item)),
+          ]),
           // 酒店
           if (day.hotelName?.isNotEmpty == true) ...[
             SizedBox(height: 6.w),
