@@ -165,6 +165,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
+            Log::error('publishCity error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -546,6 +547,7 @@ class GuideService
 
             Log::debug('Content-' . json_encode($model->toArray(), JSON_UNESCAPED_UNICODE));
         } catch (Throwable $exception) {
+            Log::error('cityContentAdd error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -784,6 +786,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
+            Log::error('informationAdd error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }

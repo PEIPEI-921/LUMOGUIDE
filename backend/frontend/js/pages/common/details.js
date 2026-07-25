@@ -190,12 +190,12 @@ const CommonDetailPage = {
         </div>
 
         <!-- Action Buttons -->
-        <div v-if="item.is_reserve !== undefined || item.is_follow !== undefined" style="display:flex;gap:12px;margin-top:20px">
+        <div v-if="item.is_reserve || item.is_follow !== undefined" style="display:flex;gap:12px;margin-top:20px">
           <button v-if="item.can_follow" @click="toggleFollow"
             class="ds-btn" :class="item.is_follow ? 'ds-btn-outline' : 'ds-btn-primary'" style="flex:1">
             {{ item.is_follow ? $t('已關注') : $t('關注') }}
           </button>
-          <button v-if="item.is_reserve !== undefined" @click="goReserve"
+          <button v-if="item.is_reserve" @click="goReserve"
             class="ds-btn ds-btn-primary" style="flex:1">
             {{ $t('預約') }}
           </button>

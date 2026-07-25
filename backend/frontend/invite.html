@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LUMO Guide</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, #666FFF 0%, #666FFF 280px, #F9F9F6 100%);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    background: #fff; border-radius: 20px; padding: 48px 32px;
+    max-width: 340px; width: 90%;
+    text-align: center;
+    box-shadow: 0 2px 20px rgba(0,0,0,.08);
+  }
+  .logo {
+    width: 120px; height: auto; margin-bottom: 24px;
+    filter: brightness(0) saturate(100%) invert(38%) sepia(85%) saturate(4158%) hue-rotate(230deg) brightness(101%) contrast(101%);
+  }
+  h2 { font-size: 18px; color: #1a1a1a; font-weight: 650; margin-bottom: 8px; }
+  p { font-size: 14px; color: #6B7280; margin-bottom: 24px; line-height: 1.6; }
+  .btn-open {
+    display: block; width: 100%; padding: 14px 0;
+    background: #666FFF; color: #fff; border-radius: 100px;
+    text-decoration: none; font-size: 17px; font-weight: 650;
+    border: none; cursor: pointer;
+    transition: background .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-open:active { background: #4A52E0; }
+  .btn-download {
+    display: block; width: 100%; padding: 12px 0; margin-top: 12px;
+    background: transparent; color: #666FFF;
+    border: 1.5px solid #666FFF; border-radius: 100px;
+    text-decoration: none; font-size: 15px; font-weight: 650;
+    transition: background .2s, color .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-download:active { background: #666FFF; color: #fff; }
+  .wechat-guide {
+    margin-top: 20px; padding: 16px;
+    background: #f5f3ff; border-radius: 12px;
+    font-size: 13px; color: #4A52E0; line-height: 1.8;
+  }
+  .wechat-guide .arrow {
+    display: inline-block; font-size: 20px; vertical-align: middle;
+    animation: bounce 1s ease infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <img class="logo" src="/img/logo_lumoguide.png" alt="LUMO Guide" onerror="this.style.display='none'">
+  <h2 id="title">LUMO Guide</h2>
+  <p id="subtitle">查看好友的邀請</p>
+  <a class="btn-open" id="btn-open" href="#">打開 App 查看</a>
+  <a class="btn-download" id="btn-download" href="#">下載 App</a>
+  <div class="wechat-guide" id="wechat-guide" style="display:none">
+    請點擊右上角 <span class="arrow">⋯</span> 選單<br>選擇<span id="browser-name">瀏覽器</span>開啟後再點擊上方按鈕
+  </div>
+</div>
+<script>
+(function () {
+  var ua = navigator.userAgent;
+  var isWeChat = /MicroMessenger/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var isAndroid = /Android/i.test(ua);
+
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code') || '';
+
+  var iosStore = 'https://apps.apple.com/cn/app/id6749853105';
+  var androidStore = 'https://play.google.com/store/apps/details?id=com.app.lumotrip';
+  var fallbackUrl = isAndroid ? androidStore : iosStore;
+
+  var deepLink = 'lumoguide://invite?code=' + encodeURIComponent(code);
+
+  document.getElementById('btn-download').href = fallbackUrl;
+
+  if (isWeChat) {
+    document.getElementById('title').textContent = '在瀏覽器中開啟';
+    document.getElementById('subtitle').textContent = '微信內無法直接打開 App';
+    document.getElementById('browser-name').textContent = isIOS ? 'Safari' : '瀏覽器';
+    document.getElementById('wechat-guide').style.display = 'block';
+    document.getElementById('btn-open').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('btn-open').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    var opened = false;
+    var timer = setTimeout(function () {
+      if (!opened) { window.location.href = fallbackUrl; }
+    }, 2500);
+
+    function markOpened() {
+      opened = true;
+      clearTimeout(timer);
+    }
+
+    document.addEventListener('visibilitychange', function handler() {
+      if (document.hidden) { markOpened(); document.removeEventListener('visibilitychange', handler); }
+    });
+    window.addEventListener('pagehide', function handler() {
+      markOpened(); window.removeEventListener('pagehide', handler);
+    });
+
+    window.location.href = deepLink;
+  });
+})();
+</script>
+</body>
+</html>

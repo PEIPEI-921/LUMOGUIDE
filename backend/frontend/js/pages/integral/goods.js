@@ -1,6 +1,5 @@
 /* ============================================
-   Integral Goods Detail — 商品详情
-   Reference: PPCC points/[id]/page.tsx
+   Integral Goods Detail — 商品详情 (Amazon style)
    ============================================ */
 
 const IntegralGoodsPage = {
@@ -22,52 +21,56 @@ const IntegralGoodsPage = {
         <button @click="$router.back()" class="ds-btn ds-btn-primary">{{ $t('返回') }}</button>
       </div>
 
-      <div v-else class="ds-container-600" style="padding-bottom:32px">
-        <!-- Image gallery -->
-        <div v-if="pics.length>0" style="margin-bottom:16px">
-          <div style="aspect-ratio:1;border-radius:var(--radius-sm);overflow:hidden;background:var(--color-bg-page)">
-            <img :src="pics[currentPic]" :alt="goods.name" style="width:100%;height:100%;object-fit:cover">
+      <div v-else class="amz-page">
+        <!-- Image -->
+        <div v-if="pics.length>0" class="amz-gallery">
+          <div class="amz-gallery-main" @touchstart="onTouchStart" @touchend="onTouchEnd">
+            <img :src="pics[currentPic]" :alt="goods.name">
           </div>
-          <div v-if="pics.length>1" style="display:flex;gap:6px;margin-top:8px;justify-content:center">
-            <button v-for="(pic, i) in pics" :key="i" @click="currentPic=i"
-              :style="{width:'52px',height:'52px',borderRadius:'8px',overflow:'hidden',border:'2px solid '+(i===currentPic?'var(--color-primary)':'transparent'),opacity:i===currentPic?'1':'.5',cursor:'pointer',padding:0}">
-              <img :src="pic" alt="" style="width:100%;height:100%;object-fit:cover">
-            </button>
+          <div v-if="pics.length>1" class="amz-thumbs">
+            <div v-for="(pic, i) in pics" :key="i"
+              :class="['amz-thumb', { 'amz-thumb--active': i === currentPic }]"
+              @click="currentPic=i">
+              <img :src="pic" alt="">
+            </div>
           </div>
         </div>
 
-        <!-- Info card -->
-        <div class="ds-card" style="padding:16px;margin-bottom:16px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-            <h2 style="font-size:18px;font-weight:700;flex:1;margin:0">{{ goods.name }}</h2>
-            <span style="font-size:10px;background:var(--color-bg-page);color:var(--color-assistant-text);padding:3px 10px;border-radius:20px;flex-shrink:0">{{ isVirtual ? $t('虛擬商品') : $t('實體商品') }}</span>
+        <!-- Info -->
+        <div class="amz-info">
+          <span :class="['amz-type-tag', isVirtual ? 'amz-type-tag--virtual' : 'amz-type-tag--physical']">
+            {{ isVirtual ? $t('虛擬商品') : $t('實體商品') }}
+          </span>
+          <h1 class="amz-title">{{ goods.name }}</h1>
+
+          <div class="amz-price-row">
+            <span class="amz-price-symbol">{{ $t('積分') }}</span>
+            <span class="amz-price-value">{{ goods.price }}</span>
           </div>
-          <div style="display:flex;align-items:baseline;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)">
-            <span style="font-size:28px;font-weight:800;color:var(--color-primary)">{{ goods.price }}</span>
-            <span style="font-size:14px;color:var(--color-secondary-text)">{{ $t('積分') }}</span>
+
+          <div v-if="goods.sales!=null || goods.free_shipping" class="amz-meta">
+            <span v-if="goods.sales!=null">{{ $t('已兌換') }} <strong>{{ goods.sales }}</strong> {{ $t('次') }}</span>
+            <span v-if="goods.free_shipping" class="amz-meta-shipping">{{ goods.free_shipping }}</span>
           </div>
-          <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--color-assistant-text)">
-            <span v-if="goods.sales!=null">{{ $t('已兌換') }} {{ goods.sales }} {{ $t('次') }}</span>
-            <span v-if="goods.free_shipping">{{ goods.free_shipping }}</span>
-          </div>
+
+          <button @click="$router.push('/integral/exchange/'+goods.id)" class="amz-btn">
+            {{ $t('立即兌換') }}
+          </button>
         </div>
+
+        <!-- Divider -->
+        <div class="amz-divider"></div>
 
         <!-- Description -->
-        <div v-if="goods.content" class="ds-card" style="padding:16px;margin-bottom:20px">
-          <h3 style="font-weight:600;font-size:14px;margin-bottom:10px">{{ $t('商品介紹') }}</h3>
-          <div style="font-size:13px;color:var(--color-secondary-text);line-height:1.7;white-space:pre-wrap">{{ goods.content }}</div>
+        <div v-if="goods.content" class="amz-desc-wrap">
+          <h2 class="amz-section-title">{{ $t('商品介紹') }}</h2>
+          <div class="amz-desc" v-html="goods.content"></div>
         </div>
-
-        <!-- Exchange button -->
-        <button @click="$router.push('/integral/exchange/'+goods.id)" class="ds-btn ds-btn-primary"
-          style="width:100%;justify-content:center;padding:14px 0;font-size:15px;border-radius:100px">
-          {{ $t('立即兌換') }}
-        </button>
       </div>
     </div>
   `,
   data() {
-    return { goods: null, pics: [], currentPic: 0, loading: true, error: null };
+    return { goods: null, pics: [], currentPic: 0, loading: true, error: null, touchStartX: 0 };
   },
   computed: {
     isVirtual() { return this.goods && Number(this.goods.goods_type) === 2; }
@@ -89,6 +92,13 @@ const IntegralGoodsPage = {
         this.error = e.message || '載入失敗';
       }
       this.loading = false;
+    },
+    onTouchStart(e) { this.touchStartX = e.changedTouches[0].clientX; },
+    onTouchEnd(e) {
+      if (!this.pics.length>1) return;
+      const dx = e.changedTouches[0].clientX - this.touchStartX;
+      if (dx < -40) { this.currentPic = (this.currentPic+1) % this.pics.length; }
+      if (dx > 40) { this.currentPic = (this.currentPic-1+this.pics.length) % this.pics.length; }
     }
   }
 };

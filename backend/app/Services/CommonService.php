@@ -731,7 +731,7 @@ class CommonService
             });
         }
 
-        $all = $query->orderBy('order', 'desc')
+        $all = $query->orderBy('view_count', 'desc')->orderBy('order', 'desc')
             ->take($limit)
             ->get(['id', 'city_id', 'type_id', 'type_class_id', 'name', 'first_picture', 'address', 'phone'])
             ->toArray();

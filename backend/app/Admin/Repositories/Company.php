@@ -4,6 +4,8 @@ namespace App\Admin\Repositories;
 
 use App\Jobs\VipExpiredJob;
 use App\Models\City;
+use App\Models\CityContent;
+use App\Models\CityTypeClass;
 use App\Models\Company as Model;
 use App\Models\CompanyEdit;
 use App\Models\SystemIntegralConfig;
@@ -146,6 +148,9 @@ class Company extends EloquentRepository
                     'company_id' => $res->id
                 ]);
 
+                // 自动创建首个商铺
+                $this->autoCreateFirstShop($res);
+
                 // 增加会员到期
                 VipExpiredJob::dispatch($res->user_id)->delay(now()->addDays(30));
             }
@@ -156,6 +161,62 @@ class Company extends EloquentRepository
             throw new \Exception($e->getMessage());
         }
         return true;
+    }
+
+    /**
+     * 企业认证通过时自动创建首个商铺
+     */
+    private function autoCreateFirstShop($company): void
+    {
+        $businessTypeMap = [
+            '景點' => 1, '景点' => 1,
+            '餐廳' => 2, '餐厅' => 2,
+            '購物' => 3, '购物' => 3,
+            '住宿' => 4,
+            '票務' => 8, '票务' => 8,
+        ];
+
+        $typeId = $businessTypeMap[$company->business_type] ?? null;
+        if (!$typeId) {
+            return;
+        }
+
+        $typeClassId = CityTypeClass::where('type_id', $typeId)->min('id');
+        if (!$typeClassId) {
+            return;
+        }
+
+        $city = City::find($company->city_id);
+        if (!$city) {
+            return;
+        }
+
+        $shop = new CityContent();
+        $shop->type_id = $typeId;
+        $shop->type_class_id = $typeClassId;
+        $shop->city_id = $company->city_id;
+        $shop->continents_id = $city->continents_id ?? 0;
+        $shop->area_id = $city->area_id ?? 0;
+        $shop->name = $company->name;
+        $shop->address = $company->address;
+        $shop->phone = $company->phone;
+        $shop->email = $company->email;
+        $shop->website = $company->website;
+        $shop->introduce = $company->introduction;
+        $shop->user_id = $company->user_id;
+        $shop->publisher_id = $company->id;
+        $shop->publisher_type = 'company';
+        $shop->audit_status = 1;
+        $shop->is_finish = 1;
+        $shop->status = 1;
+
+        $pictures = json_decode($company->picture, true);
+        if (is_array($pictures) && !empty($pictures)) {
+            $shop->first_picture = $pictures[0];
+            $shop->pictures = $company->picture;
+        }
+
+        $shop->save();
     }
 
 }

@@ -352,6 +352,27 @@ Standard Eloquent models. Key relationships:
 - `Guide`/`Company` have corresponding `*Edit` models for audit workflows (submit→audit→approve/reject)
 - `User` implements `JWTSubject`, has `SoftDeletes`
 
+### Company Audit & Auto-Create Shop (2026-07-26)
+
+**Entry point**: `app/Admin/Repositories/Company.php` `update()` — NOT the Controller. Admin approval triggers a chain of effects:
+
+1. Mark `is_finish = 1`, `audit_time = now`
+2. If `CompanyEdit` pending, overwrite company fields with edit data
+3. Sync Tencent IM nickname
+4. Award auth points, send system messages
+5. Grant default VIP company membership (30-day free trial from `vip_company` id=1)
+6. Update user: `vip_type=2`, `identity=3`, `company_id`, `vip_company_auth` JSON
+7. **Auto-create first shop** via `autoCreateFirstShop()` — copies company data into a `CityContent` record
+8. Dispatch `VipExpiredJob` delayed 30 days
+
+**`business_type` → `type_id` mapping** (supports both S2T/T2S):
+`景點/景点→1`, `餐廳/餐厅→2`, `購物/购物→3`, `住宿→4`, `票務/票务→8`
+
+**Shop data copied**: name, address, phone, email, website, introduction→introduce, picture JSON→pictures+first_picture. `city_id`/`continents_id`/`area_id` from company's city. `audit_status=1`, `is_finish=1`, `status=1`, `publisher_type='company'`.
+
+**Graceful skip** if business_type not in map, type_class_id missing, or city not found.
+
+**Related**: `app/Mail/AuditMail.php` (was missing — created 2026-07-26, caused all content uploads to fail), [[company-audit-auto-create-shop]].
 ### Enums (`app/Enums/`)
 
 Constants organized by domain: `City`, `Company`, `Guide`, `Information`, `Integral`, `Reserve`, `System`, `User`, `Vip`. Used for status codes, type mappings, and error codes.
@@ -435,6 +456,7 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 - **Response format**: All API responses are `{code: int, message: string, data: object/array}`.
 - **Queue driver**: Redis (`QUEUE_CONNECTION=redis`).
 - **API parameter types**: PHP methods have strict types (`int $city_id`). Never send empty string `""` for numeric params — use `if (value) params.key = value` to omit empty values entirely. Route query params are always strings — use `parseInt()` before passing to APIs.
+- **contentInfo API (`/city/contentInfo`)**: Requires ALL three params: `id`, `type_id`, AND `city_id`. Missing `city_id` returns error (not empty page — hard error). When linking to `#/detail/city_content`, always include all three query params. Response includes `is_reserve`: `0` for guide-uploaded content (no booking), `1` for company/merchant-uploaded content (booking available). Only types 1,2,3,4,8 (attraction/restaurant/shopping/accommodation/ticket) are reservable. Each call increments `view_count` on `city_content` — used for popularity sorting in merchantList.
 - **Bug report**: 62 known bugs documented in `bug-report-2026-07-07.md` (all fixed).
 
 ### Backend — Security Rules (2026-07-24 security review)
@@ -476,6 +498,28 @@ When a detail page shows blank content (empty body, missing images), the most co
 - **UserStore identity**: Use `Number(this.userInfo?.identity)` — API returns identity as string.
 - **Guide images**: Guides return `photo`, others return `first_picture`. Use `item.photo || item.first_picture`.
 
+### System Messages (`#/message/system`)
+
+System messages stored in `system_message` table with structured fields:
+- `content_type`: `'city_content'` | `'system'` | `null`
+- `city_id`, `content_id`, `city_content_type`: populated for city_content messages
+- `is_read`: per-message read status (MessageService::systemList must include this in select)
+
+**Inline linking pattern**: For `city_content` messages, parse the content text, strip Chinese brackets （）, and render names as inline clickable links:
+- City name → `#/city/detail?id={city_id}` (purple `#8B5CF6`)
+- Content name → `#/detail/city_content?id={content_id}&type_id={city_content_type}&city_id={city_id}` (purple `#8B5CF6`)
+- MUST include `city_id` in content detail URLs — the API requires it
+
+**Design**: White card container with subtle shadow, list items with unread dot + `#FAFAFF` tint, centered detail modal (not bottom sheet).
+
+### City Detail Tab Bar (`#/city/detail`)
+
+Sticky tab bar uses `#666FFF` indigo background with white text:
+- Active tab: pure white `#fff`, bold, 2px white bottom border
+- Inactive tab: `rgba(255,255,255,.55)`
+- Sub-category bar: `#5A5FE8` background, same white text pattern, left-aligned
+- Sticky position: `top:52px` (below topbar)
+
 ### Frontend — Key Patterns
 - **VIP gate**: `v-else-if="!isEdit && !UserStore.isVip"`. `isVip` = `vip_type > 0 && vip_expiration_time > 0` OR `vip_free === 1 && vip_free_day > 0`.
 - **Draft save/restore**: Save to `localStorage` keyed by type in `beforeUnmount` when `!isEdit && !success`. Clear on success.
@@ -485,3 +529,5 @@ When a detail page shows blank content (empty body, missing images), the most co
 - **Home page auto-switch**: Guide categories auto-switch 5s, manual tap resets timer. Use placeholder slots (`visibility: hidden`) for layout stability.
 - **City detail FAB**: Visible for guides on 景點/交通/設施/活動 tabs. VIP gate checked on click.
 - **Publish form city_id pre-fill** (2026-07-07): `publish/form.js` reads `$route.query.city_id` in `init()` to pre-select city dropdown when navigating from city detail FAB. Enables seamless "add content from city page" flow.
+- **Booking button on content detail** (2026-07-25): Only company/merchant content shows the 預約 button. Guide-uploaded content returns `is_reserve: 0` — use truthy check `v-if="item.is_reserve"`, NOT `!== undefined`. Backend checks `publisher_type == 'company'` and `type_id in [1,2,3,4,8]`. Also hides when the current user is the uploader (`user_id == $user->id`).
+- **Merchant list sorting** (2026-07-25): `merchantList` sorts by `view_count desc` primary, `order desc` secondary. `view_count` is incremented in `CityService::getContentInfo()` on each content detail view. Migration `2026_07_25_000001` added the column. **Pitfall**: always run new migrations before deploying code that references new columns — missing column causes 500 on the entire endpoint.

@@ -410,21 +410,21 @@ const MyBookingsPage = {
       </div>
 
       <!-- Status Filter -->
-      <div class="ds-type-tabs">
+      <div class="ds-type-tabs" v-if="visibleStatusOptions.length > 1">
         <div class="ds-type-tabs-row">
-          <button v-for="opt in statusOptions" :key="opt.value"
-            @click="statusFilter = opt.value; load()"
+          <button v-for="opt in visibleStatusOptions" :key="opt.value"
+            @click="statusFilter = opt.value"
             :class="['ds-type-tab', { active: statusFilter === opt.value }]">{{ opt.label }}</button>
         </div>
       </div>
 
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
-      <div v-else-if="bookings.length === 0" class="ds-empty">
+      <div v-else-if="filteredBookings.length === 0" class="ds-empty">
         <div style="font-size:40px;margin-bottom:12px;color:var(--color-assistant-text)"><span v-html="I.clipboard"></span></div>
         <p>{{ $t('暫無預約記錄') }}</p>
       </div>
       <div v-else>
-        <div v-for="b in bookings" :key="b.id" class="ds-card ds-card-hover" style="padding:16px;margin-bottom:10px">
+        <div v-for="b in filteredBookings" :key="b.id" class="ds-card ds-card-hover" style="padding:16px;margin-bottom:10px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
             <div style="flex:1;min-width:0">
               <div style="font-size:14px;font-weight:600">{{ b.guide?.name || b.content?.name || '—' }}</div>
@@ -462,6 +462,18 @@ const MyBookingsPage = {
       statusMap: { 1: { l: '待確認', c: 'ds-badge-sm ds-badge-warning' }, 2: { l: '已確認', c: 'ds-badge-sm ds-badge-primary' }, 3: { l: '已完成', c: 'ds-badge-sm ds-badge-success' }, 4: { l: '已取消', c: 'ds-badge-sm' }, 5: { l: '已拒絕', c: 'ds-badge-sm ds-badge-danger' }, 6: { l: '已過期', c: 'ds-badge-sm' } }
     };
   },
+  computed: {
+    visibleStatusOptions() {
+      if (this.bookings.length === 0) return this.statusOptions;
+      const counts = {};
+      this.bookings.forEach(b => { const s = Number(b.status); counts[s] = (counts[s] || 0) + 1; });
+      return this.statusOptions.filter(o => o.value === 0 || counts[o.value] > 0);
+    },
+    filteredBookings() {
+      if (this.statusFilter === 0) return this.bookings;
+      return this.bookings.filter(b => Number(b.status) === this.statusFilter);
+    },
+  },
   methods: {
     switchTab(t) { this.tab = t; this.statusFilter = 0; this.load(); },
     statusLabel(s) { return this.statusMap[s]?.l || '未知'; },
@@ -470,9 +482,7 @@ const MyBookingsPage = {
     async load() {
       this.loading = true;
       const ep = this.tab === 'guide' ? ApiUrl.userReserveGuide : ApiUrl.userReserveCompany;
-      const params = { page: 1, limit: 100 };
-      if (this.statusFilter > 0) params.status = this.statusFilter;
-      const res = await ApiProvider.get(ep, params);
+      const res = await ApiProvider.get(ep, { page: 1, limit: 500 });
       if (res.success) { const data = res.data?.list || res.data || []; this.bookings = Array.isArray(data) ? data : []; }
       this.loading = false;
     },

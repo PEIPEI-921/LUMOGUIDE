@@ -528,7 +528,7 @@ class MessageService
     {
         $user_id = auth('api')->id();
         $data = SystemMessage::query()->where('user_id', $user_id)->orderBy('id', 'desc')
-            ->paginate($limit, ['title', 'content as desc', 'content', 'content_type', 'city_id', 'content_id', 'city_content_type', 'created_at as time'])->toArray();
+            ->paginate($limit, ['title', 'content as desc', 'content', 'content_type', 'city_id', 'content_id', 'city_content_type', 'is_read', 'created_at as time'])->toArray();
 
         // 清空未读
         Redis::hSet("message_list:$user_id", 'system', 0);

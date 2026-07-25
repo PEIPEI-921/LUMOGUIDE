@@ -495,6 +495,9 @@ class CityService
             }
         }
 
+        $data->view_count = ($data->view_count ?? 0) + 1;
+        $data->save();
+
         $data = $data->toArray();
         $data['pictures'] = json_decode($data['pictures'], true) ?? [];
 

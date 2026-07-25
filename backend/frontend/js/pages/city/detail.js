@@ -34,21 +34,21 @@ const CityDetailPage = {
         </div>
       </div>
 
-      <!-- Main Tabs (centered, sticky) -->
-      <div class="ds-container-1280 ds-tabs" style="margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;border-bottom:none;justify-content:center;position:sticky;top:48px;z-index:30;overflow-x:auto">
+      <!-- Main Tabs (centered, sticky, dark bar) -->
+      <div class="ds-container-1280" style="margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;position:sticky;top:52px;z-index:30;overflow-x:auto;display:flex;justify-content:center;gap:0;background:var(--color-primary);border-radius:0">
         <button v-for="(tab, idx) in contentTabs" :key="tab.key"
           @click="switchTab(idx)"
-          :class="['ds-tab', { active: activeTab === idx }]" style="font-size:17.5px">{{ $t(tab.label) }}</button>
+          :style="{padding:'12px 22px',fontSize:'14px',fontWeight: activeTab === idx ? 700 : 500,border:'none',background:'transparent',cursor:'pointer',position:'relative',color: activeTab === idx ? '#fff' : 'rgba(255,255,255,.55)',borderBottom: activeTab === idx ? '2px solid #fff' : '2px solid transparent',transition:'all .15s'}">{{ $t(tab.label) }}</button>
       </div>
 
-      <!-- Sub-category Tabs (centered, always rendered, same style as main tabs) -->
-      <div class="ds-container-1280" style="min-height:44px;padding-top:0;padding-bottom:0">
+      <!-- Sub-category Tabs -->
+      <div class="ds-container-1280" style="min-height:44px;padding-top:0;padding-bottom:0;background:#5A5FE8;border-bottom:none">
         <div v-if="showSubCategories" style="display:flex;gap:0;overflow-x:auto;align-items:center">
           <button @click="switchSubTab(-1)"
-            :class="['ds-tab', { active: subTabIndex === -1 }]" style="font-size:15.5px">{{ $t('全部') }}</button>
+            :style="{padding:'10px 18px',fontSize:'13.5px',fontWeight: subTabIndex === -1 ? 600 : 400,border:'none',background:'transparent',cursor:'pointer',color: subTabIndex === -1 ? '#fff' : 'rgba(255,255,255,.55)',borderBottom: subTabIndex === -1 ? '2px solid #fff' : '2px solid transparent',transition:'all .15s'}">{{ $t('全部') }}</button>
           <button v-for="(cat, idx) in subCategories" :key="cat.id"
             @click="switchSubTab(idx)"
-            :class="['ds-tab', { active: subTabIndex === idx }]" style="font-size:15.5px">{{ cat.name }}</button>
+            :style="{padding:'10px 18px',fontSize:'13.5px',fontWeight: subTabIndex === idx ? 600 : 400,border:'none',background:'transparent',cursor:'pointer',color: subTabIndex === idx ? '#fff' : 'rgba(255,255,255,.55)',borderBottom: subTabIndex === idx ? '2px solid #fff' : '2px solid transparent',transition:'all .15s'}">{{ cat.name }}</button>
         </div>
       </div>
 

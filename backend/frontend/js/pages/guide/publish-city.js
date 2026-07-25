@@ -30,25 +30,25 @@ const GuidePublishCityPage = {
       <!-- Content -->
       <div v-else class="ds-container-640" style="padding-bottom:80px">
 
-        <!-- Info banner — matching Flutter: orange warning with icon -->
-        <div style="display:flex;align-items:flex-start;gap:5px;padding:10px;border-radius:10px;background:rgba(102,111,255,.08);margin-bottom:12px">
-          <span style="color:#FF8A00;font-size:15px;flex-shrink:0;line-height:1.4">ℹ️</span>
-          <span style="color:#FF8A00;font-size:12px;line-height:1.5">{{ $t('選擇長期居住城市或者工作所在地城市，請謹慎選擇。') }}</span>
+        <!-- Info banner -->
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:12px 14px;border-radius:12px;background:#FFF7ED;border:1px solid rgba(249,115,22,.15);margin-bottom:16px">
+          <span style="font-size:16px;flex-shrink:0;line-height:1.4">ℹ️</span>
+          <span style="color:#C2410C;font-size:13px;line-height:1.5;font-weight:500">{{ $t('選擇長期居住城市或者工作所在地城市，請謹慎選擇。') }}</span>
         </div>
 
-        <!-- City selector panel — matching Flutter: city picker + submit -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:rgba(102,111,255,.06);margin-bottom:16px">
+        <!-- City selector panel -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:var(--color-bg-white);border:1px solid var(--color-border);box-shadow:var(--shadow-sm);margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:12px;color:#6B7280">{{ $t('當前城市') }}:</span>
-            <span v-if="currentCityName" style="font-size:14px;font-weight:600;color:var(--color-primary-text)">{{ currentCityName }}</span>
-            <span v-else style="font-size:13px;color:#9CA3AF">{{ $t('未設置') }}</span>
+            <span style="font-size:13px;color:var(--color-secondary-text)">{{ $t('當前城市') }}:</span>
+            <span v-if="currentCityName" style="font-size:15px;font-weight:600;color:var(--color-primary-text)">{{ currentCityName }}</span>
+            <span v-else style="font-size:14px;color:var(--color-secondary-text)">{{ $t('未設置') }}</span>
           </div>
           <button @click="goChangeCity"
-            style="font-size:12px;color:var(--color-primary);font-weight:500;background:none;border:none;cursor:pointer;padding:4px 0">{{ $t('切換城市') }} →</button>
+            style="font-size:13px;color:var(--color-primary);font-weight:600;background:none;border:none;cursor:pointer;padding:4px 0">{{ $t('切換城市') }} →</button>
         </div>
 
-        <!-- Section header — matching Flutter: "發布城市" bold -->
-        <div style="font-size:16px;font-weight:bold;color:var(--color-primary-text);margin-bottom:10px;padding-top:4px">{{ $t('發布城市') }}</div>
+        <!-- Section header -->
+        <div style="font-size:17px;font-weight:700;color:var(--color-primary-text);margin-bottom:12px;padding-top:4px">{{ $t('發布城市') }}</div>
 
         <!-- Loading -->
         <div v-if="loading" style="text-align:center;padding:80px 0">
@@ -68,65 +68,63 @@ const GuidePublishCityPage = {
           <p style="color:var(--color-secondary-text);margin-bottom:12px">{{ $t('暫無發布城市') }}</p>
         </div>
 
-        <!-- City cards — matching Flutter MyPublishCityItemWidget -->
+        <!-- City cards -->
         <div v-else>
           <div v-for="city in myCities" :key="city.id"
-            style="border-radius:8px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.05);margin-bottom:10px">
+            style="border-radius:12px;overflow:hidden;box-shadow:var(--shadow-card);margin-bottom:12px;background:var(--color-bg-white);border:1px solid var(--color-border)">
 
             <!-- Card body -->
-            <div style="padding:10px;background:var(--color-bg-white)">
-              <!-- Row 1: Publish time + unread dot + status badge — matching Flutter -->
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="padding:14px">
+              <!-- Row 1: Publish time + unread dot + status badge -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <div style="display:flex;align-items:center;gap:6px">
                   <span v-if="city.is_read === 0" style="width:8px;height:8px;border-radius:50%;background:#EF4444;flex-shrink:0"></span>
-                  <span style="font-size:12px;color:#6B7280">{{ $t('發佈時間') }}: {{ formatTime(city.created_at) }}</span>
+                  <span style="font-size:13px;color:var(--color-secondary-text)">{{ $t('發佈時間') }}: {{ formatTime(city.created_at) }}</span>
                 </div>
                 <span v-if="cityStatus(city.audit_status).label"
-                  :style="{ color: cityStatus(city.audit_status).color, borderColor: cityStatus(city.audit_status).color }"
-                  style="font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid;white-space:nowrap;flex-shrink:0">{{ cityStatus(city.audit_status).label }}</span>
+                  :style="{ color: cityStatus(city.audit_status).color, borderColor: cityStatus(city.audit_status).color, background: cityStatusBg(city.audit_status) }"
+                  style="font-size:11px;padding:4px 10px;border-radius:100px;border:1px solid;white-space:nowrap;flex-shrink:0;font-weight:600">{{ cityStatus(city.audit_status).label }}</span>
               </div>
 
-              <!-- Row 2: Large cover image with name overlay — matching Flutter Stack layout -->
-              <div style="position:relative;border-radius:6px;overflow:hidden;height:180px;background:var(--color-bg-page)">
+              <!-- Row 2: Cover image with name overlay -->
+              <div style="position:relative;border-radius:8px;overflow:hidden;height:200px;background:var(--color-bg-page)">
                 <img v-if="getThumb(city)" :src="imageUrl(getThumb(city))" alt=""
                   style="width:100%;height:100%;object-fit:cover">
-                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--color-assistant-text)">🏙️</div>
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px">🏙️</div>
 
-                <!-- Gradient overlay + name — matching Flutter: position left 14, top 15 -->
-                <div style="position:absolute;left:14px;top:15px;padding:10px 14px;border-radius:8px;background:linear-gradient(90deg, #666FFF 0%, transparent 100%);min-width:150px;max-width:calc(100% - 28px)">
+                <!-- Gradient overlay + name -->
+                <div style="position:absolute;left:14px;top:14px;padding:10px 14px;border-radius:8px;background:linear-gradient(90deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.2) 100%);min-width:140px;max-width:calc(100% - 28px)">
                   <div style="display:flex;align-items:center;gap:8px">
-                    <span style="color:#fff;font-size:16px;font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px">{{ city.name || city.city_name || '—' }}</span>
-                    <!-- 首都 badge — matching Flutter: if item.isCapital == 1 -->
+                    <span style="color:#fff;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px">{{ city.name || city.city_name || '—' }}</span>
                     <span v-if="city.is_capital === 1"
-                      style="color:#fff;font-size:10px;padding:3px 6px;border:1px solid rgba(255,255,255,.6);border-radius:4px;white-space:nowrap;flex-shrink:0">{{ $t('首都') }}</span>
+                      style="color:#FFD700;font-size:10px;padding:2px 6px;border:1px solid rgba(255,215,0,.6);border-radius:4px;white-space:nowrap;flex-shrink:0;font-weight:600">{{ $t('首都') }}</span>
                   </div>
-                  <div v-if="city.name_en" style="color:rgba(255,255,255,.6);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">{{ city.name_en }}</div>
+                  <div v-if="city.name_en" style="color:rgba(255,255,255,.75);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px">{{ city.name_en }}</div>
                 </div>
               </div>
 
-              <!-- Location info — continents / area / country -->
-              <div v-if="city.continents_name || city.area_name || city.country_name" style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:#9CA3AF">
+              <!-- Location info -->
+              <div v-if="city.continents_name || city.area_name || city.country_name" style="display:flex;gap:12px;margin-top:10px;font-size:12px;color:var(--color-secondary-text)">
                 <span v-if="city.continents_name">🌏 {{ city.continents_name }}</span>
                 <span v-if="city.area_name">{{ city.area_name }}</span>
                 <span v-if="city.country_name">{{ city.country_name }}</span>
               </div>
 
-              <!-- Rejection reason — matching Flutter: red when auditStatus == 2 -->
+              <!-- Rejection reason -->
               <div v-if="city.audit_status === 2 && city.audit_feedback"
-                style="color:#DD0000;font-size:12px;margin-top:10px">
+                style="color:#DD0000;font-size:13px;margin-top:10px;font-weight:500">
                 {{ $t('駁回原因') }}: {{ city.audit_feedback }}
               </div>
             </div>
 
-            <!-- Operate bar — matching Flutter: edit (always) + delete (only when auditStatus == 2) -->
-            <div style="height:40px;display:flex;align-items:center;border-top:1px solid rgba(0,0,0,.04);background:rgba(255,255,255,.6)">
+            <!-- Operate bar -->
+            <div style="height:44px;display:flex;align-items:center;border-top:1px solid var(--color-border);background:var(--color-bg-card)">
               <div @click="onEditCity(city)"
-                style="flex:1;display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer;font-size:14px;color:var(--color-primary-text);font-weight:500;user-select:none">{{ $t('編輯') }}</div>
-              <!-- Delete only for rejected items — matching Flutter: if item.auditStatus == 2 -->
+                style="flex:1;display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer;font-size:14px;color:var(--color-primary-text);font-weight:600;user-select:none">{{ $t('編輯') }}</div>
               <template v-if="city.audit_status === 2">
-                <div style="width:1px;height:20px;background:rgba(0,0,0,.1);flex-shrink:0"></div>
+                <div style="width:1px;height:20px;background:var(--color-border);flex-shrink:0"></div>
                 <div @click="onDeleteCity(city)"
-                  style="flex:1;display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer;font-size:14px;color:var(--color-primary-text);font-weight:500;user-select:none">{{ $t('刪除') }}</div>
+                  style="flex:1;display:flex;align-items:center;justify-content:center;height:100%;cursor:pointer;font-size:14px;color:var(--color-primary-text);font-weight:600;user-select:none">{{ $t('刪除') }}</div>
               </template>
             </div>
 
@@ -217,6 +215,11 @@ const GuidePublishCityPage = {
 
     cityStatus(s) {
       return CITY_AUDIT_MAP[Number(s)] || {};
+    },
+
+    cityStatusBg(s) {
+      const bgMap = { 0: 'rgba(102,111,255,.08)', 1: 'rgba(0,190,170,.08)', 2: 'rgba(221,0,0,.06)' };
+      return bgMap[Number(s)] || 'transparent';
     },
 
     getThumb(city) {

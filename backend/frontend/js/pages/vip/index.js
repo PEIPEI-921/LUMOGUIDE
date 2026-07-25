@@ -1,7 +1,7 @@
 /* ============================================
    會籍中心 (Membership Center) — 付费导游/商家会员订阅
    Reference: Flutter member_center/page.dart + widgets/*
-   Aligned 2026-07-08
+   Aligned 2026-07-08 · Stripe Payment Element added 2026-07-25
    ============================================ */
 
 const VipPage = {
@@ -122,7 +122,7 @@ const VipPage = {
             </div>
           </div>
 
-          <!-- Submit area (always show if products exist) -->
+          <!-- Submit area -->
           <div v-if="products.length > 0" style="text-align:center;margin-bottom:20px">
             <p style="font-size:12px;color:var(--color-secondary-text);margin-bottom:10px;line-height:1.6">
               {{ $t('點擊按鈕即同意') }}<a href="javascript:void(0)" @click="openAgreement('subscribe')" style="color:var(--color-primary)">{{ $t('VIP會員訂閲服務協議') }}</a>{{ $t('、') }}<a href="javascript:void(0)" @click="openAgreement('member')" style="color:var(--color-primary)">{{ $t('VIP會員服務協議') }}</a>
@@ -137,13 +137,41 @@ const VipPage = {
               </template>
               <template v-else>
                 <img v-if="selectedProduct && selectedProduct.buy_type === 2" src="images/icon-integral.png" style="width:14px;height:14px;margin-right:6px;filter:brightness(0) invert(1)" />
-                <span v-else-if="selectedProduct" style="margin-right:6px">{{ selectedProduct.icon || '$' }}</span>
+                <span v-else-if="selectedProduct" style="margin-right:6px">{{ selectedProduct.icon || '€' }}</span>
                 <span style="margin-right:6px">{{ selectedProduct?.price || '0' }}</span>
                 <span>{{ $t('立即訂閱') }}</span>
               </template>
             </button>
           </div>
         </template>
+      </div>
+
+      <!-- Stripe Payment Modal -->
+      <div v-if="showPaymentModal" class="pay-modal-overlay" @click.self="closePaymentModal">
+        <div class="pay-modal">
+          <div class="pay-modal-title">{{ $t('確認付款') }}</div>
+          <div class="pay-modal-sub">{{ payModalData.productName }}</div>
+          <div class="pay-modal-amount">€{{ payModalData.amount }}</div>
+
+          <div v-if="paymentError" class="pay-modal-error">{{ paymentError }}</div>
+
+          <div id="payment-element" style="min-height:100px"></div>
+
+          <div class="pay-modal-actions">
+            <button class="pay-modal-cancel" @click="closePaymentModal" :disabled="paymentLoading">
+              {{ $t('取消') }}
+            </button>
+            <button class="pay-modal-confirm" @click="confirmStripePayment" :disabled="paymentLoading || !stripeLoaded">
+              <template v-if="paymentLoading">
+                <span class="spinner" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:#fff;margin-right:6px"></span>
+                {{ $t('處理中...') }}
+              </template>
+              <template v-else>
+                {{ $t('支付') }} €{{ payModalData.amount }}
+              </template>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -155,6 +183,20 @@ const VipPage = {
       loading: true,
       error: null,
       subscribing: false,
+
+      // Stripe payment modal
+      showPaymentModal: false,
+      paymentLoading: false,
+      paymentError: null,
+      stripeLoaded: false,
+      stripeInstance: null,
+      stripeElements: null,
+      payModalData: {
+        orderSn: '',
+        clientSecret: '',
+        amount: '0',
+        productName: '',
+      },
     };
   },
   computed: {
@@ -222,7 +264,6 @@ const VipPage = {
     async loadData() {
       this.loading = true; this.error = null;
       try {
-        // Decide which product API to call based on identity
         const planApi = this.isGuide ? ApiUrl.vipGuide
                       : this.isCompany ? ApiUrl.vipCompany
                       : null;
@@ -234,15 +275,12 @@ const VipPage = {
             : Promise.resolve({ success: false }),
         ]);
 
-        // Parse ability — API returns { guide: [...], company: [[...], ...] }
         if (abRes.success && abRes.data) {
           this.ability = abRes.data;
         } else {
           this.ability = null;
         }
 
-        // Parse products — API returns flat array [{id, name, ...}, ...]
-        // Defensive: also handle {list: [...], total: N} wrapped format
         if (planRes.success && planRes.data) {
           const d = planRes.data;
           this.products = Array.isArray(d) ? d : (d.list || d.data || []);
@@ -250,7 +288,6 @@ const VipPage = {
           this.products = [];
         }
 
-        // Auto-select first product
         if (this.products.length > 0) {
           this.selectedProductId = this.products[0].id || 0;
         }
@@ -259,9 +296,12 @@ const VipPage = {
       }
       this.loading = false;
     },
+
     selectProduct(id) {
       this.selectedProductId = id;
     },
+
+    /** Handle subscribe button — routes to Stripe or points payment */
     async handleSubscribe() {
       if (!this.selectedProduct) return;
       if (this.subscribing) return;
@@ -269,44 +309,141 @@ const VipPage = {
       try {
         const url = this.isGuide ? ApiUrl.vipSubscribeGuide : ApiUrl.vipSubscribeCompany;
         const res = await ApiProvider.post(url, { id: this.selectedProduct.id });
-        if (res.success && res.data?.pay_url) {
-          window.open(res.data.pay_url, '_blank');
-          let attempts = 0;
-          this._pollTimer = setInterval(async () => {
-            attempts++;
-            const statusRes = await ApiProvider.get(ApiUrl.vipPayStatus, { id: this.selectedProduct.id });
-            if (statusRes.success && Number(statusRes.data?.status) === 1) {
-              clearInterval(this._pollTimer);
-              this._pollTimer = null;
-              await UserStore.getProfile();
-              this.subscribing = false;
-              alert(this.$t('訂閱成功'));
-            }
-            if (attempts >= 60) {
-              clearInterval(this._pollTimer);
-              this._pollTimer = null;
-              this.subscribing = false;
-            }
-          }, 5000);
-        } else if (res.success) {
-          await UserStore.getProfile();
-          this.subscribing = false;
-          alert(this.$t('訂閱成功'));
-        } else {
-          this.subscribing = false;
+        this.subscribing = false;
+
+        if (!res.success) {
           alert(res.message || this.$t('訂閱失敗'));
+          return;
         }
+
+        // Points/integral purchase — processed immediately, no Stripe needed
+        if (!res.data?.client_secret) {
+          await UserStore.getProfile();
+          alert(this.$t('訂閱成功'));
+          return;
+        }
+
+        // Stripe payment — show payment modal
+        this.openStripePayment(
+          res.data.order_sn,
+          res.data.client_secret,
+          String(this.selectedProduct.price || '0'),
+          this.selectedProduct.name || '',
+        );
       } catch (e) {
         this.subscribing = false;
         alert(e.message || this.$t('訂閱失敗'));
       }
     },
+
+    /** Open Stripe payment modal and mount Payment Element */
+    async openStripePayment(orderSn, clientSecret, amount, productName) {
+      this.payModalData = { orderSn, clientSecret, amount, productName };
+      this.paymentError = null;
+      this.paymentLoading = false;
+      this.stripeLoaded = false;
+      this.showPaymentModal = true;
+
+      await this.$nextTick();
+
+      const stripeKey = ConfigStore.get('stripe_key', '');
+      if (!stripeKey) {
+        this.paymentError = '無法載入支付模塊 (missing Stripe key)';
+        return;
+      }
+
+      try {
+        // Stripe.js v3 exposes window.Stripe
+        if (typeof Stripe === 'undefined') {
+          this.paymentError = '無法載入支付模塊 (Stripe.js not loaded)';
+          return;
+        }
+        this.stripeInstance = Stripe(stripeKey);
+        this.stripeElements = this.stripeInstance.elements({
+          clientSecret: clientSecret,
+          appearance: {
+            variables: {
+              borderRadius: '8px',
+              colorPrimary: '#666FFF',
+              colorText: '#1a1a1a',
+              colorTextSecondary: '#6B7280',
+              colorDanger: '#EF4444',
+              fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif',
+              spacingUnit: '4px',
+            },
+            rules: {
+              '.Label': { fontWeight: '500', fontSize: '13px' },
+              '.Input': { padding: '12px 14px', fontSize: '15px' },
+            },
+          },
+        });
+
+        const paymentElement = this.stripeElements.create('payment', {
+          layout: { type: 'tabs', defaultCollapsed: false },
+        });
+        paymentElement.mount('#payment-element');
+        paymentElement.on('ready', () => { this.stripeLoaded = true; });
+      } catch (e) {
+        this.paymentError = e.message || '支付模塊初始化失敗';
+      }
+    },
+
+    /** Confirm Stripe payment via Payment Element */
+    async confirmStripePayment() {
+      if (!this.stripeInstance || !this.stripeElements) return;
+      this.paymentLoading = true;
+      this.paymentError = null;
+
+      try {
+        const result = await this.stripeInstance.confirmPayment({
+          elements: this.stripeElements,
+          confirmParams: {
+            return_url: window.location.origin + '/#/vip',
+          },
+          redirect: 'if_required',
+        });
+
+        if (result.error) {
+          this.paymentError = result.error.message || this.$t('支付失敗');
+          this.paymentLoading = false;
+          return;
+        }
+
+        // Payment succeeded — no redirect needed
+        if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+          this.closePaymentModal();
+          await UserStore.getProfile();
+          alert(this.$t('訂閱成功'));
+          return;
+        }
+
+        // Payment requires further action — Stripe will handle it
+        this.paymentLoading = false;
+      } catch (e) {
+        this.paymentError = e.message || this.$t('支付失敗');
+        this.paymentLoading = false;
+      }
+    },
+
+    /** Close payment modal and clean up Stripe elements */
+    closePaymentModal() {
+      if (this.stripeElements) {
+        const paymentElement = this.stripeElements.getElement('payment');
+        if (paymentElement) paymentElement.unmount();
+        this.stripeElements = null;
+      }
+      this.stripeInstance = null;
+      this.stripeLoaded = false;
+      this.showPaymentModal = false;
+      this.paymentLoading = false;
+    },
+
     openAgreement(type) {
       const key = type === 'member' ? 'vipUserProtocol' : 'vipUserSubscribe';
       this.$router.push(`/protocol/${key}`);
     },
   },
   beforeUnmount() {
-    if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+    this.closePaymentModal();
   }
 };
