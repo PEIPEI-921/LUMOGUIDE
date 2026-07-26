@@ -59,6 +59,14 @@ class ApiResult<T> {
     }
   }
 
+  ApiResult.bytes(Response response) {
+    code = response.statusCode ?? -1;
+    message = response.statusMessage;
+    if (response.statusCode == 200) {
+      data = response.data;
+    }
+  }
+
   ApiResult.failure(DioException exception) {
     error = ApiError(
       code: exception.response?.statusCode ?? -1,

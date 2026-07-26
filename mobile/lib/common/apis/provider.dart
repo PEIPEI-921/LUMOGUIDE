@@ -154,7 +154,7 @@ class ApiProvider {
   }
 
   /// 请求二进制数据（不解析 JSON），用于下载图片/二维码等
-  Future<Response?> getBytes(
+  Future<ApiResult> getBytes(
     String path, {
     Map<String, dynamic>? parameters,
     CancelToken? cancelToken,
@@ -166,9 +166,9 @@ class ApiProvider {
         options: Options(responseType: ResponseType.bytes),
         cancelToken: cancelToken,
       );
-      return response;
-    } on DioException {
-      return null;
+      return ApiResult.bytes(response);
+    } on DioException catch (e) {
+      return ApiResult.failure(e);
     }
   }
 }

@@ -15,7 +15,7 @@ class DeepLinkService {
     // 监听 deep link（APP 在后台时收到）
     _appLinks.uriLinkStream.listen((Uri uri) {
       _handleDeepLink(uri);
-    });
+    }, onError: (_) {});
 
     // 检查冷启动时的 deep link
     _appLinks.getInitialLink().then((Uri? uri) {
@@ -24,21 +24,26 @@ class DeepLinkService {
   }
 
   static void _handleDeepLink(Uri uri) {
-    if (uri.host != 'share') return;
+    try {
+      if (uri.host != 'share') return;
 
-    final code = uri.queryParameters['c'] ?? '';
-    final type = uri.queryParameters['t'] ?? '';
-    final id = uri.queryParameters['i'] ?? '';
+      final code = uri.queryParameters['c'] ?? '';
+      final type = uri.queryParameters['t'] ?? '';
+      final id = uri.queryParameters['i'] ?? '';
 
-    if (type.isEmpty || id.isEmpty) return;
+      if (type.isEmpty || id.isEmpty) return;
 
-    // 如果已登录，记录邀请关系
-    if (UserStore.to.isLogin && code.isNotEmpty) {
-      _bindInviter(code);
-    }
+      final idInt = int.tryParse(id);
+      if (idInt == null) return;
 
-    // 跳转到对应内容页
-    _navigateToContent(type, int.parse(id));
+      // 如果已登录，记录邀请关系
+      if (UserStore.to.isLogin && code.isNotEmpty) {
+        _bindInviter(code);
+      }
+
+      // 跳转到对应内容页
+      _navigateToContent(type, idInt);
+    } catch (_) {}
   }
 
   static void _navigateToContent(String type, int id) {

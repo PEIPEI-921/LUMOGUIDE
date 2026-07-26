@@ -31,13 +31,13 @@ class _ShareQrcodeDialogState extends State<ShareQrcodeDialog> {
 
   Future<void> _loadQrcode() async {
     try {
-      final response = await ApiProvider().getBytes(
+      final result = await ApiProvider().getBytes(
         ApiUrl.shareQrcode,
         parameters: {'type': widget.type, 'id': widget.id},
       );
-      if (response != null && response.statusCode == 200) {
+      if (result.isSuccess && result.data != null) {
         setState(() {
-          _qrcodeBytes = response.data as List<int>?;
+          _qrcodeBytes = result.data as List<int>?;
           _loading = false;
         });
       } else {

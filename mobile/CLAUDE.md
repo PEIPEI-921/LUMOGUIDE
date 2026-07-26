@@ -355,6 +355,12 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **设计文档：** `flutter-share-deeplink.md`（服务端配合的完整流程，含 share.html 落地页、延迟 deep link、邀请码绑定）
 
+**Bug fix（2026-07-26）：** `_handleDeepLink` 中 `int.parse(id)` 在非数字 ID 时会抛 FormatException → stream 订阅被取消 → 后续所有 deep link 永久失效。已修复：`int.tryParse()` + try-catch + stream `onError` handler。
+
+### TestFlight 部署
+
+`docs/testflight-deploy-with-claude.md` — 配合 Claude Code 使用的 TestFlight 上传教程，供同事的 Claude Code 逐步骤引导操作。
+
 ## Patched dependencies
 
 `patched_packages/extended_text_field/` is a locally patched copy of `extended_text_field` 16.0.2, loaded via `dependency_overrides` in pubspec.yaml. 
@@ -375,7 +381,12 @@ See [[calendar-redesign]], [[booking-color-coding]].
    - 详见 [[ios-podspec-patches]]
 7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable`、`TableCalendar` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
 8. **macOS App Sandbox 缺网络权限导致所有 API 请求失败:** `DebugProfile.entitlements` 和 `Release.entitlements` 需要添加 `com.apple.security.network.client` 权限，否则沙箱会阻止所有 HTTP 请求。已在两个 entitlements 文件中添加。详见 [[macos-network-entitlement]]。
-9. **Journey Editor `onSubmit()` 未调用 API:** 后端 JourneyWork CRUD 接口已就绪（`/user/journeyList|Detail|Create|Update|Delete`），但前端 `lib/pages/journey_editor/controller.dart:714` 的 `onSubmit()` 和 `onSaveAsTemplate()` 仍是 stub（仅显示 toast 并关闭页面，不发送 HTTP 请求）。后续需对接 API。
+9. **Journey Editor `onSubmit()` 未调用 API:** 后端 JourneyWork CRUD 接口已就绪，API 验证结果（2026-07-26）：
+   - `POST /user/journeyCreate` → 200 ✅ 创建成功
+   - `GET /user/journeyDetail?id=` → 200 ✅ 详情读取成功
+   - `PUT /user/journeyUpdate` → 200 ✅ 更新成功（需 PUT，非 POST）
+   - `DELETE /user/journeyDelete` → 200 ✅ 删除成功
+   - 前端 `lib/pages/journey_editor/controller.dart:714` 的 `onSubmit()` 和 `onSaveAsTemplate()` 仍是 stub（仅显示 toast 并关闭页面，不发送 HTTP 请求）。后续需对接 API。
 10. **Android NDK 下载损坏导致编译失败:** AGP 自动下载的 NDK 可能缺少 `source.properties`，报错 `[CXX1101] NDK at ... did not have a source.properties file`。解决方案：删除损坏的 NDK 目录（如 `~/Library/Android/sdk/ndk/28.2.13676358`），重新编译时 AGP 会自动重新下载。Flutter 也会提示具体路径和修复步骤。
 11. **Flutter 3.44.4 Android 版本要求:** Flutter 3.44.4 会警告并要求以下最低版本，否则编译会失败（不仅仅是 warning）：
     - Gradle ≥ 8.14.0（`android/gradle/wrapper/gradle-wrapper.properties`）
