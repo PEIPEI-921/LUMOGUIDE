@@ -32,44 +32,23 @@ class JourneyPage extends StatelessWidget {
             _sliverPad(child: _JourneyCalendar(controller: controller)),
             _gap(12),
             // 图例
-            _sliverPad(child: const _StatusLegend()),
+            _sliverPad(child: _StatusLegend(controller: controller)),
             _gap(12),
-            // ===== 工作列表：活跃在上，已结束在下 =====
+            // ===== 工作列表（按日期升序，不分块）=====
             Obx(() {
               final list = controller.filteredWorks;
               if (list.isEmpty) {
                 return _sliverPad(child: SizedBox(height: 200.w, child: _JourneyEmptyWidget()));
               }
-              final active = list.where((w) => w.effectiveStatus != JourneyWorkStatus.ended).toList();
-              final ended = list.where((w) => w.effectiveStatus == JourneyWorkStatus.ended).toList();
-              final hasEnded = ended.isNotEmpty;
-
               return SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 14.w),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      // 已结束分隔线
-                      if (hasEnded && i == active.length) {
-                        return Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.w),
-                          child: Row(children: [
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12.w),
-                              child: Text('已结束', style: TextStyle(fontSize: 11.sp, color: AppColors.assistantText)),
-                            ),
-                            Expanded(child: Divider(color: Colors.grey.shade300)),
-                          ]),
-                        );
-                      }
-                      final w = i < active.length ? active[i] : ended[i - active.length - 1];
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 10.w),
-                        child: _WorkCard(work: w, onTap: () => controller.onTapWork(w)),
-                      );
-                    },
-                    childCount: active.length + ended.length + (hasEnded ? 1 : 0),
+                    (context, i) => Padding(
+                      padding: EdgeInsets.only(bottom: 10.w),
+                      child: _WorkCard(work: list[i], onTap: () => controller.onTapWork(list[i])),
+                    ),
+                    childCount: list.length,
                   ),
                 ),
               );
@@ -657,11 +636,36 @@ class _JourneyCalendarState extends State<_JourneyCalendar> {
 
 // =============== 图例 ===============
 class _StatusLegend extends StatelessWidget {
-  const _StatusLegend();
-  @override Widget build(BuildContext context) => Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-    _Leg(color: AppColors.jadeGreen, label: '进行中'), SizedBox(width: 20.w),
-    _Leg(color: AppColors.primary, label: '即将开始'), SizedBox(width: 20.w),
-    _Leg(color: AppColors.assistantText, label: '已结束')]);
+  const _StatusLegend({required this.controller});
+  final JourneyController controller;
+  @override
+  Widget build(BuildContext context) => Obx(() {
+    final hideEnded = !controller.showEnded.value;
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      _Leg(color: AppColors.jadeGreen, label: '进行中'), SizedBox(width: 20.w),
+      _Leg(color: AppColors.primary, label: '即将开始'), SizedBox(width: 20.w),
+      GestureDetector(
+        onTap: () => controller.toggleShowEnded(),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 10.w, height: 10.w,
+            decoration: BoxDecoration(
+              color: AppColors.assistantText,
+              borderRadius: BorderRadius.circular(2.w),
+            ),
+          ),
+          5.w.horizontalSpace,
+          Text('已结束',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.secondaryText,
+              decoration: hideEnded ? TextDecoration.lineThrough : null,
+              decorationColor: hideEnded ? AppColors.assistantText : null,
+            )),
+        ]),
+      ),
+    ]);
+  });
 }
 class _Leg extends StatelessWidget {
   final Color color; final String label;
@@ -678,11 +682,23 @@ class _WorkCard extends StatelessWidget {
   Color get _sc => work.effectiveStatus == JourneyWorkStatus.inProgress ? AppColors.jadeGreen
     : work.effectiveStatus == JourneyWorkStatus.pending ? AppColors.primary : AppColors.assistantText;
   String get _sd { String s(String? d) => d != null && d.length >= 10 ? d.substring(5) : (d ?? ''); return '${s(work.startDate)} - ${s(work.endDate)}日'; }
-  @override Widget build(BuildContext context) => GestureDetector(onTap: onTap,
-    child: Opacity(opacity: work.effectiveStatus == JourneyWorkStatus.ended ? 0.45 : 1.0,
-      child: Container(padding: EdgeInsets.all(14.w),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14.w),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2))]),
+  @override Widget build(BuildContext context) {
+    if (work.isTemplate) return _buildTemplateCard();
+    return _buildWorkCard();
+  }
+
+  /// 模板卡片
+  Widget _buildTemplateCard() {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14.w),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             if (work.region?.isNotEmpty == true) Container(margin: EdgeInsets.only(right: 8.w),
@@ -692,18 +708,62 @@ class _WorkCard extends StatelessWidget {
               child: Text(work.region!, style: TextStyle(fontSize: 10.sp, color: AppColors.primary, fontWeight: FontWeight.w600))),
             Text(work.title ?? '', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: AppColors.primaryText)).expanded(),
             Container(padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.w),
-              decoration: BoxDecoration(color: _sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10.w)),
-              child: Text(work.effectiveStatus.label, style: TextStyle(fontSize: 10.sp, color: _sc, fontWeight: FontWeight.w500))),
+              decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10.w)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.bookmark, size: 11.sp, color: Colors.amber.shade700),
+                SizedBox(width: 4.w),
+                Text('模板', style: TextStyle(fontSize: 10.sp, color: Colors.amber.shade700, fontWeight: FontWeight.w500)),
+              ])),
           ]),
           10.w.verticalSpace,
-          _Dr(Icons.people, '${work.peopleCount ?? 0}人'), 6.w.verticalSpace,
-          _Dr(Icons.calendar_today, _sd), 6.w.verticalSpace,
-          if (work.cities.isNotEmpty) _Dr(Icons.location_on, work.cities.join('、')),
-          if (work.isFromBooking) Padding(padding: EdgeInsets.only(top: 6.w),
+          if (work.peopleCount != null && work.peopleCount! > 0)
+            Padding(padding: EdgeInsets.only(bottom: 6.w), child: _Dr(Icons.people, '${work.peopleCount}人')),
+          if (work.totalDays > 0)
+            Padding(padding: EdgeInsets.only(bottom: 6.w), child: _Dr(Icons.calendar_today, '${work.totalDays}天行程')),
+          if (work.cities.isNotEmpty)
+            Padding(padding: EdgeInsets.only(bottom: 6.w), child: _Dr(Icons.location_on, work.cities.join('、'))),
+          Padding(
+            padding: EdgeInsets.only(top: 4.w),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.sync, size: 11.sp, color: AppColors.jadeGreen), 4.w.horizontalSpace,
-              Text('预约同步', style: TextStyle(fontSize: 10.sp, color: AppColors.jadeGreen))])),
-          ]))));
+              Icon(Icons.touch_app, size: 11.sp, color: AppColors.primary.withValues(alpha: 0.5)),
+              SizedBox(width: 4.w),
+              Text('点击使用模板创建行程', style: TextStyle(fontSize: 10.sp, color: AppColors.primary.withValues(alpha: 0.5))),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  /// 普通工作卡片
+  Widget _buildWorkCard() {
+    return GestureDetector(onTap: onTap,
+      child: Opacity(opacity: work.effectiveStatus == JourneyWorkStatus.ended ? 0.45 : 1.0,
+        child: Container(padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14.w),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2))]),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              if (work.region?.isNotEmpty == true) Container(margin: EdgeInsets.only(right: 8.w),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.w),
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4.w),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2))),
+                child: Text(work.region!, style: TextStyle(fontSize: 10.sp, color: AppColors.primary, fontWeight: FontWeight.w600))),
+              Text(work.title ?? '', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: AppColors.primaryText)).expanded(),
+              Container(padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.w),
+                decoration: BoxDecoration(color: _sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10.w)),
+                child: Text(work.effectiveStatus.label, style: TextStyle(fontSize: 10.sp, color: _sc, fontWeight: FontWeight.w500))),
+            ]),
+            10.w.verticalSpace,
+            _Dr(Icons.people, '${work.peopleCount ?? 0}人'), 6.w.verticalSpace,
+            _Dr(Icons.calendar_today, _sd), 6.w.verticalSpace,
+            if (work.cities.isNotEmpty) _Dr(Icons.location_on, work.cities.join('、')),
+            if (work.isFromBooking) Padding(padding: EdgeInsets.only(top: 6.w),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.sync, size: 11.sp, color: AppColors.jadeGreen), 4.w.horizontalSpace,
+                Text('预约同步', style: TextStyle(fontSize: 10.sp, color: AppColors.jadeGreen))])),
+            ]))));
+  }
 }
 class _Dr extends StatelessWidget {
   final IconData icon; final String text; const _Dr(this.icon, this.text);

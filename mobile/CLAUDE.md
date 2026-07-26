@@ -180,7 +180,8 @@ See [[calendar-redesign]], [[booking-color-coding]].
 | `/journey_editor` | `JourneyEditorPage` | Create/edit work trip form with auto day-by-day content |
 
 **Data models:**
-- `JourneyWork` (`lib/common/models/journey_work.dart`) — main work entity with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Also contains `FlightInfo`, `HotelInfo`, `ItineraryDay`, `ItineraryItem` (embedded; TODO on line 523 to split into separate files). Backend CRUD APIs now available at `/user/journeyList|Detail|Create|Update|Delete`. `mockData()` still provides 4 sample entries as fallback if API fails.
+- `JourneyWork` (`lib/common/models/journey_work.dart`) — main work entity with `JourneyWorkStatus` enum (inProgress=1, pending=2, ended=3). Also contains `FlightInfo`, `HotelInfo`, `DayCityBlock`, `ItineraryDay`, `ItineraryItem`. Backend CRUD APIs now available at `/user/journeyList|Detail|Create|Update|Delete`. `mockData()` still provides 4 sample entries as fallback if API fails.
+- `DayCityBlock` (`lib/common/models/journey_work.dart`) — **NEW (2026-07-25)**: each city within a day has its own independent block with `cityId`, `cityName`, and `items` list. Replaces the old flat `cityIds`/`cityNames`/`items` on `ItineraryDay`. `fromJson` handles backward compatibility with old-format data.
 - `JourneyTemplate` (`lib/common/models/journey_template.dart`) — reusable template saved from a work; used by `TemplatePickerSheet` and `TemplateSaveDialog`. Backend APIs at `/user/journeyTemplateList|Save|Delete`.
 - **Backend data storage:** Journey CRUD uses Laravel JSON `content` column — all fields stored as JSON blob. `expandJourneyWork()` in backend expands content to flat fields on response. Frontend sends flat JSON; backend stores in `content`. See `docs/backend-requirements.md`.
 
@@ -206,7 +207,16 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - Removed: arrival method/time/location, departure method, cities list, manual status selector (status is date-derived)
 
 **Editor redesign v2 (2026-07):** Further refined quick-create flow:
-- **Auto group name:** Derived from **all itinerary city countries** + days (e.g. "奥地利捷克匈牙利5日游"). Collects cities from `startCity` + `endCity` + all `itineraryDays[].cityName`, deduplicates, maps to countries, joins. Edit mode skips auto-generation.
+- **Auto group name (2026-07-25 redesigned):** Multi-level naming based on country count:
+  - 1国 → 国家全名 + N日游（奥地利7日游）
+  - 2-3国 → 各国首字拼接 + N日游（奥匈7日游 / 奥捷匈7日游）
+  - 4-5国 → 地区首字拼接 + N国 + N日游（中东欧四国7日游）
+  - ≥6国 → 洲名 + N日游（欧洲7日游）
+  - 跨洲 → 前三国首字 + 等多国 + N日游
+  - Collects cities from 3 sources: `startCity`/`endCity` + all `day.cityBlocks[].cityName` + scanning item titles/descriptions for known city names via `_extractCityFromTitle()`.
+  - Country mapping: `cityCountry(c)` checks `CityList.country` → `_cityCountryMap` (from `systemContinents`) → `areaName`.
+  - `_countryRegionMap` and `_countryContinentMap` built alongside `_cityCountryMap` during `_walkTree` for region/continent lookup.
+  - Triggered on: date selection, city picker selection, day item add/remove/edit, resource add.
 - **Date range picker:** `showDateRangePicker` replaces two separate `showDatePicker`. Single calendar, select start + end. Display: "7月3日 → 7月9日 共7天".
 - **Journey start/end cities:** Two independent `_CityPickerRow` widgets (游览起始城市 / 游览结束城市). Distinct from flight departure/arrival cities in the 大交通 section.
 - **Reactive totalPeople:** Changed from plain getter to `RxInt` with TextEditingController listeners. `Obx` wraps `.value` for live display.
@@ -228,17 +238,51 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - **Problem:** Backend `/city/lists` only returns `area_id`/`area_name` (region, e.g. "中歐"), not `country`. Titles fell back to areaName → "中歐几日游".
 - **Solution:** Backend `/common/systemContinents` API returns continent→country→city hierarchy tree (with `Cache::remember` 24h TTL). Frontend `ApiUrl.systemContinents = '/common/systemContinents'` routes through standard Dio base URL. Also backend `CityController::enrichCityCountry()` injects `country_name` via `City::whereIn('id', $cityIds)->with('country')` query (with `Cache::remember('city_country_map', 3600)` 1h TTL).
 - **`_cityCountryMap`:** `Map<int, String>` mapping city ID → country name, built by `_loadSystemContinents()` which is called after `_loadCityList()`.
-- **`_walkTree(node, parentName)`:** Recursive tree walker. **Leaf nodes = cities, parent nodes = countries.** Handles both 3-level (continent→country→city) and 4-level (continent→area→country→city) structures. Includes `debugPrint` logging for diagnostics.
-- **`cityCountry(CityList c)`:** Unified country lookup: `city.country` → `_cityCountryMap` → `areaName`.
-- **`_autoGenerateTitle()` rewritten:** Collects cities from `startCity` + `endCity` + all `itineraryDays[].cityName`, deduplicates, maps to countries, joins. e.g. "奥地利捷克匈牙利5日游". Falls back to city name concatenation if no country data.
+- **`_walkTree(node, List<String> ancestors)`:** Recursive tree walker with ancestor chain. **Leaf nodes = cities, ancestors[-1] = country, ancestors[-2] = region (4-level) or continent (3-level), ancestors[0] = continent.** Simultaneously builds three maps: `_cityCountryMap` (city ID→country), `_countryRegionMap` (country→region), `_countryContinentMap` (country→continent). Handles both 3-level and 4-level structures. Includes `debugPrint` logging for diagnostics.
+- **`cityCountry(CityList c)`:** Unified country lookup: `CityList.country` (from `country_name` JSON field) → `_cityCountryMap` → `areaName`.
+- **`_autoGenerateTitle()`:** Multi-level naming rules (see Editor redesign v2 above). Collects cities from `startCity`/`endCity` + `day.cityBlocks[].cityName` + scanning item titles/descriptions for known city names via `_extractCityFromTitle()`.
 - **Labels renamed:** "出发城市"→"游览起始城市", "结束城市"→"游览结束城市" in both `page.dart` (`_CityPickerRow` labels) and `controller.dart` (picker sheet titles, comments).
 - City picker subtitles (3 pickers) now use `cityCountry(c)` instead of raw `c.country ?? c.areaName ?? ''`.
 - **Bug fix (2026-07-21):** `CityListStore.fetchCityList()` used wrong JSON key `res.dataJson['lists']` (plural) — corrected to `res.dataJson['list']` (singular), matching all other callers of `/city/lists`. Previously `CityListStore.to.cityList` was always empty.
 - **Bug fix (2026-07-21):** `_CityPickerRow` now uses `controller.cityCountry(c)` instead of raw `c.country`, matching city picker subtitles.
+- **Bug fix (2026-07-25):** `CityList.fromJson` read `json['country']` but backend `enrichCityCountry()` injects `country_name`. Fixed to `json.safeString('country_name') ?? json.safeString('country')`. Previously `CityList.country` was always null, breaking auto-title generation.
+
+**Multi-city per day — `DayCityBlock` (2026-07-25):**
+- Each day supports multiple independent city blocks via `ItineraryDay.cityBlocks: List<DayCityBlock>`.
+- Each `DayCityBlock` has: `cityId`, `cityName`, `items` (独立活动列表).
+- **UI:** Each city block rendered as bordered sub-section within the day card, with its own city name header, items list, add-item button, and city-specific recommendations. «添加城市» button at bottom of day appends new city blocks.
+- **Controller methods** all take `blockIndex` parameter: `addDayItem(dayIndex, blockIndex)`, `removeDayItem(dayIndex, blockIndex, itemIndex)`, `updateDayItem(dayIndex, blockIndex, itemIndex, ...)`, `addResourceToDay(dayIndex, blockIndex, resource)`, `pickItemTime(context, dayIndex, blockIndex, itemIndex)`.
+- `_CityBlockSection` (StatefulWidget) manages its own expanded-categories state; `_typeBadge` moved to top-level function with top-level `_typeMeta` const.
+- `fromJson` backward-compatible: migrates old `city_ids`/`city_names`/`items` format → `cityBlocks` (items assigned to first city block).
+- PDF/Word/HTML exports and detail page adapted to render city blocks as sub-sections with `📍 cityName` headers.
+
+**Template display in journey list (2026-07-25):**
+- Saved templates automatically appear in the journey list as cards with a 📑「模板」badge (amber color).
+- `JourneyWork.fromTemplate()` factory converts `JourneyTemplate` → `JourneyWork` with `isTemplate: true` and `templateSource` reference.
+- `JourneyController.fetchData()` calls `_loadLocalTemplates()` to merge templates from SharedPreferences into `allWorks` list.
+- Template cards show: region tag, title, people count, day count, cities, and 「点击使用模板创建行程」hint. No date range or status badge.
+- Clicking a template card opens editor pre-filled with template data (via `JOURNEY_EDITOR` route with `template` argument).
+- Templates are excluded from status/date filtering (always visible).
+- Bug fix: API empty response no longer overwrites mock data — `fetchData()` skips replacing `allWorks` if API returns empty list.
+
+**全部模式排序 & 已结束折叠 (2026-07):**
+- 全部模式（`statusFilter==0`）下默认隐藏已结束行程，列表按 `startDate` 升序纯平排列（不分块）
+- 图例 `_StatusLegend` 中「已结束」默认带删除线（`TextDecoration.lineThrough`），可点击 toggle
+- `JourneyController` 新增 `showEnded.obs`（默认 false）和 `toggleShowEnded()`；`_applyFilters()` 中 `statusFilter==0 && !showEnded` 过滤 ended
 
 **FAB create-options sheet (2026-07):** Journey list FAB replaced with `_showCreateOptions` bottom sheet:
 - 4 entries: 空白创建 → editor / 从模板创建 → `TemplatePickerSheet` / 拍照导入 (reserved) / 文件导入 (reserved)
 - Reserved entries show "即将上线" tag and `Loading.toast`
+
+**Editor draft auto-save (2026-07):**
+- 新建工作模式下，表单有内容后自动定时保存草稿到 SharedPreferences（`STORAGE_JOURNEY_DRAFT_KEY`）
+- 30 秒定时器 + `onClose()` 最终保存（编辑模式不保存草稿）
+- 下次打开新建编辑器时检测草稿：弹窗提示「发现未完成的行程」→ 继续编辑 / 重新开始
+- 继续编辑：恢复所有字段（标题、日期、起止城市、交通、人员、费用、应急、每日行程、展开状态）
+- 重新开始：清除草稿，空白表单
+- 提交成功后自动清除草稿
+- 核心方法：`_saveDraft()` (序列化→JSON→SharedPreferences)、`_loadDraft()` / `_restoreFromDraft()` (反序列化恢复)、`_clearDraft()`、`checkDraftAndPrompt(context)` (弹窗)
+- `_hasContent()` 判断是否有填写内容；`_toDraftJson()` 序列化所有表单字段
 
 **Template picker/viewer (2026-07):** `TemplatePickerSheet` (`lib/pages/journey/widgets/template_picker_sheet.dart`):
 - Bottom sheet (75% height) listing saved templates from SharedPreferences

@@ -22,3 +22,4 @@ const String STORAGE_SYSTEM_WELCOME_ZH_PATH_KEY = 'system_welcome_zh_path';
 const String STORAGE_SYSTEM_WELCOME_EN_PATH_KEY = 'system_welcome_en_path';
 
 const String STORAGE_JOURNEY_TEMPLATES_KEY = 'journey_templates';
+const String STORAGE_JOURNEY_DRAFT_KEY = 'journey_draft';

@@ -10,6 +10,11 @@ class JourneyEditorPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.put(JourneyEditorController());
 
+    // 检查是否有未完成的草稿需要恢复
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ctrl.checkDraftAndPrompt(context);
+    });
+
     return IScaffold(
       title: ctrl.isEdit.value ? '编辑行程' : '新建工作',
       backgroundImage: const AssetImage(Assets.bgMine),
@@ -377,6 +382,192 @@ class _ItinerarySection extends StatelessWidget {
   }
 }
 
+/// 单个城市块（城市名 + 独立活动列表 + 推荐）
+class _CityBlockSection extends StatefulWidget {
+  final int dayIndex;
+  final int blockIndex;
+  final DayCityBlock block;
+  final JourneyEditorController ctrl;
+  final BuildContext context;
+
+  const _CityBlockSection({
+    required this.dayIndex,
+    required this.blockIndex,
+    required this.block,
+    required this.ctrl,
+    required this.context,
+  });
+
+  @override
+  State<_CityBlockSection> createState() => _CityBlockSectionState();
+}
+
+class _CityBlockSectionState extends State<_CityBlockSection> {
+  final _expandedCats = <String>{};
+
+  static const _categoryDefs = [
+    _CategoryDef('attraction', '景点', Icons.landscape_outlined),
+    _CategoryDef('activity', '活动', Icons.festival_outlined),
+    _CategoryDef('merchant', '餐厅', Icons.restaurant_outlined),
+    _CategoryDef('shopping', '购物', Icons.shopping_bag_outlined),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = widget.ctrl;
+    final di = widget.dayIndex;
+    final bi = widget.blockIndex;
+    final block = widget.block;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.w),
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.w),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ---- 城市头部 ----
+        Row(children: [
+          Container(
+            width: 6.w, height: 6.w,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(3.w),
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Text(block.cityName ?? '未选城市',
+            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => ctrl.removeDayCity(di, bi),
+            child: Icon(Icons.close, size: 15.sp, color: AppColors.assistantText),
+          ),
+        ]),
+        SizedBox(height: 8.w),
+        // ---- 活动列表 ----
+        ...block.items.asMap().entries.map((item) => Padding(
+          padding: EdgeInsets.only(bottom: 4.w),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            GestureDetector(
+              onTap: () => ctrl.pickItemTime(context, di, bi, item.key),
+              child: Container(
+                width: 48.w, height: 28.w,
+                decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(4.w),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                alignment: Alignment.center,
+                child: Text(block.items[item.key].time?.isNotEmpty == true ? block.items[item.key].time! : '时间',
+                  style: TextStyle(fontSize: 10.sp, color: block.items[item.key].time?.isNotEmpty == true
+                    ? AppColors.primaryText : AppColors.assistantText)),
+              ),
+            ),
+            SizedBox(width: 4.w),
+            _typeBadge(block.items[item.key].type),
+            Expanded(child: _TnyInput(
+              block.items[item.key].title ?? '',
+              (v) => ctrl.updateDayItem(di, bi, item.key, 'title', v),
+              hint: '活动/景点',
+            )),
+            SizedBox(width: 4.w),
+            GestureDetector(
+              onTap: () => ctrl.removeDayItem(di, bi, item.key),
+              child: Icon(Icons.close, size: 15.sp, color: AppColors.assistantText),
+            ),
+          ]),
+        )),
+        GestureDetector(
+          onTap: () => ctrl.addDayItem(di, bi),
+          child: Row(children: [
+            Icon(Icons.add, size: 15.sp, color: AppColors.primary),
+            SizedBox(width: 4.w),
+            Text('添加活动', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
+          ]),
+        ),
+        // ---- 城市推荐 ----
+        Obx(() {
+          final recs = ctrl.cityRecommendations[di];
+          if (recs == null || recs.isEmpty) return const SizedBox.shrink();
+
+          // 只显示属于当前城市块的推荐
+          final myItems = recs.where((r) => r.cityId == block.cityId).toList();
+          if (myItems.isEmpty) return const SizedBox.shrink();
+
+          final Map<String, List<CityResource>> groups = {};
+          for (final r in myItems) {
+            groups.putIfAbsent(r.type, () => []).add(r);
+          }
+
+          final List<Widget> children = [
+            SizedBox(height: 4.w),
+            Row(children: [
+              Icon(Icons.auto_awesome_outlined, size: 11.sp, color: AppColors.primary),
+              SizedBox(width: 4.w),
+              Text('${block.cityName ?? ''}推荐',
+                style: TextStyle(fontSize: 10.sp, color: AppColors.primary, fontWeight: FontWeight.w500)),
+            ]),
+          ];
+
+          for (final cat in _categoryDefs) {
+            final items = groups[cat.type];
+            if (items == null || items.isEmpty) continue;
+            final isExpanded = _expandedCats.contains(cat.type);
+
+            children.add(InkWell(
+              onTap: () => setState(() {
+                isExpanded ? _expandedCats.remove(cat.type) : _expandedCats.add(cat.type);
+              }),
+              borderRadius: BorderRadius.circular(4.w),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 2.w),
+                child: Row(children: [
+                  Icon(cat.icon, size: 12.sp, color: AppColors.primary),
+                  SizedBox(width: 4.w),
+                  Text(cat.label, style: TextStyle(fontSize: 10.sp, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                  SizedBox(width: 4.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8.w),
+                    ),
+                    child: Text('${items.length}', style: TextStyle(fontSize: 9.sp, color: AppColors.primary)),
+                  ),
+                  const Spacer(),
+                  Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 14.sp, color: AppColors.assistantText),
+                ]),
+              ),
+            ));
+
+            if (isExpanded) {
+              children.add(SizedBox(height: 3.w));
+              children.add(Wrap(
+                spacing: 4.w,
+                runSpacing: 4.w,
+                children: items.map((r) => ActionChip(
+                  avatar: Icon(r.icon, size: 12.sp, color: AppColors.primary),
+                  label: Text(r.name ?? r.label, style: TextStyle(fontSize: 10.sp, color: AppColors.primary)),
+                  onPressed: () => ctrl.addResourceToDay(di, bi, r),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.15)),
+                )).toList(),
+              ));
+            }
+          }
+
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+        }),
+      ]),
+    );
+  }
+}
+
 class _DayCard extends StatefulWidget {
   final JourneyEditorController ctrl;
   final int index;
@@ -388,28 +579,9 @@ class _DayCard extends StatefulWidget {
 }
 
 class _DayCardState extends State<_DayCard> {
-  final _expandedCategories = <String>{};
-
   JourneyEditorController get ctrl => widget.ctrl;
   int get index => widget.index;
   ItineraryDay get day => widget.day;
-
-  /// 行程项类型 → 图标 & 颜色
-  static const _typeMeta = {
-    'attraction': (Icons.landscape, Color(0xFF44B89D)),
-    'activity': (Icons.festival, Color(0xFFF5A623)),
-    'merchant': (Icons.restaurant, Color(0xFFE8734A)),
-    'shopping': (Icons.shopping_bag, Color(0xFF5B8DEF)),
-  };
-
-  Widget _typeBadge(String? type) {
-    final meta = _typeMeta[type];
-    if (meta == null) return SizedBox(width: 4.w);
-    return Padding(
-      padding: EdgeInsets.only(right: 4.w),
-      child: Icon(meta.$1, size: 14.sp, color: meta.$2),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -434,161 +606,42 @@ class _DayCardState extends State<_DayCard> {
           ),
           SizedBox(width: 6.w),
           Text(day.date ?? '', style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
-          const Spacer(),
-          // 当天城市选择
-          GestureDetector(
-            onTap: () => ctrl.showDayCityPicker(context, index),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.w),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4.w),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.location_on_outlined, size: 11.sp, color: AppColors.primary),
-                SizedBox(width: 3.w),
-                Text(day.cityName ?? '选城市', style: TextStyle(fontSize: 10.sp, color: AppColors.primary)),
-              ]),
-            ),
-          ),
         ]),
         SizedBox(height: 6.w),
         _SmlInput('主题', (v) => ctrl.updateDayField(index, 'theme', v), day.theme),
         SizedBox(height: 6.w),
-        // 活动列表
-        ...day.items.asMap().entries.map((item) => Padding(
-          padding: EdgeInsets.only(bottom: 4.w),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            GestureDetector(
-              onTap: () => ctrl.pickItemTime(context, index, item.key),
-              child: Container(
-                width: 48.w, height: 28.w,
-                decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(4.w),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                alignment: Alignment.center,
-                child: Text(day.items[item.key].time?.isNotEmpty == true ? day.items[item.key].time! : '时间',
-                  style: TextStyle(fontSize: 10.sp, color: day.items[item.key].time?.isNotEmpty == true
-                    ? AppColors.primaryText : AppColors.assistantText)),
-              ),
-            ),
-            SizedBox(width: 4.w),
-            _typeBadge(day.items[item.key].type),
-            Expanded(child: _TnyInput(
-              day.items[item.key].title ?? '',
-              (v) => ctrl.updateDayItem(index, item.key, 'title', v),
-              hint: '活动/景点',
-            )),
-            SizedBox(width: 4.w),
-            GestureDetector(
-              onTap: () => ctrl.removeDayItem(index, item.key),
-              child: Icon(Icons.close, size: 15.sp, color: AppColors.assistantText),
-            ),
-          ]),
-        )),
-        GestureDetector(
-          onTap: () => ctrl.addDayItem(index),
-          child: Row(children: [
-            Icon(Icons.add, size: 15.sp, color: AppColors.primary),
-            SizedBox(width: 4.w),
-            Text('添加', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
-          ]),
-        ),
-        // 城市推荐（按分类分组，默认折叠）
-        Obx(() {
-          final recs = ctrl.cityRecommendations[index];
-          if (recs == null || recs.isEmpty) return const SizedBox.shrink();
-
-          // 按类型分组
-          final Map<String, List<CityResource>> groups = {};
-          for (final r in recs) {
-            groups.putIfAbsent(r.type, () => []).add(r);
-          }
-
-          // 构建子组件列表
-          final List<Widget> children = [
-            Row(children: [
-              Icon(Icons.auto_awesome_outlined, size: 12.sp, color: AppColors.primary),
-              SizedBox(width: 4.w),
-              Text('${day.cityName ?? ''}推荐', style: TextStyle(fontSize: 11.sp, color: AppColors.primary, fontWeight: FontWeight.w500)),
-            ]),
-            SizedBox(height: 6.w),
-          ];
-
-          const categoryDefs = [
-            _CategoryDef('attraction', '景点', Icons.landscape_outlined),
-            _CategoryDef('activity', '活动', Icons.festival_outlined),
-            _CategoryDef('merchant', '餐厅', Icons.restaurant_outlined),
-            _CategoryDef('shopping', '购物', Icons.shopping_bag_outlined),
-          ];
-
-          for (final cat in categoryDefs) {
-            final items = groups[cat.type];
-            if (items == null || items.isEmpty) continue;
-
-            final isExpanded = _expandedCategories.contains(cat.type);
-
-            // 分类标题（可点击展开/折叠）
-            children.add(InkWell(
-              onTap: () => setState(() {
-                if (isExpanded) {
-                  _expandedCategories.remove(cat.type);
-                } else {
-                  _expandedCategories.add(cat.type);
-                }
-              }),
-              borderRadius: BorderRadius.circular(4.w),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 3.w),
-                child: Row(children: [
-                  Icon(cat.icon, size: 13.sp, color: AppColors.primary),
-                  SizedBox(width: 4.w),
-                  Text(cat.label, style: TextStyle(fontSize: 11.sp, color: AppColors.primary, fontWeight: FontWeight.w500)),
-                  SizedBox(width: 4.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8.w),
-                    ),
-                    child: Text('${items.length}', style: TextStyle(fontSize: 9.sp, color: AppColors.primary)),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                    size: 16.sp, color: AppColors.assistantText,
-                  ),
-                ]),
-              ),
-            ));
-
-            // 展开时显示推荐 chips
-            if (isExpanded) {
-              children.add(SizedBox(height: 4.w));
-              children.add(Wrap(
-                spacing: 4.w,
-                runSpacing: 4.w,
-                children: items.map((r) => ActionChip(
-                  avatar: Icon(r.icon, size: 13.sp, color: AppColors.primary),
-                  label: Text(r.name ?? r.label, style: TextStyle(fontSize: 10.sp, color: AppColors.primary)),
-                  onPressed: () => ctrl.addResourceToDay(index, r),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: Colors.white,
-                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.15)),
-                )).toList(),
-              ));
-              children.add(SizedBox(height: 4.w));
-            }
-          }
-
-          return Padding(
-            padding: EdgeInsets.only(top: 8.w),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+        // ---- 每个城市块独立渲染 ----
+        ...List.generate(day.cityBlocks.length, (bi) {
+          final block = day.cityBlocks[bi];
+          return _CityBlockSection(
+            dayIndex: index,
+            blockIndex: bi,
+            block: block,
+            ctrl: ctrl,
+            context: context,
           );
         }),
-        SizedBox(height: 6.w),
+        // 添加城市按钮
+        Padding(
+          padding: EdgeInsets.only(top: 6.w),
+          child: GestureDetector(
+            onTap: () => ctrl.showDayCityPicker(context, index),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 6.w),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6.w),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), style: BorderStyle.solid),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.add_location_outlined, size: 14.sp, color: AppColors.primary),
+                SizedBox(width: 4.w),
+                Text('添加城市', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
+              ]),
+            ),
+          ),
+        ),
+        SizedBox(height: 8.w),
         _SmlInput('酒店', (v) => ctrl.updateDayField(index, 'hotel_name', v), day.hotelName),
         SizedBox(height: 4.w),
         _SmlInput('车程(h)', (v) => ctrl.updateDayField(index, 'driving_hours', v), day.drivingHours),
@@ -710,6 +763,23 @@ Widget _TnyInput(String value, Function(String) onChanged, {String hint = ''}) {
       filled: true, fillColor: Colors.white, contentPadding: EdgeInsets.symmetric(horizontal: 6.w),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(4.w), borderSide: BorderSide(color: Colors.grey.shade200)),
       isDense: true)));
+}
+
+/// 行程项类型图标
+const _typeMeta = {
+  'attraction': (Icons.landscape, Color(0xFF44B89D)),
+  'activity': (Icons.festival, Color(0xFFF5A623)),
+  'merchant': (Icons.restaurant, Color(0xFFE8734A)),
+  'shopping': (Icons.shopping_bag, Color(0xFF5B8DEF)),
+};
+
+Widget _typeBadge(String? type) {
+  final meta = _typeMeta[type];
+  if (meta == null) return SizedBox(width: 4.w);
+  return Padding(
+    padding: EdgeInsets.only(right: 4.w),
+    child: Icon(meta.$1, size: 14.sp, color: meta.$2),
+  );
 }
 
 // ================================================================

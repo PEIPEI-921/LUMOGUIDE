@@ -225,46 +225,65 @@ class JourneyDetailController extends GetxController {
                                 color: const PdfColor(0.4, 0.4, 0.4))),
                       ),
                     pw.SizedBox(height: 6),
-                    ...day.items.map((item) => pw.Padding(
-                          padding: const pw.EdgeInsets.only(bottom: 4),
-                          child: pw.Row(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.SizedBox(
-                                width: 48,
-                                child: pw.Text(item.time ?? '',
-                                    style: pw.TextStyle(
-                                        fontSize: 9,
-                                        color: PdfColor.fromHex('#666FFF'),
-                                        fontWeight: pw.FontWeight.bold)),
+                    // 每个城市块
+                    ...day.cityBlocks.expand((block) => [
+                      if (block.cityName?.isNotEmpty == true)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2, bottom: 2),
+                          child: pw.Row(children: [
+                            pw.Container(
+                              width: 6, height: 6,
+                              decoration: pw.BoxDecoration(
+                                color: PdfColor.fromHex('#666FFF'),
+                                borderRadius: pw.BorderRadius.circular(3),
                               ),
-                              pw.Container(
-                                width: 1,
-                                height: 28,
-                                color: PdfColor.fromHex('#666FFF26'),
-                              ),
-                              pw.SizedBox(width: 6),
-                              pw.Expanded(
-                                child: pw.Column(
-                                  crossAxisAlignment:
-                                      pw.CrossAxisAlignment.start,
-                                  children: [
-                                    pw.Text(item.title ?? '',
-                                        style: pw.TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: pw.FontWeight.bold)),
-                                    if (item.description?.isNotEmpty == true)
-                                      pw.Text(item.description!,
-                                          style: const pw.TextStyle(
-                                              fontSize: 9,
-                                              color: const PdfColor(
-                                                  0.4, 0.4, 0.4))),
-                                  ],
+                            ),
+                            pw.SizedBox(width: 4),
+                            pw.Text(block.cityName!,
+                              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#666FFF'))),
+                          ]),
+                        ),
+                      ...block.items.map((item) => pw.Padding(
+                            padding: const pw.EdgeInsets.only(bottom: 4),
+                            child: pw.Row(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.SizedBox(
+                                  width: 48,
+                                  child: pw.Text(item.time ?? '',
+                                      style: pw.TextStyle(
+                                          fontSize: 9,
+                                          color: PdfColor.fromHex('#666FFF'),
+                                          fontWeight: pw.FontWeight.bold)),
                                 ),
-                              ),
-                            ],
-                          ),
-                        )),
+                                pw.Container(
+                                  width: 1,
+                                  height: 28,
+                                  color: PdfColor.fromHex('#666FFF26'),
+                                ),
+                                pw.SizedBox(width: 6),
+                                pw.Expanded(
+                                  child: pw.Column(
+                                    crossAxisAlignment:
+                                        pw.CrossAxisAlignment.start,
+                                    children: [
+                                      pw.Text(item.title ?? '',
+                                          style: pw.TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: pw.FontWeight.bold)),
+                                      if (item.description?.isNotEmpty == true)
+                                        pw.Text(item.description!,
+                                            style: const pw.TextStyle(
+                                                fontSize: 9,
+                                                color: const PdfColor(
+                                                    0.4, 0.4, 0.4))),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    ]),
                     if (day.hotelName?.isNotEmpty == true)
                       pw.Padding(
                         padding: const pw.EdgeInsets.only(top: 2),
@@ -338,7 +357,11 @@ class JourneyDetailController extends GetxController {
 
   String _buildHtmlDocument(JourneyWork w, String logoBase64) {
     final daysHtml = w.itineraryDays.map((day) {
-      final itemsHtml = day.items.map((item) => '''
+      final blocksHtml = day.cityBlocks.map((block) {
+        final cityHeader = block.cityName?.isNotEmpty == true
+            ? '<div class="city-block-header">📍 ${block.cityName}</div>'
+            : '';
+        final itemsHtml = block.items.map((item) => '''
         <div class="item-row">
           <div class="item-time">${item.time ?? ''}</div>
           <div class="item-line"></div>
@@ -348,6 +371,8 @@ class JourneyDetailController extends GetxController {
           </div>
         </div>
       ''').join();
+        return '$cityHeader$itemsHtml';
+      }).join();
 
       final hotelHtml = day.hotelName?.isNotEmpty == true
           ? '<div class="hotel">🏨 ${day.hotelName}</div>'
@@ -359,7 +384,7 @@ class JourneyDetailController extends GetxController {
           <span class="day-date">${day.date ?? ''}</span>
         </div>
         ${day.theme?.isNotEmpty == true ? '<div class="day-theme">${day.theme}</div>' : ''}
-        $itemsHtml
+        $blocksHtml
         $hotelHtml
       ''';
     }).join();
@@ -380,6 +405,7 @@ class JourneyDetailController extends GetxController {
     .day-num { color: #666FFF; font-weight: bold; font-size: 13px; }
     .day-date { color: #999; font-size: 12px; margin-left: 8px; }
     .day-theme { font-size: 13px; color: #666; margin-bottom: 6px; }
+    .city-block-header { font-size: 12px; color: #666FFF; font-weight: 600; margin: 8px 0 4px 0; padding-left: 8px; border-left: 3px solid #666FFF; }
     .item-row { display: flex; margin-bottom: 6px; align-items: flex-start; }
     .item-time { width: 60px; color: #666FFF; font-size: 12px; font-weight: 500; flex-shrink: 0; }
     .item-line { width: 2px; min-height: 30px; background: #666FFF26; margin-right: 10px; flex-shrink: 0; }

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -73,6 +75,15 @@ class JourneyEditorController extends GetxController with ApiMixin {
 
   /// 城市ID → 国家名称映射（从 systemContinents 接口加载）
   final _cityCountryMap = <int, String>{};
+  /// 国家名 → 地区名映射（如 奥地利→中欧）
+  final _countryRegionMap = <String, String>{};
+  /// 国家名 → 洲名映射（如 奥地利→欧洲）
+  final _countryContinentMap = <String, String>{};
+
+  // ====== 草稿自动保存 ======
+  Timer? _draftSaveTimer;
+  bool _hasDraft = false; // 存储中是否有待恢复的草稿
+  bool _draftRestored = false; // 是否已从草稿恢复
 
   @override
   void onInit() {
@@ -94,6 +105,12 @@ class JourneyEditorController extends GetxController with ApiMixin {
     endDateCtrl.addListener(_syncDays);
     adultCountCtrl.addListener(_updateTotalPeople);
     childCountCtrl.addListener(_updateTotalPeople);
+
+    // 新建模式下检查是否有未完成的草稿
+    if (!isEdit.value && Get.arguments?['template'] == null) {
+      _checkExistingDraft();
+      _startDraftAutoSave();
+    }
   }
 
   void _updateTotalPeople() {
@@ -129,9 +146,9 @@ class JourneyEditorController extends GetxController with ApiMixin {
       debugPrint('[systemContinents] list length=${list?.length}');
       if (list == null) return;
       for (final item in list) {
-        _walkTree(item, null);
+        _walkTree(item, []);
       }
-      debugPrint('[systemContinents] map size=${_cityCountryMap.length}');
+      debugPrint('[systemContinents] cityMap=${_cityCountryMap.length} regionMap=${_countryRegionMap.length} continentMap=${_countryContinentMap.length}');
       // 打印前5条映射用于验证
       final entries = _cityCountryMap.entries.take(5).toList();
       for (final e in entries) {
@@ -142,28 +159,47 @@ class JourneyEditorController extends GetxController with ApiMixin {
     }
   }
 
-  /// 递归遍历层级树，叶子节点=城市，其父节点名称=国家
-  void _walkTree(dynamic node, String? parentName) {
+  /// 递归遍历层级树，同时建立三张映射：
+  /// - _cityCountryMap: 城市ID → 国家名
+  /// - _countryRegionMap: 国家名 → 地区名（4层结构时有值）
+  /// - _countryContinentMap: 国家名 → 洲名
+  ///
+  /// 树结构可能是 3 层（洲→国家→城市）或 4 层（洲→地区→国家→城市）
+  /// ancestors 链: [洲, (地区), 国家]，叶子节点=城市
+  void _walkTree(dynamic node, List<String> ancestors) {
     if (node is! Map<String, dynamic>) return;
     final name = node['name'] as String?;
     final nodeId = node['id'] as int?;
     final children = node['children'] as List<dynamic>?;
 
     if (children != null && children.isNotEmpty) {
-      // 非叶子节点：当前 name 作为 parentName 传给子节点
       for (final child in children) {
-        _walkTree(child, name);
+        _walkTree(child, [...ancestors, name ?? '']);
       }
-    } else if (parentName != null && nodeId != null) {
-      // 叶子节点：parentName 即为国家
-      _cityCountryMap[nodeId] = parentName;
-      // 同时通过名称匹配 cityList 建立映射（兜底 ID 不一致的情况）
+    } else if (nodeId != null && ancestors.isNotEmpty) {
+      // 叶子节点 = 城市，ancestors 最后一项 = 国家名
+      final countryName = ancestors.last;
+      _cityCountryMap[nodeId] = countryName;
+
+      // 国家→地区：4 层结构时 ancestors[-2] 即地区，3 层时无地区
+      if (ancestors.length >= 3) {
+        final regionName = ancestors[ancestors.length - 2];
+        if (!_countryRegionMap.containsKey(countryName)) {
+          _countryRegionMap[countryName] = regionName;
+        }
+      }
+      // 国家→洲：ancestors[0] 始终是洲
+      if (!_countryContinentMap.containsKey(countryName)) {
+        _countryContinentMap[countryName] = ancestors.first;
+      }
+
+      // 同时通过名称匹配 cityList 建立城市映射（兜底 ID 不一致的情况）
       if (name != null && name.isNotEmpty) {
         final match = cityList.firstWhereOrNull(
           (c) => c.id == nodeId || c.name == name || c.nameEn == name,
         );
         if (match != null && match.id != null) {
-          _cityCountryMap[match.id!] = parentName;
+          _cityCountryMap[match.id!] = countryName;
         }
       }
     }
@@ -185,108 +221,129 @@ class JourneyEditorController extends GetxController with ApiMixin {
 
   void removeCity(CityList city) => cities.removeWhere((c) => c.id == city.id);
 
-  /// 为某天设置城市
-  void setDayCity(int dayIndex, CityList city) {
+  /// 为某天添加城市块
+  void addDayCity(int dayIndex, CityList city) {
     final day = itineraryDays[dayIndex];
-    day.cityId = city.id;
-    day.cityName = city.name;
-    itineraryDays.refresh();
-    _loadDayRecommendations(dayIndex, city.id!);
+    final exists = day.cityBlocks.any((b) => b.cityId == city.id);
+    if (city.id != null && !exists) {
+      day.cityBlocks = [...day.cityBlocks, DayCityBlock(cityId: city.id, cityName: city.name)];
+      itineraryDays.refresh();
+      _loadDayRecommendations(dayIndex, day.cityBlocks.map((b) => b.cityId!).where((id) => id != null).toList());
+      _autoGenerateTitle();
+    }
   }
 
-  /// 加载某天城市的推荐资源（调用真实 API）
-  Future<void> _loadDayRecommendations(int dayIndex, int cityId) async {
+  /// 从某天移除城市块
+  void removeDayCity(int dayIndex, int blockIndex) {
+    final day = itineraryDays[dayIndex];
+    if (blockIndex < day.cityBlocks.length) {
+      final newBlocks = List<DayCityBlock>.from(day.cityBlocks)..removeAt(blockIndex);
+      day.cityBlocks = newBlocks;
+      itineraryDays.refresh();
+      if (day.cityBlocks.isNotEmpty) {
+        _loadDayRecommendations(dayIndex, day.cityBlocks.where((b) => b.cityId != null).map((b) => b.cityId!).toList());
+      } else {
+        cityRecommendations.remove(dayIndex);
+      }
+      _autoGenerateTitle();
+    }
+  }
+
+  /// 加载某天所有城市的推荐资源（支持多城市）
+  Future<void> _loadDayRecommendations(int dayIndex, List<int> cityIds) async {
     final items = <CityResource>[];
 
-    try {
-      // 1) 景点
-      final attrRes = await get(ApiUrl.cityAttraction, parameters: {
-        'city_id': cityId, 'page': 1, 'limit': 10,
-      });
-      if (attrRes.isSuccess) {
-        final list = (attrRes.dataJson['list'] as List<dynamic>? ?? [])
-            .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
-            .toList();
-        for (final m in list) {
-          items.add(CityResource(
-            type: 'attraction', label: m.name ?? '景点',
-            icon: Icons.landscape_outlined, cityId: cityId,
-            id: m.id, name: m.name, imageUrl: m.firstPicture,
-          ));
+    for (final cityId in cityIds) {
+      try {
+        // 1) 景点
+        final attrRes = await get(ApiUrl.cityAttraction, parameters: {
+          'city_id': cityId, 'page': 1, 'limit': 10,
+        });
+        if (attrRes.isSuccess) {
+          final list = (attrRes.dataJson['list'] as List<dynamic>? ?? [])
+              .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
+              .toList();
+          for (final m in list) {
+            items.add(CityResource(
+              type: 'attraction', label: m.name ?? '景点',
+              icon: Icons.landscape_outlined, cityId: cityId,
+              id: m.id, name: m.name, imageUrl: m.firstPicture,
+            ));
+          }
         }
+
+        // 2) 活动（过滤已过期）
+        final actRes = await get(ApiUrl.cityActivity, parameters: {
+          'city_id': cityId, 'page': 1, 'limit': 10,
+        });
+        if (actRes.isSuccess) {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final list = (actRes.dataJson['list'] as List<dynamic>? ?? [])
+              .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
+              .where((m) {
+                if (m.endTime == null || m.endTime!.isEmpty) return true;
+                final endDate = DateTime.tryParse(m.endTime!);
+                if (endDate == null) return true;
+                return !endDate.isBefore(today);
+              })
+              .toList();
+          for (final m in list) {
+            items.add(CityResource(
+              type: 'activity', label: m.name ?? '活动',
+              icon: Icons.festival_outlined, cityId: cityId,
+              id: m.id, name: m.name, imageUrl: m.firstPicture,
+              startTime: m.startTime, endTime: m.endTime,
+            ));
+          }
+        }
+
+        // 3) 餐厅
+        final restRes = await get(ApiUrl.cityRestaurant, parameters: {
+          'city_id': cityId, 'page': 1, 'limit': 10,
+        });
+        if (restRes.isSuccess) {
+          final list = (restRes.dataJson['list'] as List<dynamic>? ?? [])
+              .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
+              .toList();
+          for (final m in list) {
+            items.add(CityResource(
+              type: 'merchant', label: m.name ?? '餐厅',
+              icon: Icons.restaurant_outlined, cityId: cityId,
+              id: m.id, name: m.name, imageUrl: m.firstPicture,
+            ));
+          }
+        }
+
+        // 4) 购物
+        final shopRes = await get(ApiUrl.cityShopping, parameters: {
+          'city_id': cityId, 'page': 1, 'limit': 10,
+        });
+        if (shopRes.isSuccess) {
+          final list = (shopRes.dataJson['list'] as List<dynamic>? ?? [])
+              .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
+              .toList();
+          for (final m in list) {
+            items.add(CityResource(
+              type: 'shopping', label: m.name ?? '购物',
+              icon: Icons.shopping_bag_outlined, cityId: cityId,
+              id: m.id, name: m.name, imageUrl: m.firstPicture,
+            ));
+          }
+        }
+      } catch (_) {
+        // 单个城市请求失败，继续下一个
       }
 
-      // 2) 活动（过滤已过期）
-      final actRes = await get(ApiUrl.cityActivity, parameters: {
-        'city_id': cityId, 'page': 1, 'limit': 10,
-      });
-      if (actRes.isSuccess) {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final list = (actRes.dataJson['list'] as List<dynamic>? ?? [])
-            .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
-            .where((m) {
-              if (m.endTime == null || m.endTime!.isEmpty) return true;
-              final endDate = DateTime.tryParse(m.endTime!);
-              if (endDate == null) return true;
-              return !endDate.isBefore(today);
-            })
-            .toList();
-        for (final m in list) {
-          items.add(CityResource(
-            type: 'activity', label: m.name ?? '活动',
-            icon: Icons.festival_outlined, cityId: cityId,
-            id: m.id, name: m.name, imageUrl: m.firstPicture,
-            startTime: m.startTime, endTime: m.endTime,
-          ));
-        }
+      // 兜底：API 全部失败或返回空时仍显示 4 个通用标签
+      if (items.isEmpty) {
+        items.addAll([
+          CityResource(type: 'attraction', label: '景点', icon: Icons.landscape_outlined, cityId: cityId),
+          CityResource(type: 'activity', label: '活动', icon: Icons.festival_outlined, cityId: cityId),
+          CityResource(type: 'merchant', label: '餐厅', icon: Icons.restaurant_outlined, cityId: cityId),
+          CityResource(type: 'shopping', label: '购物', icon: Icons.shopping_bag_outlined, cityId: cityId),
+        ]);
       }
-
-      // 3) 餐厅
-      final restRes = await get(ApiUrl.cityRestaurant, parameters: {
-        'city_id': cityId, 'page': 1, 'limit': 10,
-      });
-      if (restRes.isSuccess) {
-        final list = (restRes.dataJson['list'] as List<dynamic>? ?? [])
-            .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
-            .toList();
-        for (final m in list) {
-          items.add(CityResource(
-            type: 'merchant', label: m.name ?? '餐厅',
-            icon: Icons.restaurant_outlined, cityId: cityId,
-            id: m.id, name: m.name, imageUrl: m.firstPicture,
-          ));
-        }
-      }
-
-      // 4) 购物
-      final shopRes = await get(ApiUrl.cityShopping, parameters: {
-        'city_id': cityId, 'page': 1, 'limit': 10,
-      });
-      if (shopRes.isSuccess) {
-        final list = (shopRes.dataJson['list'] as List<dynamic>? ?? [])
-            .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
-            .toList();
-        for (final m in list) {
-          items.add(CityResource(
-            type: 'shopping', label: m.name ?? '购物',
-            icon: Icons.shopping_bag_outlined, cityId: cityId,
-            id: m.id, name: m.name, imageUrl: m.firstPicture,
-          ));
-        }
-      }
-    } catch (_) {
-      // 网络异常等，走兜底
-    }
-
-    // 兜底：API 全部失败或返回空时仍显示 4 个通用标签
-    if (items.isEmpty) {
-      items.addAll([
-        CityResource(type: 'attraction', label: '景点', icon: Icons.landscape_outlined, cityId: cityId),
-        CityResource(type: 'activity', label: '活动', icon: Icons.festival_outlined, cityId: cityId),
-        CityResource(type: 'merchant', label: '餐厅', icon: Icons.restaurant_outlined, cityId: cityId),
-        CityResource(type: 'shopping', label: '购物', icon: Icons.shopping_bag_outlined, cityId: cityId),
-      ]);
     }
 
     cityRecommendations[dayIndex] = items.obs;
@@ -299,8 +356,9 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (start == null || end == null) return;
     final days = end.difference(start).inDays + 1;
     if (days <= 0 || days > 90) return;
+    // 已有内容则不覆盖
     if (itineraryDays.isNotEmpty && itineraryDays.length == days &&
-        itineraryDays.any((d) => d.items.isNotEmpty)) return;
+        itineraryDays.any((d) => d.cityBlocks.any((b) => b.items.isNotEmpty))) return;
 
     itineraryDays.value = List.generate(days, (i) {
       final d = start.add(Duration(days: i));
@@ -344,6 +402,11 @@ class JourneyEditorController extends GetxController with ApiMixin {
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   // ====== 团名自动生成 ======
+  /// 规则：
+  /// - 1国：国家全名 + N日游
+  /// - 2-3国：取每个国家首字拼接 + N日游
+  /// - 4-5国：取国家所属地区首字拼接 + N国 + N日游
+  /// - 6国及以上：取洲名 + N日游
   void _autoGenerateTitle() {
     // 仅新建模式自动填充（编辑模式保留原标题）
     if (isEdit.value) return;
@@ -354,19 +417,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
     final days = end.difference(start).inDays + 1;
     if (days <= 0) return;
 
-    // 获取城市所属国家名（优先 city.country → systemContinents 映射 → 城市名）
-    String countryOfName(String cityName) {
-      // 在 cityList 中查找匹配的城市
-      final c = cityList.firstWhereOrNull(
-        (cl) => cl.name == cityName || cl.nameEn == cityName,
-      );
-      if (c != null) {
-        return cityCountry(c);
-      }
-      return cityName; // 查不到就用城市名
-    }
-
-    // 收集所有行程涉及的城市名（去重保序）
+    // ---- 收集所有行程涉及的城市名（去重保序）----
     final seen = <String>{};
     final allCityNames = <String>[];
     void addCity(String? name) {
@@ -374,14 +425,17 @@ class JourneyEditorController extends GetxController with ApiMixin {
         allCityNames.add(name);
       }
     }
-
-    // 起始/结束城市
     addCity(startCity.value?.name);
     addCity(endCity.value?.name);
-
-    // 每日行程中选的城市
     for (final day in itineraryDays) {
-      addCity(day.cityName);
+      for (final block in day.cityBlocks) {
+        addCity(block.cityName);
+        // 从每个城市块的 items 标题中提取涉及的城市名
+        for (final item in block.items) {
+          _extractCityFromTitle(item.title, seen, allCityNames);
+          _extractCityFromTitle(item.description, seen, allCityNames);
+        }
+      }
     }
 
     if (allCityNames.isEmpty) {
@@ -389,24 +443,87 @@ class JourneyEditorController extends GetxController with ApiMixin {
       return;
     }
 
-    // 城市名 → 国家名 → 去重保序
+    // ---- 城市名 → 国家名 → 去重保序 ----
+    String countryOf(String cityName) {
+      final c = cityList.firstWhereOrNull(
+        (cl) => cl.name == cityName || cl.nameEn == cityName,
+      );
+      if (c != null) return cityCountry(c);
+      return cityName; // 查不到就用城市名兜底
+    }
+
     final seenCountries = <String>{};
     final countries = <String>[];
     for (final cn in allCityNames) {
-      final country = countryOfName(cn);
+      final country = countryOf(cn);
       if (country.isNotEmpty && seenCountries.add(country)) {
         countries.add(country);
       }
     }
 
-    String title;
     if (countries.isEmpty) {
-      // 无国家信息，用城市名拼接
-      title = '${allCityNames.join('')}$days日游';
-    } else {
-      title = '${countries.join('')}$days日游';
+      titleCtrl.text = '$days日游';
+      return;
     }
+
+    final n = countries.length;
+    String title;
+
+    if (n == 1) {
+      // 1国：奥地利7日游
+      title = '${countries[0]}$days日游';
+    } else if (n <= 3) {
+      // 2-3国：取首字拼接 → 奥匈7日游 / 奥捷匈7日游
+      final abbr = countries.map((c) => c.characters.first).join();
+      title = '$abbr$days日游';
+    } else if (n <= 5) {
+      // 4-5国：取地区首字拼接 → 中东欧四国7日游
+      final seenRegions = <String>{};
+      final regionNames = <String>[];
+      for (final country in countries) {
+        final region = _countryRegionMap[country] ??
+            _countryContinentMap[country] ??
+            country;
+        if (region.isNotEmpty && seenRegions.add(region)) {
+          regionNames.add(region);
+        }
+      }
+      final regionAbbr = regionNames.map((r) => r.characters.first).join();
+      title = '$regionAbbr${n}国$days日游';
+    } else {
+      // 6国及以上：取洲名
+      final seenContinents = <String>{};
+      final continentNames = <String>[];
+      for (final country in countries) {
+        final continent = _countryContinentMap[country] ?? '';
+        if (continent.isNotEmpty && seenContinents.add(continent)) {
+          continentNames.add(continent);
+        }
+      }
+      if (continentNames.length == 1) {
+        title = '${continentNames[0]}$days日游';
+      } else {
+        // 跨洲 → 取前3国首字 + 等多国
+        final abbr = countries.take(3).map((c) => c.characters.first).join();
+        title = '$abbr等多国$days日游';
+      }
+    }
+
     titleCtrl.text = title;
+  }
+
+  /// 从文本中提取已知城市名（匹配 cityList 中的中/英文名）
+  void _extractCityFromTitle(
+      String? text, Set<String> seen, List<String> allCityNames) {
+    if (text == null || text.isEmpty) return;
+    for (final c in cityList) {
+      if (c.name != null && c.name!.isNotEmpty && text.contains(c.name!)) {
+        if (seen.add(c.name!)) allCityNames.add(c.name!);
+      }
+      if (c.nameEn != null && c.nameEn!.isNotEmpty && text.contains(c.nameEn!)) {
+        if (seen.add(c.nameEn!)) allCityNames.add(c.nameEn!);
+      }
+    }
   }
 
   // ====== 游览起始/结束城市选择器 ======
@@ -520,26 +637,29 @@ class JourneyEditorController extends GetxController with ApiMixin {
     itineraryDays.refresh();
   }
 
-  void addDayItem(int dayIndex) {
-    final day = itineraryDays[dayIndex];
-    day.items = [...day.items, ItineraryItem(time: '', title: '')];
+  void addDayItem(int dayIndex, int blockIndex) {
+    final block = itineraryDays[dayIndex].cityBlocks[blockIndex];
+    block.items = [...block.items, ItineraryItem(time: '', title: '')];
     itineraryDays.refresh();
+    _autoGenerateTitle();
   }
 
-  void removeDayItem(int dayIndex, int itemIndex) {
-    final day = itineraryDays[dayIndex];
-    final newItems = List<ItineraryItem>.from(day.items)..removeAt(itemIndex);
-    day.items = newItems;
+  void removeDayItem(int dayIndex, int blockIndex, int itemIndex) {
+    final block = itineraryDays[dayIndex].cityBlocks[blockIndex];
+    final newItems = List<ItineraryItem>.from(block.items)..removeAt(itemIndex);
+    block.items = newItems;
     itineraryDays.refresh();
+    _autoGenerateTitle();
   }
 
-  void updateDayItem(int dayIndex, int itemIndex, String field, String value) {
-    final items = itineraryDays[dayIndex].items;
+  void updateDayItem(int dayIndex, int blockIndex, int itemIndex, String field, String value) {
+    final items = itineraryDays[dayIndex].cityBlocks[blockIndex].items;
     switch (field) {
       case 'time': items[itemIndex].time = value;
       case 'title': items[itemIndex].title = value;
     }
     itineraryDays.refresh();
+    if (field == 'title') _autoGenerateTitle();
   }
 
   // ====== 日期 & 时间选择 ======
@@ -562,11 +682,11 @@ class JourneyEditorController extends GetxController with ApiMixin {
     }
   }
 
-  Future<void> pickItemTime(BuildContext context, int dayIndex, int itemIndex) async {
+  Future<void> pickItemTime(BuildContext context, int dayIndex, int blockIndex, int itemIndex) async {
     final now = TimeOfDay.now();
     final picked = await showTimePicker(context: context, initialTime: now);
     if (picked != null) {
-      updateDayItem(dayIndex, itemIndex, 'time',
+      updateDayItem(dayIndex, blockIndex, itemIndex, 'time',
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}');
     }
   }
@@ -682,7 +802,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
                 subtitle: Text('${c.nameEn ?? ''}  ${cityCountry(c)}',
                   style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
                 onTap: () {
-                  setDayCity(dayIndex, c);
+                  addDayCity(dayIndex, c);
                   Get.back();
                 },
               );
@@ -695,7 +815,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
   }
 
   // ====== 来自推荐资源添加活动 ======
-  void addResourceToDay(int dayIndex, CityResource resource) {
+  void addResourceToDay(int dayIndex, int blockIndex, CityResource resource) {
     final item = ItineraryItem(
       time: '',
       title: resource.name ?? resource.label,
@@ -705,15 +825,243 @@ class JourneyEditorController extends GetxController with ApiMixin {
       resourceType: resource.type,
       imageUrl: resource.imageUrl,
     );
-    final day = itineraryDays[dayIndex];
-    day.items = [...day.items, item];
+    final block = itineraryDays[dayIndex].cityBlocks[blockIndex];
+    block.items = [...block.items, item];
     itineraryDays.refresh();
+    _autoGenerateTitle();
+  }
+
+  // ====== 草稿自动保存 & 恢复 ======
+
+  /// 检查存储中是否有未完成的草稿
+  void _checkExistingDraft() {
+    final draftJson = StorageService.to.getString(STORAGE_JOURNEY_DRAFT_KEY);
+    if (draftJson.isEmpty) return;
+    try {
+      final json = jsonDecode(draftJson) as Map<String, dynamic>;
+      // 验证草稿中至少有一些内容
+      final hasContent = (json['title'] as String?)?.isNotEmpty == true ||
+          (json['startDate'] as String?)?.isNotEmpty == true ||
+          (json['startCityName'] as String?)?.isNotEmpty == true;
+      if (hasContent) {
+        _hasDraft = true;
+      } else {
+        _clearDraft();
+      }
+    } catch (_) {
+      _clearDraft();
+    }
+  }
+
+  /// 启动定时自动保存（每 30 秒保存一次）
+  void _startDraftAutoSave() {
+    _draftSaveTimer = Timer.periodic(const Duration(seconds: 30), (_) => _saveDraft());
+  }
+
+  /// 页面 build 后调用：弹出是否继续编辑的提示
+  void checkDraftAndPrompt(BuildContext context) {
+    if (!_hasDraft || _draftRestored) return;
+    _hasDraft = false; // 只提示一次
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.w)),
+        title: Row(children: [
+          Icon(Icons.edit_note, size: 22.sp, color: AppColors.primary),
+          SizedBox(width: 8.w),
+          Text('发现未完成的行程', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+        ]),
+        content: Text('上次编辑的行程还未完成，是否继续编辑？',
+            style: TextStyle(fontSize: 13.sp, color: AppColors.secondaryText)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _clearDraft();
+              Get.back();
+            },
+            child: Text('重新开始', style: TextStyle(fontSize: 13.sp, color: AppColors.assistantText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.w)),
+            ),
+            onPressed: () {
+              _loadDraft();
+              _draftRestored = true;
+              Get.back();
+            },
+            child: Text('继续编辑', style: TextStyle(fontSize: 13.sp, color: Colors.white)),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  /// 将当前表单状态序列化为 JSON
+  Map<String, dynamic> _toDraftJson() {
+    return {
+      'title': titleCtrl.text.trim(),
+      'adultCount': adultCountCtrl.text.trim(),
+      'childCount': childCountCtrl.text.trim(),
+      'startDate': startDateCtrl.text.trim(),
+      'endDate': endDateCtrl.text.trim(),
+      'startCityId': startCity.value?.id,
+      'startCityName': startCity.value?.name ?? '',
+      'startCityCountry': startCity.value != null ? _safeCityCountry(startCity.value!) : '',
+      'endCityId': endCity.value?.id,
+      'endCityName': endCity.value?.name ?? '',
+      'endCityCountry': endCity.value != null ? _safeCityCountry(endCity.value!) : '',
+      'arrFlight': arrFlightCtrl.text.trim(),
+      'arrDate': arrDateCtrl.text.trim(),
+      'arrTime': arrTimeCtrl.text.trim(),
+      'arrAirport': arrAirportCtrl.text.trim(),
+      'depFlight': depFlightCtrl.text.trim(),
+      'depDate': depDateCtrl.text.trim(),
+      'depTime': depTimeCtrl.text.trim(),
+      'depAirport': depAirportCtrl.text.trim(),
+      'leaderName': leaderNameCtrl.text.trim(),
+      'leaderPhone': leaderPhoneCtrl.text.trim(),
+      'driverName': driverNameCtrl.text.trim(),
+      'driverPhone': driverPhoneCtrl.text.trim(),
+      'vehicle': vehicleCtrl.text.trim(),
+      'totalPrice': totalPriceCtrl.text.trim(),
+      'cashAdvance': cashAdvanceCtrl.text.trim(),
+      'agencyContact': agencyContactCtrl.text.trim(),
+      'agencyPhone': agencyPhoneCtrl.text.trim(),
+      'emergencyPhone': emergencyPhoneCtrl.text.trim(),
+      'description': descriptionCtrl.text.trim(),
+      'showFlight': showFlight.value,
+      'showItinerary': showItinerary.value,
+      'showPeople': showPeople.value,
+      'showCost': showCost.value,
+      'showEmergency': showEmergency.value,
+      'itineraryDays': itineraryDays.map((d) => d.toJson()).toList(),
+      'savedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  /// 安全获取城市国家名（忽略 _cityCountryMap 未加载的情况）
+  String _safeCityCountry(CityList c) {
+    try {
+      return cityCountry(c);
+    } catch (_) {
+      return c.country ?? c.areaName ?? '';
+    }
+  }
+
+  /// 检查当前表单是否有任何填写内容
+  bool _hasContent() {
+    return titleCtrl.text.trim().isNotEmpty ||
+        startDateCtrl.text.trim().isNotEmpty ||
+        endDateCtrl.text.trim().isNotEmpty ||
+        startCity.value != null ||
+        endCity.value != null ||
+        adultCountCtrl.text.trim().isNotEmpty ||
+        childCountCtrl.text.trim().isNotEmpty ||
+        itineraryDays.any((d) => d.cityBlocks.any((b) => b.items.isNotEmpty || b.cityName?.isNotEmpty == true)) ||
+        descriptionCtrl.text.trim().isNotEmpty ||
+        arrFlightCtrl.text.trim().isNotEmpty ||
+        depFlightCtrl.text.trim().isNotEmpty ||
+        leaderNameCtrl.text.trim().isNotEmpty ||
+        driverNameCtrl.text.trim().isNotEmpty;
+  }
+
+  /// 保存草稿到 SharedPreferences
+  void _saveDraft() {
+    if (!_hasContent()) return;
+    final json = _toDraftJson();
+    StorageService.to.setString(STORAGE_JOURNEY_DRAFT_KEY, jsonEncode(json));
+  }
+
+  /// 从 SharedPreferences 加载草稿并填充表单
+  void _loadDraft() {
+    final draftJson = StorageService.to.getString(STORAGE_JOURNEY_DRAFT_KEY);
+    if (draftJson.isEmpty) return;
+    try {
+      final json = jsonDecode(draftJson) as Map<String, dynamic>;
+      _restoreFromDraft(json);
+    } catch (_) {}
+  }
+
+  void _restoreFromDraft(Map<String, dynamic> json) {
+    titleCtrl.text = json['title'] as String? ?? '';
+    adultCountCtrl.text = json['adultCount'] as String? ?? '';
+    childCountCtrl.text = json['childCount'] as String? ?? '';
+    startDateCtrl.text = json['startDate'] as String? ?? '';
+    endDateCtrl.text = json['endDate'] as String? ?? '';
+
+    // 还原游览起始城市
+    final sCityId = json['startCityId'] as int?;
+    final sCityName = json['startCityName'] as String?;
+    if (sCityId != null && sCityName != null && sCityName.isNotEmpty) {
+      startCity.value = _findCity(sCityName) ??
+          CityList(id: sCityId, name: sCityName, country: json['startCityCountry'] as String?);
+    }
+
+    // 还原游览结束城市
+    final eCityId = json['endCityId'] as int?;
+    final eCityName = json['endCityName'] as String?;
+    if (eCityId != null && eCityName != null && eCityName.isNotEmpty) {
+      endCity.value = _findCity(eCityName) ??
+          CityList(id: eCityId, name: eCityName, country: json['endCityCountry'] as String?);
+    }
+
+    arrFlightCtrl.text = json['arrFlight'] as String? ?? '';
+    arrDateCtrl.text = json['arrDate'] as String? ?? '';
+    arrTimeCtrl.text = json['arrTime'] as String? ?? '';
+    arrAirportCtrl.text = json['arrAirport'] as String? ?? '';
+    depFlightCtrl.text = json['depFlight'] as String? ?? '';
+    depDateCtrl.text = json['depDate'] as String? ?? '';
+    depTimeCtrl.text = json['depTime'] as String? ?? '';
+    depAirportCtrl.text = json['depAirport'] as String? ?? '';
+    leaderNameCtrl.text = json['leaderName'] as String? ?? '';
+    leaderPhoneCtrl.text = json['leaderPhone'] as String? ?? '';
+    driverNameCtrl.text = json['driverName'] as String? ?? '';
+    driverPhoneCtrl.text = json['driverPhone'] as String? ?? '';
+    vehicleCtrl.text = json['vehicle'] as String? ?? '';
+    totalPriceCtrl.text = json['totalPrice'] as String? ?? '';
+    cashAdvanceCtrl.text = json['cashAdvance'] as String? ?? '';
+    agencyContactCtrl.text = json['agencyContact'] as String? ?? '';
+    agencyPhoneCtrl.text = json['agencyPhone'] as String? ?? '';
+    emergencyPhoneCtrl.text = json['emergencyPhone'] as String? ?? '';
+    descriptionCtrl.text = json['description'] as String? ?? '';
+
+    showFlight.value = json['showFlight'] as bool? ?? false;
+    showItinerary.value = json['showItinerary'] as bool? ?? false;
+    showPeople.value = json['showPeople'] as bool? ?? false;
+    showCost.value = json['showCost'] as bool? ?? false;
+    showEmergency.value = json['showEmergency'] as bool? ?? false;
+
+    // 还原每日行程
+    final daysList = json['itineraryDays'] as List<dynamic>?;
+    if (daysList != null && daysList.isNotEmpty) {
+      itineraryDays.value = daysList
+          .map((d) => ItineraryDay.fromJson(d as Map<String, dynamic>))
+          .toList();
+      if (itineraryDays.isNotEmpty) showItinerary.value = true;
+    }
+
+    _updateTotalPeople();
+    // 同步天数
+    final start = DateTime.tryParse(startDateCtrl.text.trim());
+    final end = DateTime.tryParse(endDateCtrl.text.trim());
+    if (start != null && end != null) {
+      daysCount.value = end.difference(start).inDays + 1;
+    }
+  }
+
+  /// 清除草稿
+  void _clearDraft() {
+    StorageService.to.remove(STORAGE_JOURNEY_DRAFT_KEY);
   }
 
   // ====== 提交 ======
   Future<void> onSubmit() async {
     if (titleCtrl.text.trim().isEmpty) { Loading.error('请输入团名'); return; }
     if (startDateCtrl.text.trim().isEmpty) { Loading.error('请选择出发日期'); return; }
+    _clearDraft();
     Loading.success(isEdit.value ? '修改成功' : '创建成功');
     Get.back(result: true);
   }
@@ -799,6 +1147,11 @@ class JourneyEditorController extends GetxController with ApiMixin {
 
   @override
   void onClose() {
+    _draftSaveTimer?.cancel();
+    // 新建模式下如果有内容则保存草稿（编辑模式不保存草稿）
+    if (!isEdit.value && _hasContent()) {
+      _saveDraft();
+    }
     startDateCtrl.removeListener(_syncDays);
     endDateCtrl.removeListener(_syncDays);
     adultCountCtrl.removeListener(_updateTotalPeople);
