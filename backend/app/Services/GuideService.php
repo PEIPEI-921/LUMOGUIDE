@@ -158,15 +158,19 @@ class GuideService
             //                'city_name' => $data['name']
             //            ]);
 
-
-            // 发送待审核邮件
-            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/city?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
             Log::error('publishCity error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
+
+        // 发送待审核邮件（非关键路径）
+        try {
+            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/city?status=1";
+            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+        } catch (Throwable $exception) {
+            Log::error('publishCity mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
     }
 
@@ -242,6 +246,7 @@ class GuideService
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
+            Log::error('changeCity error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -396,12 +401,17 @@ class GuideService
                 $model->pictures = json_encode($data['pictures']);
                 $model->save();
             }
+        } catch (Throwable $exception) {
+            Log::error('editCity error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
 
-            // 发送待审核邮件
+        // 发送待审核邮件（非关键路径）
+        try {
             $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/city?status=1";
             Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
-            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+            Log::error('editCity mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
     }
 
@@ -541,14 +551,18 @@ class GuideService
             }
             $model->save();
 
-            // 发送待审核邮件
-            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/cityContent?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
-
             Log::debug('Content-' . json_encode($model->toArray(), JSON_UNESCAPED_UNICODE));
         } catch (Throwable $exception) {
             Log::error('cityContentAdd error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
+
+        // 发送待审核邮件（非关键路径）
+        try {
+            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/cityContent?status=1";
+            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+        } catch (Throwable $exception) {
+            Log::error('cityContentAdd mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
     }
 
@@ -708,13 +722,20 @@ class GuideService
 
 
             //            Log::debug('Content-' . json_encode($res->toArray(), JSON_UNESCAPED_UNICODE));
-            // 发送待审核邮件
-            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/cityContent?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
             DB::commit();
         } catch (Throwable $exception) {
             DB::rollBack();
+            Log::error('cityContentEdit error: ' . $exception->getMessage() . "
+" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
+
+        try {
+            $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/cityContent?status=1";
+            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("346234211346226260347232204345276205345257251346240270345237216345270202345205247345256271357274214350253213347233241345277253350231225347220206,<br><a href='" . $url . "'>351273236346223212346237245347234213</a>"))->onQueue('emails'));
+        } catch (Throwable $exception) {
+            Log::error('cityContentEdit mail error: ' . $exception->getMessage() . "
+" . $exception->getTraceAsString());
         }
     }
 
@@ -733,6 +754,7 @@ class GuideService
         try {
             $model->delete();
         } catch (Throwable $exception) {
+            Log::error('cityContentDel error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -774,10 +796,6 @@ class GuideService
             if (env('APP_DEBUG')) {
                 $model->is_finish = 1;
                 $model->audit_status = 1;
-            } else {
-                // 发送待审核邮件
-                $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/information";
-                Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
             }
             $model->save();
 
@@ -788,6 +806,16 @@ class GuideService
             DB::rollBack();
             Log::error('informationAdd error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
+
+        // 发送待审核邮件（非关键路径）
+        if (!env('APP_DEBUG')) {
+            try {
+                $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/information";
+                Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+            } catch (Throwable $exception) {
+                Log::error('informationAdd mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
+            }
         }
     }
 
@@ -858,7 +886,7 @@ class GuideService
         try {
             $res->class_id = $data['class_id'];
             $res->title = $data['title'];
-            $res->desc = substr($data['content'], 0, 100);
+            $res->desc = mb_substr($data['content'], 0, 200, 'UTF-8');
             $res->content = $data['content'];
             $pictures = $data['pictures'] ?? [];
             if (is_array($pictures) && !empty($pictures)) {
@@ -869,12 +897,17 @@ class GuideService
             $res->audit_status = 0;
             $res->audit_feedback = null;
             $res->save();
+        } catch (Throwable $exception) {
+            Log::error('informationEdit error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
 
-            // 发送待审核邮件
+        // 发送待审核邮件（非关键路径，失败不影响编辑结果）
+        try {
             $url = env('APP_URL') . '/' . env('ADMIN_ROUTE_PREFIX', 'admin') . "/information";
             Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
-            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+            Log::error('informationEdit mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
     }
 
@@ -894,6 +927,7 @@ class GuideService
         try {
             $res->delete();
         } catch (Throwable $exception) {
+            Log::error('informationDel error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -1089,6 +1123,7 @@ class GuideService
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
+            Log::error('tripUpdate error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -1118,6 +1153,7 @@ class GuideService
             $reserve->reason = $reason;
             $reserve->save();
         } catch (\Throwable $exception) {
+            Log::error('rejectReserve error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -1145,6 +1181,7 @@ class GuideService
             $reserve->guide_del = 1;
             $reserve->save();
         } catch (\Throwable $exception) {
+            Log::error('delReserve error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }

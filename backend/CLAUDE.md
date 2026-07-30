@@ -373,6 +373,99 @@ Standard Eloquent models. Key relationships:
 **Graceful skip** if business_type not in map, type_class_id missing, or city not found.
 
 **Related**: `app/Mail/AuditMail.php` (was missing — created 2026-07-26, caused all content uploads to fail), [[company-audit-auto-create-shop]].
+
+### Admin Menu Merge — Unified User Management (2026-07-26)
+
+**Menu restructured**: 用戶管理 + 導遊管理 + 商家管理 merged into a single tabbed page at `/manage/users` with three tabs: 全部用户 / 導遊 / 企業.
+
+**New menus created**:
+- **訂單管理** (ID 37): 預約管理 (moved from 商家) + 會員訂單 (moved from 會費)
+- **分類管理** (ID 38): 導遊類型 + 城市類型 + 城市類型分類 + 資訊分類 + 積分商品分類 (all type configs consolidated)
+
+**Deleted**: 導遊管理(14), 導遊列表(26), 商家管理(16), 商家列表(34)
+
+**Implementation**: `app/Admin/Controllers/UserController.php` rewritten — `grid()` dispatches to `userGrid()` / `guideGrid()` / `companyGrid()` based on `?tab=` query param. Guide/Company tabs use `setResource('guide')` / `setResource('company')` so audit quick-edit actions still route to original GuideController/CompanyController. Original controllers and routes **preserved** for audit workflow.
+
+**Badge counts** (`bootstrap.php`): ID 30 (用戶管理) = guide pending + company pending combined.
+
+**User model**: Added `guide()` and `company()` relations.
+
+### Auto-Delete Rejected Content (2026-07-26)
+
+**`app/Console/Commands/CleanRejectedContent.php`** — daily scheduled command:
+- **Day 4** after rejection: sends system message warning "3天后自动删除"
+- **Day 7** after rejection: hard deletes record + associated `*Edit` record
+
+**Migration**: `2026_07_26_000001` — added `reject_notified_at` column to `city_content` and `city` tables (prevents duplicate notifications).
+
+**Manual delete**: Rejected content (`audit_status == 2`) shows a row delete button in both `CityContentController` and `CityController`. Both override `destroy()` to also clean up `*Edit` records.
+
+**Schedule** (`Kernel.php`): `$schedule->command('clean:rejected-content')->daily()`
+
+**Cron required**: `* * * * * php /www/wwwroot/lumo/artisan schedule:run >> /dev/null 2>&1`
+
+### Publish Form Improvements (2026-07-26)
+
+**Information publish** (`#/publish/information`):
+- Replaced `name`/`name_en` fields with Flutter-matching fields: `title`, `class_id` (mapped from `type_class_id`), `content`, `look` (1=仅导游, 2=所有人)
+- Payload maps `type_class_id` → `class_id` for API compatibility (`AddInformationRequest`)
+
+**City publish** (`#/guide/publish-city-form`):
+- Fixed cascade selector: `fetchContinents(parentId, target)` uses explicit `'continents'|'areas'|'countries'` target parameter (was broken by `this.form.area_id === parentId` logic)
+- Added `longitude`/`latitude` fields to match Flutter app
+
+**Draft auto-save** (both `publish/form.js` and `publish-city-form.js`):
+- Deep `watch` on `form` + `pictures` with 400ms debounce auto-saves to localStorage
+- Draft detection checks ALL text fields (not just `name`/`title`)
+- On success: `localStorage.removeItem(draftKey)` — no more prompts
+
+**Category loading** (`publish/form.js`): Fixed `res.data?.list` → `Array.isArray(res.data) ? res.data : (res.data?.list || [])` — `getInformationClass` returns array directly, not `{list: [...]}`.
+
+**Error display** (`publish-city-form.js`): Validation errors shown below submit button with auto-scroll.
+
+### Logo Sizing (2026-07-26)
+
+`.topbar-logo-full` height is `40px` default with responsive scaling:
+- Default (≥861px): 40px
+- Tablet (≤860px): 34px
+- Mobile (≤480px): 28px
+
+### Location / Longitude-Latitude Pattern (2026-07-27)
+
+All coordinate inputs use a **single `location` field** in "latitude, longitude" format (Google Maps convention). The `longitude` and `latitude` columns are populated from this field on save.
+
+| Layer | File | Implementation |
+|-------|------|---------------|
+| Admin City form | `CityController.php` | `$form->text('location')` + `saving` callback parses into `longitude`/`latitude` |
+| Admin CityContent form | `CityContentController.php` | Same pattern. `CityContent` model has `getLocationAttribute` accessor that joins `latitude, longitude` for edit display |
+| Web frontend | `publish-city-form.js` | Single `<input v-model="form.location">` — on submit, splits into `longitude`/`latitude` for the API |
+| API | `GuideService::publishCity` | Still receives `longitude`/`latitude` separately (frontend splits on submit) |
+
+**Format**: `纬度, 经度` (e.g., `48.86, 2.35`). The `saving` callback handles both full "lat,lng" and single-value inputs gracefully.
+
+### Safari Vue 3 Reactive Getter Workaround (2026-07-27)
+
+**Problem**: `Vue.reactive()` getters (e.g., `UserStore.isGuide`, `UserStore.isLogin`) may not trigger reactivity properly in Safari's JavaScriptCore engine. Computed properties that access these getters silently return stale values, causing UI elements (buttons, menus) to not render even when the user meets all conditions.
+
+**Fix**: In page-level `computed` properties, access raw reactive properties directly instead of through getters:
+
+```javascript
+// BEFORE (broken in Safari)
+isGuide() {
+  return UserStore.isLogin && UserStore.isGuide;
+}
+
+// AFTER (works in all browsers)
+isGuide() {
+  const info = UserStore.userInfo;
+  return !!UserStore.token && info && Number(info.identity) === 2;
+}
+```
+
+**Pattern**: Access `UserStore.token` and `UserStore.userInfo` (plain reactive properties) directly. Never chain getter access (`UserStore.isGuide`, `UserStore.isLogin`) inside a `computed: {}` block. Template guards like `v-if="UserStore.isLogin"` are fine since Vue evaluates them differently.
+
+**Identity checks**: Always use `Number(info.identity) === N` (not `info.identity === N`) since the API may return identity as a string. This applies to templates, computed properties, and store getters.
+
 ### Enums (`app/Enums/`)
 
 Constants organized by domain: `City`, `Company`, `Guide`, `Information`, `Integral`, `Reserve`, `System`, `User`, `Vip`. Used for status codes, type mappings, and error codes.
@@ -467,6 +560,18 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 - **Stripe webhooks**: Check `pay_status` before processing to ensure idempotency. Stripe may retry webhooks.
 - **SSL verification**: NEVER disable `CURLOPT_SSL_VERIFYPEER` in production code.
 - **Debug endpoints**: All debug/test routes MUST have `auth:api` middleware. The `/api/common/test` endpoint was secured 2026-07-24.
+
+### Backend — Hard Pitfalls (2026-07-30)
+
+- **`substr()` vs `mb_substr()` — CRITICAL**: ALWAYS use `mb_substr($str, 0, $len, 'UTF-8')` when truncating user content. `substr()` is byte-based and will slice multi-byte Chinese characters in half, producing invalid UTF-8 byte sequences (e.g., `\xE9\x81`) that MySQL rejects with "SQLSTATE[HY000]: General error: 1366 Incorrect string value". In `GuideService.php`, `informationAdd` correctly used `mb_substr()` but `informationEdit` used `substr()` — so creates worked but edits silently failed. Symptom: creates succeed, edits fail. Fix: grep for all `substr()` calls and replace with `mb_substr()`. See [[substr-mb-substr-encoding-bug]] in memory.
+
+- **ALL catch blocks MUST log the actual exception**: Every `catch (Throwable $e)` in Service files MUST call `Log::error('methodName error: ' . $e->getMessage() . "\n" . $e->getTraceAsString())`. Without this, bugs are completely invisible — the `ApiException::report()` only logs WHERE the exception was re-thrown (the catch block line number), not the original error. In `GuideService.php`, only 3 of 12 catch blocks had logging before 2026-07-30; the other 9 silently swallowed the actual exceptions. This must never happen again — when adding a new try/catch to a Service, ALWAYS include error logging in the catch block.
+
+- **Mail::queue() MUST be outside DB transactions**: If `Mail::queue()` throws inside a `DB::beginTransaction()`...`DB::commit()` block, the entire transaction rolls back and the user's data is lost. Move `Mail::queue()` AFTER the transaction commit/catch block, wrapped in its own try-catch. If mail fails, log it but don't fail the API response. The email is a notification — it's not critical to the operation.
+
+- **`php artisan config:cache` freezes `env()` calls**: After running `config:cache`, any `env()` call in application code (Service/Controller files) that was evaluated at cache time WILL STILL WORK — but be aware that config files are snap-shotted. If `.env` changes, you MUST run `config:clear` + `config:cache` to pick up changes. After deployment (2026-07-30): make this a checklist item post-deploy.
+
+- **Queue worker required for emails**: `Mail::queue()` dispatches to Redis but requires `php artisan queue:work redis` to actually send. Without a running worker, emails pile up in Redis but are never delivered. Check with `ps aux | grep queue:work` and `redis-cli LLEN queues:emails`.
 
 ### Frontend — Hard Pitfalls (will silently break with no errors)
 - **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component.
