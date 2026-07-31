@@ -27,6 +27,7 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
@@ -185,7 +186,7 @@ class UserService
             'reg_time' => substr($user->created_at, 0, 10),
             'user_status' => $user_status,
             'invite_url' => env('WEB_URL') . '/invite.html?code=' . $user->inviter_code,
-            'invite_img' => env('APP_URL') . "/storage/user_invite/{$user->id}.png",
+            'invite_img' => config('app.url') . "/storage/user_invite/{$user->id}.png",
         ];
     }
 
@@ -957,6 +958,41 @@ class UserService
 //                $guide->save();
             }
 
+            // --- 常駐城市處理 ---
+            $is_new_city = (int)($data['is_new_city'] ?? 0);
+            $linked_city_id = null;
+            $resident_city_id = null;
+            $resident_city_name = null;
+
+            if ($is_new_city === 1) {
+                // 檢查同名城市是否已存在（相同國家下）
+                $existing_city = City::query()
+                    ->where('name', $data['new_city_name'])
+                    ->where('country_id', $data['new_city_country_id'])
+                    ->first();
+                if ($existing_city) {
+                    $resident_city_id = $existing_city->id;
+                    $resident_city_name = $existing_city->name;
+                    $linked_city_id = null;
+                } else {
+                    $new_city = new City();
+                    $new_city->name = $data['new_city_name'];
+                    $new_city->name_en = $data['new_city_name_en'] ?? '';
+                    $new_city->continents_id = $data['new_city_continents_id'];
+                    $new_city->area_id = $data['new_city_area_id'];
+                    $new_city->country_id = $data['new_city_country_id'];
+                    $new_city->audit_status = 0; // 待審核，與導遊認證聯動
+                    $new_city->user_id = $user_id;
+                    $new_city->save();
+                    $resident_city_id = $new_city->id;
+                    $resident_city_name = $new_city->name;
+                    $linked_city_id = $new_city->id;
+                }
+            } else {
+                $resident_city_id = $data['resident_city_id'] ?? null;
+                $resident_city_name = $data['resident_city_name'] ?? null;
+            }
+
             $model->photo = $data['photo'];
             $model->name = $data['name'];
             if (isset($data['name_en'])) {
@@ -1005,6 +1041,22 @@ class UserService
                 $model->car_pictures = json_encode($data['car_pictures']);
             }
 
+            // 常駐城市字段
+            $model->resident_city_id = $resident_city_id;
+            $model->resident_city_name = $resident_city_name;
+            $model->is_new_city = $is_new_city;
+            if ($is_new_city === 1) {
+                $model->new_city_name = $data['new_city_name'] ?? null;
+                $model->new_city_name_en = $data['new_city_name_en'] ?? null;
+                $model->new_city_continents_id = $data['new_city_continents_id'] ?? null;
+                $model->new_city_continents_name = $data['new_city_continents_name'] ?? null;
+                $model->new_city_area_id = $data['new_city_area_id'] ?? null;
+                $model->new_city_area_name = $data['new_city_area_name'] ?? null;
+                $model->new_city_country_id = $data['new_city_country_id'] ?? null;
+                $model->new_city_country_name = $data['new_city_country_name'] ?? null;
+                $model->linked_city_id = $linked_city_id;
+            }
+
             // 处理审核驳回
 //            if ($model->audit_status == \App\Enums\Guide::StatusReject) {
 //                $model->audit_status = \App\Enums\Guide::StatusSubmit;
@@ -1020,6 +1072,7 @@ class UserService
 
             DB::commit();
         } catch (Throwable $e) {
+            Log::error('applyGuide error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             Db::rollBack();
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
@@ -1214,6 +1267,7 @@ class UserService
             $model->save();
             DB::commit();
         } catch (Throwable $e) {
+            Log::error('applyCompany error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             Db::rollBack();
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }

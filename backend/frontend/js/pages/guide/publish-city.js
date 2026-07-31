@@ -155,8 +155,8 @@ const GuidePublishCityPage = {
   },
   computed: {
     isGuide() {
-      const profile = UserStore.profile || UserStore.userInfo;
-      return profile && Number(profile.identity) === 2;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 2;
     },
   },
   mounted() {

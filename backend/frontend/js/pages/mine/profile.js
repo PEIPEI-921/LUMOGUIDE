@@ -199,10 +199,12 @@ const ProfilePage = {
       return UserStore.profile || UserStore.userInfo;
     },
     isGuide() {
-      return (this.user?.identity || 1) === 2;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 2;
     },
     isCompany() {
-      return (this.user?.identity || 1) === 3;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 3;
     },
     identityLabel() {
       if (this.isGuide) return this.$t('導遊');

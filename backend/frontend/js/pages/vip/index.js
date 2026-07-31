@@ -204,10 +204,12 @@ const VipPage = {
       return UserStore.profile || {};
     },
     isGuide() {
-      return Number(this.profile.identity) === 2;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 2;
     },
     isCompany() {
-      return Number(this.profile.identity) === 3;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 3;
     },
     isPaidVip() {
       return Number(this.profile.vip_type || 0) > 0 && Number(this.profile.vip_expiration_time || 0) > 0;

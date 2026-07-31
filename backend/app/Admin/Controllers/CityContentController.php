@@ -122,9 +122,13 @@ class CityContentController extends AdminController
                 if (($actions->row->edit_data && $actions->row->edit_data->audit_status == 0) || $actions->row->audit_status == 0) {
                     $actions->prepend(new AuditCityContent());
                 } else {
-                    if($actions->row->audit_status == 1){
+                    if ($actions->row->audit_status == 1) {
                         $actions->edit();
                     }
+                }
+                // 已驳回的内容可以手动删除
+                if ($actions->row->audit_status == 2) {
+                    $actions->delete();
                 }
             });
 
@@ -275,6 +279,23 @@ class CityContentController extends AdminController
                     break;
             }
 
+            $form->text('location', '經緯度')
+                ->help('格式：緯度, 經度（如 48.86, 2.35）');
+
+            $form->saving(function (Form $form) {
+                $location = $form->input('location');
+                if ($location) {
+                    $parts = array_map('trim', explode(',', $location));
+                    if (count($parts) >= 2) {
+                        $form->input('latitude', $parts[0]);
+                        $form->input('longitude', $parts[1]);
+                    } elseif (count($parts) === 1) {
+                        $form->input('longitude', $parts[0]);
+                    }
+                }
+                $form->deleteInput('location');
+            });
+
             $form->multipleImage('pictures')->saveFullUrl()->uniqueName()->autoUpload()->sortable()
                 ->maxSize(5120)
                 ->compress([
@@ -303,5 +324,26 @@ class CityContentController extends AdminController
                 return $form->response()->success('操作成功')->redirect('cityContent?type_id=' . $type_id);
             });
         });
+    }
+
+    /**
+     * Delete city content + related edit records.
+     */
+    public function destroy($id)
+    {
+        $ids = explode(',', $id);
+        $deleted = 0;
+        foreach ($ids as $id) {
+            $id = trim($id);
+            if (!$id) continue;
+            \App\Models\CityContentEdit::where('city_content_id', $id)->delete();
+            if (\App\Models\CityContent::find($id)?->delete()) {
+                $deleted++;
+            }
+        }
+        return response()->json([
+            'status' => true,
+            'message' => "已刪除 {$deleted} 條記錄",
+        ]);
     }
 }

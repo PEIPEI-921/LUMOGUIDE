@@ -402,7 +402,16 @@ Standard Eloquent models. Key relationships:
 
 **Schedule** (`Kernel.php`): `$schedule->command('clean:rejected-content')->daily()`
 
-**Cron required**: `* * * * * php /www/wwwroot/lumo/artisan schedule:run >> /dev/null 2>&1`
+**Cron required**: Must run as `www` user (`crontab -u www -e`): `* * * * * /www/server/php/80/bin/php /www/wwwroot/lumo/artisan schedule:run >> /dev/null 2>&1`
+
+### Draft Save for Multi-Step Forms (2026-07-31)
+
+Multi-step certification forms auto-save drafts to `localStorage`. Pattern from `publish/form.js`:
+
+- **Guide certification** (`guide/certify.js`): key `guide_certify_draft`, watches `form`, `selectedLangs`, `selectedTypes`, `photoPreview`, `carPics`
+- **Company entry** (`merchant/entry.js`): key `merchant_entry_draft`, watches `form`, `selectedTypes`, `storePics`
+
+**Flow**: `watch` (deep, 400ms debounce) → `saveDraft()` → on re-entry: `checkDraft()` after `loadData()` → show prompt card → `restoreDraft()` or `clearDraft()` → clear on submit success. Only saves serializable data (no File objects or blob URLs). Does not trigger in readOnly mode (approved/pending status).
 
 ### Publish Form Improvements (2026-07-26)
 
@@ -465,6 +474,32 @@ isGuide() {
 **Pattern**: Access `UserStore.token` and `UserStore.userInfo` (plain reactive properties) directly. Never chain getter access (`UserStore.isGuide`, `UserStore.isLogin`) inside a `computed: {}` block. Template guards like `v-if="UserStore.isLogin"` are fine since Vue evaluates them differently.
 
 **Identity checks**: Always use `Number(info.identity) === N` (not `info.identity === N`) since the API may return identity as a string. This applies to templates, computed properties, and store getters.
+
+### Guide Certification — Resident City (2026-07-31)
+
+When a guide applies for certification (`POST /user/applyGuide`), they can set a resident city (常駐城市):
+
+- **Existing city** (`is_new_city=0`): sends `resident_city_id`
+- **New city** (`is_new_city=1`): sends `new_city_name`, `new_city_name_en`, `new_city_continents_id/area_id/country_id`
+
+Backend creates a `city` record with `audit_status=0` (pending) and stores `linked_city_id`. City dedup: checks `name + country_id` before creating.
+
+**Audit linkage** (`app/Admin/Repositories/Guide.php`):
+- Approval: `UPDATE city SET audit_status = 1 WHERE id = linked_city_id`
+- Rejection: `UPDATE city SET audit_status = 2 WHERE id = linked_city_id`
+
+**Migration**: `2026_07_31_000001_add_resident_city_to_guides.php` — adds 12 columns to both `guides` and `guide_edit` tables.
+
+### Company Registration — Field Name Compatibility (2026-07-31)
+
+`POST /user/applyCompany` uses `prepareForValidation()` in `ApplyCompanyRequest.php` to map incoming field names:
+
+| Client sends | Mapped to | Notes |
+|---|---|---|
+| `license` | `documents_picture` | Flutter/web send individual image field |
+| `type` (array) | `business_type` (string) | Web frontend fixed to send `business_type` |
+
+This allows both old clients (Flutter sending `license`) and new clients (web sending `documents_picture`) to work.
 
 ### Enums (`app/Enums/`)
 
@@ -569,12 +604,33 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 
 - **Mail::queue() MUST be outside DB transactions**: If `Mail::queue()` throws inside a `DB::beginTransaction()`...`DB::commit()` block, the entire transaction rolls back and the user's data is lost. Move `Mail::queue()` AFTER the transaction commit/catch block, wrapped in its own try-catch. If mail fails, log it but don't fail the API response. The email is a notification — it's not critical to the operation.
 
-- **`php artisan config:cache` freezes `env()` calls**: After running `config:cache`, any `env()` call in application code (Service/Controller files) that was evaluated at cache time WILL STILL WORK — but be aware that config files are snap-shotted. If `.env` changes, you MUST run `config:clear` + `config:cache` to pick up changes. After deployment (2026-07-30): make this a checklist item post-deploy.
+- **`php artisan config:cache` DISABLES all `env()` calls in application code — CRITICAL**: After running `config:cache`, **EVERY `env()` call in Service/Controller/application code returns `null`/empty**. This is NOT a freeze — it's a complete shutdown. `config:cache` compiles all config files into a single cached array, and Laravel's `env()` helper is designed to only work during config bootstrapping. Once cached, `env('APP_URL')` returns `""`, `env('STRIPE_KEY')` returns `""`, etc. **You MUST NEVER use `env()` directly in Service or Controller code — always use `config()` instead.** After config:cache, if `.env` changes, you MUST run `config:clear` + `config:cache` to pick up changes. All `env('APP_URL')` in `CommonService`, `AuthService`, `GuideService`, `UserService` were replaced with `config('app.url')` (2026-08-01). Remaining `env()` calls in Services/ (~15 instances: SDK_APP_ID, SECRET_KEY, STRIPE_KEY, WEB_URL, AUDIT_EMAIL, APP_DEBUG) still need migration to `config()`. See [[app-timezone-upload-fix]] in memory.
 
-- **Queue worker required for emails**: `Mail::queue()` dispatches to Redis but requires `php artisan queue:work redis` to actually send. Without a running worker, emails pile up in Redis but are never delivered. Check with `ps aux | grep queue:work` and `redis-cli LLEN queues:emails`.
+- **Queue worker required for emails**: `Mail::queue()` dispatches to Redis but requires a queue worker to actually send. The worker runs via www user's crontab every minute. Without a running worker, emails pile up in Redis but are never delivered. Check with `ps aux | grep queue:work` and `redis-cli LLEN lumo_database_queues:emails`.
+
+- **schedule:run cron required**: `Kernel.php` scheduled commands (`clean:rejected-content`, `member:expiry-remind`) only execute if the schedule:run cron runs every minute. Server must have BOTH entries in **www user's crontab** (`crontab -u www -l`), NOT root:
+  ```
+  * * * * * /www/server/php/80/bin/php /www/wwwroot/lumo/artisan queue:work --queue=emails,default --once --max-jobs=5 >> /dev/null 2>&1
+  * * * * * /www/server/php/80/bin/php /www/wwwroot/lumo/artisan schedule:run >> /dev/null 2>&1
+  ```
+  These MUST run as `www` (not root) to avoid creating root-owned files that PHP-FPM cannot access.
+
+- **`prepareForValidation()` for API field compatibility**: When mobile/web clients send different field names than what the backend expects (e.g., Flutter sends `license` but backend wants `documents_picture`), use `prepareForValidation()` in the FormRequest to map old field names BEFORE validation. This avoids breaking existing clients. Example in `ApplyCompanyRequest.php`: maps `license` → `documents_picture` when the latter is missing.
+
+- **File upload error logging**: `CommonService::upload()` catch block now logs the actual exception. File upload failures (disk full, GD/compressImage errors, permission issues) were previously invisible — only a generic "System error" was returned. When debugging upload issues, check the Laravel log for `upload error:` entries.
+
+- **`APP_TIMEZONE=Asia/Shanghai` MUST be set in `.env`**: Defaults to UTC if unset. Laravel calls `date_default_timezone_set('UTC')` on boot → `date('Ymd')` returns UTC date (previous day between 00:00-08:00 CST). `CommonService::upload()` uses `date('Ymd')` for upload directory names. If root cron creates the directory first (root:root 700), PHP-FPM (www) can't write → all uploads fail with `getimagesize(): Permission denied`. Both `.env` files updated 2026-08-01. See [[app-timezone-upload-fix]] in memory.
+
+- **Crontab MUST run as `www` user, not root**: Root cron creates files/directories with `root:root` ownership that PHP-FPM (www) cannot read/write. This caused the `20260731` upload directory to have `drwx------ root root` permissions, blocking all uploads. Moved `queue:work` and `schedule:run` from root crontab to `www` user's crontab (2026-08-01). Use: `crontab -u www -e`. Both commands need full paths: `/www/server/php/80/bin/php /www/wwwroot/lumo/artisan ...`
+
+- **Flutter Dart/3.10 uses `image` field name for file uploads**: The Flutter mobile app (Dart/3.10, starting ~July 28) sends files under the `image` field name, NOT `file`. `FileRequest` now accepts both via `required_without` rules, and `CommonService::upload()` resolves `$request->file('file') ?: $request->file('image')`. See [[flutter-image-field-name]] in memory.
+
+- **`Company::AuditStatusArr`**: `Company` enum had `AuditStatus` but other enums (City, Guide) use `AuditStatusArr`. Added `const AuditStatusArr = self::AuditStatus` alias. Without this, admin page `/manage/users?tab=company` crashes with "Undefined constant".
 
 ### Frontend — Hard Pitfalls (will silently break with no errors)
 - **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component.
+- **File upload silent failure in frontend**: `uploadFile()` in `entry.js` and `certify.js` catches errors and returns `existingUrl` (which is empty string for new uploads). If the file upload API fails, the user sees "證件圖片不能為空" with no indication that the upload itself failed. When debugging "upload failure" reports, check Nginx access logs for `fileUpload` 200 responses first — the upload API usually works, and the real issue is field name mismatch in the subsequent POST.
+- **Draft save for multi-step forms**: Follow the pattern in `publish/form.js`: `watch` form+pics (deep) → `created()` debounced `saveDraft()` → `checkDraft()` after `loadData()` → prompt UI with restore/clear → clear on success → save in `beforeUnmount()`. Only save serializable data (skip File objects and blob URLs). Applied to `guide/certify.js` and `merchant/entry.js`. See [[draft-save-multi-step-forms]] in memory.
 - **API response snake_case**: Access fields as the API returns them (`guide_type`, `city_id`, `first_picture`). Never use camelCase — JS returns `undefined` with no error.
 - **i18n reactivity**: I18n MUST be `Vue.reactive()` and `I18n.init()` MUST run before `app.mount('#app')`.
 - **File upload blob trap**: Store both `File` object AND blob URL for preview. Blob URLs are preview-only — upload File objects on submit. Revoke blob URLs in `beforeUnmount`.

@@ -85,6 +85,10 @@ class CityController extends AdminController
                         $actions->edit();
                     }
                 }
+                // 已驳回的城市可以手动删除
+                if ($actions->row->audit_status == 2) {
+                    $actions->delete();
+                }
             });
 
 //            $grid->disableDeleteButton();
@@ -183,6 +187,40 @@ class CityController extends AdminController
             $form->switch('recommend');
             $form->switch('home_recommend');
             $form->number('order')->default(0);
+
+            $form->saving(function (Form $form) {
+                $location = $form->input('location');
+                if ($location) {
+                    $parts = array_map('trim', explode(',', $location));
+                    if (count($parts) >= 2) {
+                        $form->input('latitude', $parts[0]);
+                        $form->input('longitude', $parts[1]);
+                    } elseif (count($parts) === 1) {
+                        $form->input('longitude', $parts[0]);
+                    }
+                }
+            });
         });
+    }
+
+    /**
+     * Delete city + related edit records.
+     */
+    public function destroy($id)
+    {
+        $ids = explode(',', $id);
+        $deleted = 0;
+        foreach ($ids as $id) {
+            $id = trim($id);
+            if (!$id) continue;
+            \App\Models\CityEdit::where('city_id', $id)->delete();
+            if (\App\Models\City::find($id)?->delete()) {
+                $deleted++;
+            }
+        }
+        return response()->json([
+            'status' => true,
+            'message' => "已刪除 {$deleted} 條記錄",
+        ]);
     }
 }

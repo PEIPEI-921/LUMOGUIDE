@@ -14,6 +14,18 @@ class ApplyCompanyRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        // Accept individual image fields from mobile app / old web frontend
+        // and map them to the expected field names
+        if (!$this->has('documents_picture') || empty($this->input('documents_picture'))) {
+            $license = $this->input('license');
+            if ($license && filter_var($license, FILTER_VALIDATE_URL)) {
+                $this->merge(['documents_picture' => $license]);
+            }
+        }
+    }
+
     public function rules()
     {
         return [

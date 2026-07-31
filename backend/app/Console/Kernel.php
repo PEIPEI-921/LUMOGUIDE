@@ -15,7 +15,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Auto-clean rejected city content older than 7 days
+        $schedule->command('clean:rejected-content')->daily();
+
+        // Membership expiry reminders at 30/10/3/1 days before expiration
+        $schedule->command('member:expiry-remind')->dailyAt('02:00');
     }
 
     /**

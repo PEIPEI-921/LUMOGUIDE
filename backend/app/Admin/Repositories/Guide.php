@@ -109,6 +109,14 @@ class Guide extends EloquentRepository
 
             $res->save();
 
+            // --- 常駐城市審核聯動 ---
+            if (isset($attributes['audit_status']) && $res->is_new_city == 1 && $res->linked_city_id) {
+                $city_audit_status = $attributes['audit_status'];
+                City::query()->where('id', $res->linked_city_id)->update([
+                    'audit_status' => $city_audit_status,
+                ]);
+            }
+
             if (isset($attributes['audit_status']) && $attributes['audit_status'] == 1) {
                 $city_name = City::query()->where('id', $res->city_id)->value('name_en');
                 $identity_str = \App\Models\GuideType::where('id', $res->identity_type)->value('name');

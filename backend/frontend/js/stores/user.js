@@ -52,13 +52,13 @@ const UserStore = Vue.reactive({
   get showGuideAuth() {
     const info = this.userInfo;
     if (!info) return false;
-    return info.identity === 1 && info.guide_audit_status !== 1 && info.company_audit_status === 9;
+    return Number(info.identity) === 1 && info.guide_audit_status !== 1 && info.company_audit_status === 9;
   },
 
   get showEnterpriseAuth() {
     const info = this.userInfo;
     if (!info) return false;
-    return info.identity === 1 && info.company_audit_status !== 1 && info.guide_audit_status === 9;
+    return Number(info.identity) === 1 && info.company_audit_status !== 1 && info.guide_audit_status === 9;
   },
 
   // --- Actions ---

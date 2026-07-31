@@ -31,6 +31,15 @@ const GuideCertifyPage = {
         <button @click="$router.back()" class="ds-btn ds-btn-primary" style="max-width:200px;margin:0 auto">{{ $t('返回') }}</button>
       </div>
 
+      <!-- Draft prompt -->
+      <div v-if="showDraftPrompt && !readOnly && !success" class="ds-container-600" style="margin-top:12px">
+        <div class="ds-card" style="padding:16px;background:var(--color-accent-soft);border:1px solid rgba(102,111,255,.15);display:flex;align-items:center;gap:12px">
+          <span style="flex:1;font-size:13px;color:var(--color-primary)">{{ $t('偵測到未完成的認證資料，是否繼續編輯？') }}</span>
+          <button @click="restoreDraft" class="ds-btn ds-btn-primary" style="padding:6px 16px;font-size:12px;white-space:nowrap">{{ $t('繼續編輯') }}</button>
+          <button @click="clearDraft" class="ds-btn ds-btn-outline" style="padding:6px 16px;font-size:12px;white-space:nowrap">{{ $t('重新填寫') }}</button>
+        </div>
+      </div>
+
       <!-- Form -->
       <div v-else class="ds-container-600">
         <!-- Header -->
@@ -245,12 +254,25 @@ const GuideCertifyPage = {
         { key: 'licenseFront', label: '駕照正面', ref: 'licFrontInput' },
         { key: 'licenseBack', label: '駕照背面', ref: 'licBackInput' },
       ],
-      yearOptions: years, STEPS, IDENTITY_OPTIONS, HAVE_OPTIONS
+      yearOptions: years, STEPS, IDENTITY_OPTIONS, HAVE_OPTIONS,
+      showDraftPrompt: false, draftKey: 'guide_certify_draft'
     };
+  },
+  watch: {
+    form: { deep: true, handler() { this._autoSaveDraft(); } },
+    selectedLangs: { deep: true, handler() { this._autoSaveDraft(); } },
+    selectedTypes: { deep: true, handler() { this._autoSaveDraft(); } },
+    photoPreview: { handler() { this._autoSaveDraft(); } },
+    carPics: { deep: true, handler() { this._autoSaveDraft(); } },
+  },
+  created() {
+    this._autoSaveDraft = debounce(() => {
+      if (!this.readOnly && !this.success) this.saveDraft();
+    }, 400);
   },
   mounted() {
     if (!UserStore.isLogin) { this.loading = false; return; }
-    this.loadData();
+    this.loadData().then(() => this.checkDraft());
   },
   methods: {
     async loadData() {
@@ -316,6 +338,56 @@ const GuideCertifyPage = {
       this.docFiles[key] = null;
       const map = { certificate: 'certificate_picture', passport: 'passport_picture', licenseFront: 'driver_license_front', licenseBack: 'driver_license_back' };
       this.form[map[key]] = '';
+    },
+    _draftTextFields() {
+      return ['name', 'name_en', 'phone', 'email', 'bill_address', 'wechat', 'whats_app', 'line', 'other_contact', 'invite_code', 'year', 'identity_type', 'introduction', 'business_contact', 'vehicle_info', 'other_type'];
+    },
+    getDraft() {
+      try {
+        const s = localStorage.getItem(this.draftKey);
+        return s ? JSON.parse(s) : null;
+      } catch (e) { return null; }
+    },
+    checkDraft() {
+      if (this.readOnly || this.success) return;
+      const draft = this.getDraft();
+      if (!draft) return;
+      const hasText = this._draftTextFields().some(k => draft.form && draft.form[k] && String(draft.form[k]).trim());
+      const hasPhoto = draft.photoPreview && typeof draft.photoPreview === 'string';
+      const hasCars = Array.isArray(draft.carPics) && draft.carPics.length > 0;
+      const hasDocs = draft.form && ['certificate_picture', 'passport_picture', 'driver_license_front', 'driver_license_back'].some(k => draft.form[k] && String(draft.form[k]).trim());
+      if (hasText || hasPhoto || hasCars || hasDocs) this.showDraftPrompt = true;
+    },
+    restoreDraft() {
+      const draft = this.getDraft();
+      if (!draft) { this.showDraftPrompt = false; return; }
+      if (draft.form) {
+        Object.keys(this.form).forEach(k => { if (draft.form[k] !== undefined) this.form[k] = draft.form[k]; });
+      }
+      if (draft.selectedLangs) this.selectedLangs = [...draft.selectedLangs];
+      if (draft.selectedTypes) this.selectedTypes = [...draft.selectedTypes];
+      if (draft.photoPreview && typeof draft.photoPreview === 'string') this.photoPreview = draft.photoPreview;
+      if (Array.isArray(draft.carPics)) this.carPics = draft.carPics.filter(p => typeof p === 'string');
+      this.showDraftPrompt = false;
+    },
+    saveDraft() {
+      const hasText = this._draftTextFields().some(k => this.form[k] && String(this.form[k]).trim());
+      const hasPhoto = this.photoPreview && typeof this.photoPreview === 'string';
+      const hasCars = this.carPics.length > 0;
+      const hasDocs = ['certificate_picture', 'passport_picture', 'driver_license_front', 'driver_license_back'].some(k => this.form[k] && String(this.form[k]).trim());
+      if (!hasText && !hasPhoto && !hasCars && !hasDocs) return;
+      const draft = {
+        form: { ...this.form },
+        selectedLangs: [...this.selectedLangs],
+        selectedTypes: [...this.selectedTypes],
+        photoPreview: (typeof this.photoPreview === 'string' && !this.photoPreview.startsWith('blob:')) ? this.photoPreview : '',
+        carPics: this.carPics.map(p => typeof p === 'string' ? p : (p.preview && !p.preview.startsWith('blob:') ? p.preview : '')).filter(Boolean),
+      };
+      localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    },
+    clearDraft() {
+      localStorage.removeItem(this.draftKey);
+      this.showDraftPrompt = false;
     },
     validateStep(s) {
       if (s === 0) {
@@ -385,6 +457,7 @@ const GuideCertifyPage = {
         });
         if (result.success) {
           this.success = true;
+          localStorage.removeItem(this.draftKey);
         } else {
           this.error = result.message || '提交失败';
         }
@@ -396,6 +469,7 @@ const GuideCertifyPage = {
   },
 
   beforeUnmount() {
+    if (!this.readOnly && !this.success) this.saveDraft();
     // Revoke blob URLs to prevent memory leaks
     if (this.photoPreview && this.photoPreview.startsWith('blob:')) URL.revokeObjectURL(this.photoPreview);
     this.carPics.forEach(p => { if (p.preview && p.preview.startsWith('blob:')) URL.revokeObjectURL(p.preview); });

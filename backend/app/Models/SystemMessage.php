@@ -36,4 +36,21 @@ class SystemMessage extends Model
         Redis::hSet("message_list:$user_id", 'system', $count + 1);
     }
 
+    /**
+     * 添加系统消息（含 content_type，用于会员到期等特定类型消息）
+     */
+    static public function saveDataWithType(int $user_id, string $title, string $desc, string $content, string $content_type)
+    {
+        $model = new self();
+        $model->user_id = $user_id;
+        $model->title = $title;
+        $model->desc = $desc;
+        $model->content = $content;
+        $model->content_type = $content_type;
+        $model->save();
+
+        $count = Redis::hGet("message_list:$user_id", 'system') ?? 0;
+        Redis::hSet("message_list:$user_id", 'system', $count + 1);
+    }
+
 }

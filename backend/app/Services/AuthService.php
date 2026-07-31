@@ -12,6 +12,7 @@ use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
 use Tencent\TLSSigAPIv2;
@@ -72,7 +73,7 @@ class AuthService
     public function sendCode(string $email, string $type): void
     {
         if ($type == 'reg') {
-            if (User::query()->where("email", $email)->exists()) {
+            if (DB::table('users')->where('email', $email)->exists()) {
                 throw new ApiException(__('res.account_in'));
             }
         }
@@ -136,9 +137,14 @@ class AuthService
 
         DB::beginTransaction();
         try {
+            // 事务内原子性检查：防止并发注册同一邮箱
+            if (DB::table('users')->where('email', $data['email'])->exists()) {
+                throw new ApiException(__('res.email_unique'));
+            }
+
             $model = new User();
             $model->email = $data['email'];
-            $model->avatar = env('APP_URL') . "/storage/avatar/default.jpg";
+            $model->avatar = config('app.url') . "/storage/avatar/default.jpg";
             $model->password = Hash::make($data['password']);
             $model->inviter_id = $inviter_id;
             $model->inviter_code = generateUniqueInviteCode();
@@ -181,6 +187,7 @@ class AuthService
             DB::commit();
         } catch (\Throwable $exception) {
             DB::rollBack();
+            Log::error('register error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 

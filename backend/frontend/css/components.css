@@ -21,9 +21,9 @@
 
 /* Full logo — white version via filter for dark bg */
 .topbar-logo-full {
-  height: 36px;
+  height: 40px;
   width: auto;
-  flex-shrink: 0;
+  max-width: 100%;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -48,7 +48,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 13px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.75);
@@ -130,6 +130,19 @@
 .topbar-svg {
   display: block;
   flex-shrink: 0;
+}
+
+/* ── Narrow viewports: logo and nav spacing scale down together ── */
+@media (max-width: 860px) {
+  .topbar-logo-full { height: 34px; }
+  .topbar-tab { padding: 5px 8px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .topbar-logo-full { height: 28px; }
+  .topbar-tab { padding: 4px 6px; font-size: 11px; }
+  .topbar-tabs { gap: 1px; }
+  .topbar-lang-btn { font-size: 10px; padding: 2px 4px; }
 }
 
 /* Search icon button */

@@ -30,6 +30,15 @@ const MerchantEntryPage = {
         <button @click="$router.back()" class="ds-btn ds-btn-primary" style="max-width:200px;margin:0 auto">{{ $t('返回') }}</button>
       </div>
 
+      <!-- Draft prompt -->
+      <div v-if="showDraftPrompt && !readOnly && !success" class="ds-container-600" style="margin-top:12px">
+        <div class="ds-card" style="padding:16px;background:var(--color-accent-soft);border:1px solid rgba(102,111,255,.15);display:flex;align-items:center;gap:12px">
+          <span style="flex:1;font-size:13px;color:var(--color-primary)">{{ $t('偵測到未完成的入駐資料，是否繼續編輯？') }}</span>
+          <button @click="restoreDraft" class="ds-btn ds-btn-primary" style="padding:6px 16px;font-size:12px;white-space:nowrap">{{ $t('繼續編輯') }}</button>
+          <button @click="clearDraft" class="ds-btn ds-btn-outline" style="padding:6px 16px;font-size:12px;white-space:nowrap">{{ $t('重新填寫') }}</button>
+        </div>
+      </div>
+
       <!-- Form -->
       <div v-else class="ds-container-600">
         <!-- Header -->
@@ -79,6 +88,21 @@ const MerchantEntryPage = {
           <div class="ds-form-group">
             <label class="ds-label">{{ $t('地址') }}</label>
             <input v-model="form.address" class="ds-input" :disabled="readOnly" style="margin-top:4px">
+          </div>
+          <div class="ds-form-group">
+            <label class="ds-label">{{ $t('所在城市') }} *</label>
+            <select v-model="form.city_id" class="ds-input" :disabled="readOnly" style="margin-top:4px">
+              <option value="">{{ $t('請選擇城市') }}</option>
+              <option v-for="c in cityOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="ds-form-group">
+            <label class="ds-label">{{ $t('統一編號') }} *</label>
+            <input v-model="form.tax_id" class="ds-input" :disabled="readOnly" style="margin-top:4px">
+          </div>
+          <div class="ds-form-group">
+            <label class="ds-label">{{ $t('網站') }} *</label>
+            <input v-model="form.website" class="ds-input" :disabled="readOnly" style="margin-top:4px">
           </div>
           <div class="ds-form-group">
             <label class="ds-label">{{ $t('企業簡介') }}</label>
@@ -171,11 +195,13 @@ const MerchantEntryPage = {
       form: {
         name: '', name_en: '', contact_name: '', phone: '', email: '',
         country: '', address: '', introduction: '',
+        city_id: '', tax_id: '', website: '',
         wechat: '', whats_app: '', line: '', other_contact: '',
         contact_phone: '', contact_email: '',
         photo: '', license: '', id_card_front: '', id_card_back: '',
         store_pictures: [],
       },
+      cityOptions: [],
       docFiles: { photo: null, license: null, idCardFront: null, idCardBack: null },
       storePics: [],
       docFields: [
@@ -184,14 +210,32 @@ const MerchantEntryPage = {
         { key: 'idCardFront', label: '身分證正面', ref: 'idFrontRef' },
         { key: 'idCardBack', label: '身分證背面', ref: 'idBackRef' },
       ],
-      MERCHANT_STEPS, BIZ_TYPES
+      MERCHANT_STEPS, BIZ_TYPES,
+      showDraftPrompt: false, draftKey: 'merchant_entry_draft'
     };
+  },
+  watch: {
+    form: { deep: true, handler() { this._autoSaveDraft(); } },
+    selectedTypes: { deep: true, handler() { this._autoSaveDraft(); } },
+    storePics: { deep: true, handler() { this._autoSaveDraft(); } },
+  },
+  created() {
+    this._autoSaveDraft = debounce(() => {
+      if (!this.readOnly && !this.success) this.saveDraft();
+    }, 400);
   },
   mounted() {
     if (!UserStore.isLogin) { this.loading = false; return; }
-    this.loadData();
+    this.loadData().then(() => this.checkDraft());
+    this.loadCityOptions();
   },
   methods: {
+    async loadCityOptions() {
+      try {
+        const res = await ApiProvider.get(ApiUrl.cityOptions);
+        if (res.success) this.cityOptions = res.data || [];
+      } catch (e) { /* silent */ }
+    },
     async loadData() {
       this.loading = true;
       try {
@@ -201,8 +245,15 @@ const MerchantEntryPage = {
           const status = Number(d.audit_status ?? 0);
           if (status === 0 || status === 1) this.readOnly = true;
           Object.keys(this.form).forEach(k => { if (d[k] !== undefined) this.form[k] = d[k]; });
-          if (Array.isArray(d.type)) this.selectedTypes = [...d.type];
-          if (Array.isArray(d.store_pictures)) this.storePics = [...d.store_pictures];
+          if (d.documents_picture) this.form.license = d.documents_picture;
+          if (d.business_type) {
+            if (Array.isArray(d.business_type)) this.selectedTypes = [...d.business_type];
+            else if (typeof d.business_type === 'string') this.selectedTypes = d.business_type.split(',').filter(Boolean);
+          }
+          if (Array.isArray(d.picture)) {
+            this.storePics = [...d.picture];
+            if (d.picture.length > 0) this.form.photo = d.picture[0];
+          }
         }
       } catch (e) { /* silent */ }
       this.loading = false;
@@ -230,11 +281,56 @@ const MerchantEntryPage = {
       const map = { photo: 'photo', license: 'license', idCardFront: 'id_card_front', idCardBack: 'id_card_back' };
       this.form[map[key]] = '';
     },
+    _draftTextFields() {
+      return ['name', 'name_en', 'contact_name', 'phone', 'email', 'country', 'address', 'introduction', 'city_id', 'tax_id', 'website', 'wechat', 'whats_app', 'line', 'other_contact', 'contact_phone', 'contact_email', 'photo', 'license', 'id_card_front', 'id_card_back'];
+    },
+    getDraft() {
+      try {
+        const s = localStorage.getItem(this.draftKey);
+        return s ? JSON.parse(s) : null;
+      } catch (e) { return null; }
+    },
+    checkDraft() {
+      if (this.readOnly || this.success) return;
+      const draft = this.getDraft();
+      if (!draft) return;
+      const hasText = this._draftTextFields().some(k => draft.form && draft.form[k] && String(draft.form[k]).trim());
+      const hasPics = Array.isArray(draft.storePics) && draft.storePics.length > 0;
+      if (hasText || hasPics) this.showDraftPrompt = true;
+    },
+    restoreDraft() {
+      const draft = this.getDraft();
+      if (!draft) { this.showDraftPrompt = false; return; }
+      if (draft.form) {
+        Object.keys(this.form).forEach(k => { if (draft.form[k] !== undefined) this.form[k] = draft.form[k]; });
+      }
+      if (draft.selectedTypes) this.selectedTypes = [...draft.selectedTypes];
+      if (Array.isArray(draft.storePics)) this.storePics = draft.storePics.filter(p => typeof p === 'string');
+      this.showDraftPrompt = false;
+    },
+    saveDraft() {
+      const hasText = this._draftTextFields().some(k => this.form[k] && String(this.form[k]).trim());
+      const hasPics = this.storePics.length > 0;
+      if (!hasText && !hasPics) return;
+      const draft = {
+        form: { ...this.form },
+        selectedTypes: [...this.selectedTypes],
+        storePics: this.storePics.map(p => typeof p === 'string' ? p : (p.preview && !p.preview.startsWith('blob:') ? p.preview : '')).filter(Boolean),
+      };
+      localStorage.setItem(this.draftKey, JSON.stringify(draft));
+    },
+    clearDraft() {
+      localStorage.removeItem(this.draftKey);
+      this.showDraftPrompt = false;
+    },
     validateStep(s) {
       if (s === 0) {
         if (!this.form.name.trim()) return '請輸入企業名稱';
         if (!this.form.phone.trim()) return '請輸入電話';
         if (!this.form.email.trim()) return '請輸入郵箱';
+        if (!this.form.city_id) return '請選擇所在城市';
+        if (!this.form.tax_id.trim()) return '請輸入統一編號';
+        if (!this.form.website.trim()) return '請輸入網站';
       }
       if (s === 1) {
         if (this.selectedTypes.length === 0) return '請選擇營業類型';
@@ -275,7 +371,9 @@ const MerchantEntryPage = {
 
         const result = await ApiProvider.post(ApiUrl.applyCompany, {
           ...this.form,
-          type: this.selectedTypes,
+          business_type: this.selectedTypes.join(','),
+          documents_picture: licenseUrl || '',
+          picture: photoUrl ? [photoUrl, ...storeUrls] : storeUrls,
           photo: photoUrl,
           license: licenseUrl,
           id_card_front: idFrontUrl,
@@ -284,6 +382,7 @@ const MerchantEntryPage = {
         });
         if (result.success) {
           this.success = true;
+          localStorage.removeItem(this.draftKey);
         } else {
           this.error = result.message || '提交失敗';
         }
@@ -292,5 +391,9 @@ const MerchantEntryPage = {
       }
       this.submitting = false;
     },
+  },
+
+  beforeUnmount() {
+    if (!this.readOnly && !this.success) this.saveDraft();
   }
 };

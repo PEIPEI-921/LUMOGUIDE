@@ -131,7 +131,8 @@ function createPublishPage(typeKey) {
           </div>
 
           <div class="ds-card" style="padding:16px">
-            <!-- Name -->
+            <!-- Name — hidden for information (API doesn't use it) -->
+            <template v-if="typeKey!=='information'">
             <div class="ds-form-group">
               <label class="ds-label">{{ $t('名稱') }} *</label>
               <input v-model="form.name" class="ds-input" style="margin-top:4px" :placeholder="$t('請輸入名稱')">
@@ -142,6 +143,7 @@ function createPublishPage(typeKey) {
               <label class="ds-label">{{ $t('英文名稱') }}</label>
               <input v-model="form.name_en" class="ds-input" style="margin-top:4px" :placeholder="$t('請輸入英文名稱')">
             </div>
+            </template>
 
             <!-- Title (information only) -->
             <div v-if="${f.title ? 'true' : 'false'}" class="ds-form-group">
@@ -240,6 +242,17 @@ function createPublishPage(typeKey) {
               <textarea v-model="form.content" class="ds-textarea" rows="10" style="margin-top:4px" :placeholder="$t('請輸入內容')"></textarea>
             </div>
 
+            <!-- Look (information only) — who can see this -->
+            <div v-if="typeKey==='information'" class="ds-form-group" style="margin-bottom:16px">
+              <label class="ds-label">{{ $t('可見範圍') }}</label>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button type="button" @click="form.look=2"
+                  :style="{flex:1,padding:'8px 12px',borderRadius:'8px',fontSize:'13px',border:'1px solid '+(form.look===2?'var(--color-primary)':'var(--color-border)'),background:form.look===2?'var(--color-accent-soft)':'transparent',color:form.look===2?'var(--color-primary)':'var(--color-secondary-text)',cursor:'pointer'}">{{ $t('所有人可見') }}</button>
+                <button type="button" @click="form.look=1"
+                  :style="{flex:1,padding:'8px 12px',borderRadius:'8px',fontSize:'13px',border:'1px solid '+(form.look===1?'var(--color-primary)':'var(--color-border)'),background:form.look===1?'var(--color-accent-soft)':'transparent',color:form.look===1?'var(--color-primary)':'var(--color-secondary-text)',cursor:'pointer'}">{{ $t('僅導遊可見') }}</button>
+              </div>
+            </div>
+
             <!-- Pictures (up to 6) -->
             <div class="ds-form-group">
               <label class="ds-label">{{ $t('圖片') }}（{{ $t('最多6張') }}）</label>
@@ -282,6 +295,7 @@ function createPublishPage(typeKey) {
           content: '', city_id: '', type_class_id: '', type_class_name: '',
           open_time: '', tickets_free: 1, price: '',
           phone: '', email: '', website: '', how_arrive: '', introduce: '',
+          look: 2,
         },
         pictures: [],           // [{file, preview}] or server URL strings
         myCities: [], categories: [],
@@ -291,9 +305,18 @@ function createPublishPage(typeKey) {
     },
     computed: {
       isGuide() {
-        const profile = UserStore.profile || UserStore.userInfo;
-        return profile && Number(profile.identity) === 2;
+        const info = UserStore.userInfo;
+        return !!UserStore.token && info && Number(info.identity) === 2;
       },
+    },
+    watch: {
+      form: { deep: true, handler() { this._autoSaveDraft(); } },
+      pictures: { deep: true, handler() { this._autoSaveDraft(); } },
+    },
+    created() {
+      this._autoSaveDraft = debounce(() => {
+        if (!this.isEdit && !this.success) this.saveDraft();
+      }, 400);
     },
     mounted() {
       if (!UserStore.isLogin || !this.isGuide) return;
@@ -321,13 +344,17 @@ function createPublishPage(typeKey) {
         if (typeKey === 'information') {
           try {
             const res = await ApiProvider.get(ApiUrl.getInformationClass);
-            if (res.success && res.data?.list) this.categories = res.data.list;
+            if (res.success && res.data) {
+              this.categories = Array.isArray(res.data) ? res.data : (res.data.list || []);
+            }
           } catch (e) { /* silent */ }
         } else {
           // Use getTypeClass for non-information types
           try {
             const res = await ApiProvider.get(ApiUrl.getTypeClass, { type_id: 1 });
-            if (res.success && res.data?.list) this.categories = res.data.list;
+            if (res.success && res.data) {
+              this.categories = Array.isArray(res.data) ? res.data : (res.data.list || []);
+            }
           } catch (e) { /* silent */ }
         }
 
@@ -349,8 +376,9 @@ function createPublishPage(typeKey) {
               this.form.start_time = d.start_time ? d.start_time.slice(0, 16) : '';
               this.form.content = d.content || '';
               this.form.city_id = d.city_id || '';
-              this.form.type_class_id = d.type_class_id || '';
-              this.form.type_class_name = d.type_class_name || '';
+              this.form.type_class_id = d.type_class_id || d.class_id || '';
+              this.form.type_class_name = d.type_class_name || d.class_name || '';
+              this.form.look = d.look || 2;
               this.form.open_time = d.open_time || d.start_time || '';
               this.form.tickets_free = d.tickets_free !== undefined ? Number(d.tickets_free) : 1;
               this.form.price = d.price || '';
@@ -391,9 +419,17 @@ function createPublishPage(typeKey) {
 
       checkDraft() {
         const draft = this.getDraftMap();
-        if (draft && (draft.name || draft.name_en || draft.title || (draft.pictures && draft.pictures.length > 0))) {
-          this.showDraftPrompt = true;
-        }
+        if (!draft) return;
+        const pics = (draft.pictures && draft.pictures.length > 0);
+        const hasText = this._draftTextFields().some(k => draft[k] && String(draft[k]).trim());
+        if (pics || hasText) this.showDraftPrompt = true;
+      },
+
+      _draftTextFields() {
+        // Return all text fields that should trigger draft save/restore
+        return ['name', 'name_en', 'title', 'desc', 'address', 'start_time',
+          'content', 'type_class_id', 'open_time', 'price',
+          'phone', 'email', 'website', 'how_arrive', 'introduce'];
       },
 
       restoreDraft() {
@@ -417,6 +453,7 @@ function createPublishPage(typeKey) {
         this.form.website = draft.website || '';
         this.form.how_arrive = draft.how_arrive || '';
         this.form.introduce = draft.introduce || '';
+        this.form.look = draft.look || 2;
         if (draft.pictures && Array.isArray(draft.pictures)) {
           this.pictures = draft.pictures.filter(p => typeof p === 'string');
         }
@@ -429,7 +466,7 @@ function createPublishPage(typeKey) {
       },
 
       saveDraft() {
-        const hasContent = this.form.name.trim() || this.form.title.trim() || this.pictures.length > 0;
+        const hasContent = this._draftTextFields().some(k => this.form[k] && String(this.form[k]).trim()) || this.pictures.length > 0;
         if (!hasContent) return;
         const draft = {
           ...this.form,
@@ -464,6 +501,7 @@ function createPublishPage(typeKey) {
         if (!this.form.name.trim() && typeKey !== 'information') { this.formError = '請輸入名稱'; return; }
         if (typeKey === 'information') {
           if (!this.form.title.trim()) { this.formError = '請輸入標題'; return; }
+          if (!this.form.type_class_id) { this.formError = '請選擇資訊分類'; return; }
           if (!this.form.content.trim()) { this.formError = '請輸入內容'; return; }
         }
         this.submitting = true;
@@ -485,6 +523,15 @@ function createPublishPage(typeKey) {
             first_picture: uploadedUrls.length > 0 ? uploadedUrls[0] : '',
             id: this.isEdit ? this.editId : undefined,
           };
+
+          // Map type_class_id → class_id for information (API expects class_id)
+          if (typeKey === 'information') {
+            payload.class_id = this.form.type_class_id;
+            delete payload.type_class_id;
+            delete payload.type_class_name;
+            delete payload.name;
+            delete payload.name_en;
+          }
 
           const endpoint = this.isEdit ? typeConfig.endpoints.edit : typeConfig.endpoints.add;
           const result = await ApiProvider.post(endpoint, payload);

@@ -64,4 +64,14 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(User::class, 'id', 'inviter_id');
     }
 
+    public function guide()
+    {
+        return $this->hasOne(Guide::class, 'user_id', 'id');
+    }
+
+    public function company()
+    {
+        return $this->hasOne(Company::class, 'user_id', 'id');
+    }
+
 }

@@ -54,9 +54,6 @@ const GuidePublishCityFormPage = {
           </div>
         </div>
 
-        <!-- Error -->
-        <div v-if="formError" style="background:#FEF2F2;color:var(--color-red);font-size:12px;padding:12px;border-radius:8px;margin-bottom:16px">{{ formError }}</div>
-
         <!-- Section 1: Basic Info -->
         <div class="ds-card" style="padding:16px;margin-bottom:12px">
           <h3 style="font-weight:600;margin-bottom:14px;font-size:15px">{{ $t('基本資訊') }}</h3>
@@ -107,6 +104,11 @@ const GuidePublishCityFormPage = {
                 {{ $t('否') }}
               </label>
             </div>
+          </div>
+
+          <div class="ds-form-group">
+            <label class="ds-label">{{ $t('經緯度') }}</label>
+            <input v-model="form.location" class="ds-input" style="margin-top:4px" :placeholder="$t('請輸入經緯度，如 48.86, 2.35')">
           </div>
         </div>
 
@@ -165,11 +167,15 @@ const GuidePublishCityFormPage = {
         </div>
 
         <!-- Submit -->
-        <div style="display:flex;gap:12px;margin-top:20px;padding-bottom:32px">
-          <button @click="$router.back()" class="ds-btn ds-btn-outline" style="flex:1;justify-content:center;padding:12px 0">{{ $t('取消') }}</button>
-          <button @click="handleSubmit" :disabled="submitting" class="ds-btn ds-btn-primary" style="flex:2;justify-content:center;padding:12px 0">
-            {{ submitting ? $t('提交中...') : isEdit ? $t('保存修改') : $t('確認發布城市') }}
-          </button>
+        <div style="margin-top:20px;padding-bottom:32px">
+          <div style="display:flex;gap:12px">
+            <button @click="$router.back()" class="ds-btn ds-btn-outline" style="flex:1;justify-content:center;padding:12px 0">{{ $t('取消') }}</button>
+            <button @click="handleSubmit" :disabled="submitting" class="ds-btn ds-btn-primary" style="flex:2;justify-content:center;padding:12px 0">
+              {{ submitting ? $t('提交中...') : isEdit ? $t('保存修改') : $t('確認發布城市') }}
+            </button>
+          </div>
+          <!-- Error below submit button -->
+          <div v-if="formError" style="background:#FEF2F2;color:var(--color-red);font-size:13px;padding:10px 14px;border-radius:8px;margin-top:12px;border:1px solid #FECACA">{{ formError }}</div>
         </div>
       </div>
     </div>
@@ -182,7 +188,7 @@ const GuidePublishCityFormPage = {
         name: '', name_en: '', continents_id: '', continents_name: '',
         area_id: '', area_name: '', country_id: '', country_name: '',
         is_capital: 0, currency: '', language: '', population: '', race: '',
-        overview: '', history: '',
+        overview: '', history: '', location: '',
       },
       pictures: [],           // [{preview, file}] or server URLs
       continents: [], subContinents: [], countries: [],
@@ -193,9 +199,20 @@ const GuidePublishCityFormPage = {
 
   computed: {
     isGuide() {
-      const profile = UserStore.profile || UserStore.userInfo;
-      return profile && Number(profile.identity) === 2;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 2;
     },
+  },
+
+  watch: {
+    form: { deep: true, handler() { this._autoSaveDraft(); } },
+    pictures: { deep: true, handler() { this._autoSaveDraft(); } },
+  },
+
+  created() {
+    this._autoSaveDraft = debounce(() => {
+      if (!this.isEdit && !this.success) this.saveDraft();
+    }, 400);
   },
 
   mounted() {
@@ -221,7 +238,7 @@ const GuidePublishCityFormPage = {
       }
 
       // Load continents
-      await this.fetchContinents(0);
+      await this.fetchContinents(0, 'continents');
 
       if (this.isEdit) {
         await this.fetchCityInfo();
@@ -234,21 +251,17 @@ const GuidePublishCityFormPage = {
 
     // --- Cascade selectors ---
 
-    async fetchContinents(parentId) {
+    async fetchContinents(parentId, target) {
       try {
         const res = await ApiProvider.get(ApiUrl.getContinentsList, { parent_id: parentId });
-        const list = res.data?.list || res.data || [];
-        if (parentId === 0) {
-          this.continents = Array.isArray(list) ? list : [];
-          this.subContinents = [];
+        const list = Array.isArray(res.data) ? res.data : (res.data?.list || []);
+        if (target === 'continents') {
+          this.continents = list;
+        } else if (target === 'areas') {
+          this.subContinents = list;
           this.countries = [];
-        } else if (!this.form.area_id || this.form.area_id === parentId) {
-          // Loading sub-continents after continent selection
-          this.subContinents = Array.isArray(list) ? list : [];
-          this.countries = [];
-        } else {
-          // Loading countries after area selection
-          this.countries = Array.isArray(list) ? list : [];
+        } else if (target === 'countries') {
+          this.countries = list;
         }
       } catch (e) { /* silent */ }
     },
@@ -260,7 +273,7 @@ const GuidePublishCityFormPage = {
       this.form.country_name = '';
       const selected = this.continents.find(c => c.id == this.form.continents_id);
       this.form.continents_name = selected ? selected.name : '';
-      if (this.form.continents_id) this.fetchContinents(this.form.continents_id);
+      if (this.form.continents_id) this.fetchContinents(this.form.continents_id, 'areas');
     },
 
     onAreaChange() {
@@ -268,7 +281,7 @@ const GuidePublishCityFormPage = {
       this.form.country_name = '';
       const selected = this.subContinents.find(c => c.id == this.form.area_id);
       this.form.area_name = selected ? selected.name : '';
-      if (this.form.area_id) this.fetchContinents(this.form.area_id);
+      if (this.form.area_id) this.fetchContinents(this.form.area_id, 'countries');
     },
 
     // --- File upload ---
@@ -305,9 +318,10 @@ const GuidePublishCityFormPage = {
 
     checkDraft() {
       const draft = this.getDraftMap();
-      if (draft && (draft.name || (draft.pictures && draft.pictures.length > 0))) {
-        this.showDraftPrompt = true;
-      }
+      if (!draft) return;
+      const pics = (draft.pictures && draft.pictures.length > 0);
+      const hasText = ['name', 'name_en', 'currency', 'language', 'population', 'race', 'overview', 'history', 'location'].some(k => draft[k] && String(draft[k]).trim());
+      if (pics || hasText) this.showDraftPrompt = true;
     },
 
     restoreDraft() {
@@ -328,13 +342,14 @@ const GuidePublishCityFormPage = {
       this.form.race = draft.race || '';
       this.form.overview = draft.overview || '';
       this.form.history = draft.history || '';
+      this.form.location = draft.location || '';
       if (draft.pictures && Array.isArray(draft.pictures)) {
         this.pictures = draft.pictures.filter(p => typeof p === 'string');
       }
       // Reload cascade if needed
       if (this.form.continents_id) {
-        this.fetchContinents(this.form.continents_id).then(() => {
-          if (this.form.area_id) this.fetchContinents(this.form.area_id);
+        this.fetchContinents(this.form.continents_id, 'areas').then(() => {
+          if (this.form.area_id) this.fetchContinents(this.form.area_id, 'countries');
         });
       }
       this.showDraftPrompt = false;
@@ -346,7 +361,7 @@ const GuidePublishCityFormPage = {
     },
 
     saveDraft() {
-      const hasContent = this.form.name.trim() || this.form.name_en.trim() || this.pictures.length > 0;
+      const hasContent = ['name', 'name_en', 'currency', 'language', 'population', 'race', 'overview', 'history', 'location'].some(k => this.form[k] && String(this.form[k]).trim()) || this.pictures.length > 0;
       if (!hasContent) return;
       const draft = {
         ...this.form,
@@ -377,13 +392,16 @@ const GuidePublishCityFormPage = {
         this.form.race = d.race || '';
         this.form.overview = d.overview || '';
         this.form.history = d.history || '';
+        if (d.longitude || d.latitude) {
+          this.form.location = [d.latitude, d.longitude].filter(Boolean).join(', ');
+        }
         if (Array.isArray(d.pictures)) {
           this.pictures = d.pictures.map(p => typeof p === 'string' ? p : p);
         }
         // Reload cascade
         if (this.form.continents_id) {
-          await this.fetchContinents(this.form.continents_id);
-          if (this.form.area_id) await this.fetchContinents(this.form.area_id);
+          await this.fetchContinents(this.form.continents_id, 'areas');
+          if (this.form.area_id) await this.fetchContinents(this.form.area_id, 'countries');
         }
       } catch (e) { /* silent */ }
     },
@@ -409,7 +427,7 @@ const GuidePublishCityFormPage = {
 
     async handleSubmit() {
       const err = this.validate();
-      if (err) { this.formError = err; return; }
+      if (err) { this.formError = err; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       this.formError = '';
       this.submitting = true;
 
@@ -427,9 +445,20 @@ const GuidePublishCityFormPage = {
 
         const payload = {
           ...this.form,
+          longitude: '',
+          latitude: '',
           pictures: uploadedUrls,
           id: this.isEdit ? this.editId : undefined,
         };
+
+        // Parse location "lat, lng" into separate fields for the API
+        const locParts = (this.form.location || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (locParts.length >= 2) {
+          payload.latitude = locParts[0];
+          payload.longitude = locParts[1];
+        } else if (locParts.length === 1) {
+          payload.longitude = locParts[0];
+        }
 
         const endpoint = this.isEdit ? ApiUrl.guideEditCity : ApiUrl.guidePublishCity;
         const result = await ApiProvider.post(endpoint, payload);

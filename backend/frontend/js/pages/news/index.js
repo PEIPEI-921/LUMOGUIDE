@@ -137,8 +137,8 @@ const NewsPage = {
       return list.concat(this.categories.filter(c => c.count > 0));
     },
     isGuide() {
-      const profile = UserStore.profile || UserStore.userInfo;
-      return profile && Number(profile.identity) === 2;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 2;
     }
   },
 
@@ -194,7 +194,10 @@ const NewsPage = {
     }
   },
 
-  mounted() {
+  async mounted() {
+    if (UserStore.isLogin && !UserStore.userInfo) {
+      await UserStore.getProfile();
+    }
     this.fetchCategories();
     this.fetchNews(true);
   }

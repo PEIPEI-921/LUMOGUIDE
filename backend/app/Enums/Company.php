@@ -16,5 +16,7 @@ class Company
         self::StatusReject => '审核驳回',
     ];
 
+    const AuditStatusArr = self::AuditStatus;
+
 
 }

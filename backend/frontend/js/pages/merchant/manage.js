@@ -357,8 +357,8 @@ const MerchantManagePage = {
 
   computed: {
     isCompany() {
-      const profile = UserStore.profile || UserStore.userInfo;
-      return profile && Number(profile.identity) === 3;
+      const info = UserStore.userInfo;
+      return !!UserStore.token && info && Number(info.identity) === 3;
     },
     showType() {
       const t = Number(this.form.type_id);

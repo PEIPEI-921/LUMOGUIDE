@@ -63,15 +63,15 @@ $cityAllCount = $cityCount+$cityContentCount;
 
 $informationCount = \App\Models\Information::query()->where('audit_status', 0)->count();
 
+$userAllCount = $guideCount + $companyCount;
+
 Admin::script(
     <<<JS
 $(document).ready(function() {
      const badgeData = {
-        14: $guideCount,
-        26: $guideCount,
-        16: $companyAllCount,
+        30: $userAllCount,
         33: $reserveCount,
-        34: $companyCount,
+        37: $reserveCount,
         17: $cityAllCount,
         18: $cityCount,
         21: $cityContentCount,

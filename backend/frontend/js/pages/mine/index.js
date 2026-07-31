@@ -61,8 +61,8 @@ const MinePage = {
           <div class="pc-info">
             <div class="pc-name">
               {{ profile.nickname || profile.email || '' }}
-              <span v-if="profile.identity === 2" class="badge-guide">{{ $t('认证导游') }}</span>
-              <span v-if="profile.identity === 3" class="badge-company">{{ $t('认证企业') }}</span>
+              <span v-if="Number(profile.identity) === 2" class="badge-guide">{{ $t('认证导游') }}</span>
+              <span v-if="Number(profile.identity) === 3" class="badge-company">{{ $t('认证企业') }}</span>
               <span v-if="UserStore.isVip" class="badge-vip">VIP</span>
             </div>
             <div class="pc-id">ID: {{ (profile.number || '').slice(0, 10) }}</div>
@@ -147,8 +147,8 @@ const MinePage = {
     myMenus() {
       const menus = [];
       const info = this.profile || {};
-      const isGuide = info.identity === 2;
-      const isEnterprise = info.identity === 3;
+      const isGuide = Number(info.identity) === 2;
+      const isEnterprise = Number(info.identity) === 3;
 
       if (isGuide) {
         menus.push({ key: 'city_pub', label: '城市管理', route: '/guide/publish-city', badge: 0 });

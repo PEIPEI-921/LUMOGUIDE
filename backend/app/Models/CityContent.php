@@ -39,4 +39,12 @@ class CityContent extends Model
             ->orderBy('id', 'desc')
             ->select(['id', 'city_content_id', 'audit_status', 'audit_feedback']);
     }
+
+    public function getLocationAttribute()
+    {
+        if ($this->latitude || $this->longitude) {
+            return implode(', ', array_filter([$this->latitude, $this->longitude]));
+        }
+        return '';
+    }
 }

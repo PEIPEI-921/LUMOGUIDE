@@ -35,10 +35,10 @@ class CommonService
             'system_logo' => systemConfig('system_logo'),
             'system_welcome_zh' => systemConfig('system_welcome_zh'),
             'system_welcome_en' => systemConfig('system_welcome_en'),
-            'user_protocol' => env('APP_URL') . '/protocol/user_protocol',
-            'privacy_protocol' => env('APP_URL') . '/protocol/privacy_protocol',
-            'vip_user_protocol' => env('APP_URL') . '/protocol/vip_user_protocol',
-            'vip_user_subscribe' => env('APP_URL') . '/protocol/vip_user_subscribe',
+            'user_protocol' => config('app.url') . '/protocol/user_protocol',
+            'privacy_protocol' => config('app.url') . '/protocol/privacy_protocol',
+            'vip_user_protocol' => config('app.url') . '/protocol/vip_user_protocol',
+            'vip_user_subscribe' => config('app.url') . '/protocol/vip_user_subscribe',
             'contact_us' => systemConfig('contact_us'),
             'integral_rule' => systemConfig('integral_rule'),
             'business_type' => json_decode(systemConfig('business_type'), true),
@@ -60,11 +60,13 @@ class CommonService
      */
     public function upload(Request $request)
     {
-        Log::debug('Files-' . $request->file('file'));
+        // Flutter Dart/3.10 sends file under 'image' field name instead of 'file'
+        $uploadedFile = $request->file('file') ?: $request->file('image');
+        Log::debug('Files-' . $uploadedFile);
         // 保存上传文件
         try {
             $randomName = Str::random(20);
-            $extension = strtolower($request->file('file')->getClientOriginalExtension());
+            $extension = strtolower($uploadedFile->getClientOriginalExtension());
 
             // Whitelist allowed extensions (defense-in-depth)
             $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
@@ -74,7 +76,7 @@ class CommonService
 
             // 拼接随机文件名和扩展名
             $fileName = $randomName . '.' . $extension;
-            $request->file('file')->storeAs('public/uploads/' . date('Ymd') . '/', $fileName);
+            $uploadedFile->storeAs('public/uploads/' . date('Ymd') . '/', $fileName);
 
             $filePath = '/storage/uploads/' . date('Ymd') . '/' . $fileName;
 
@@ -83,9 +85,10 @@ class CommonService
             compressImage($savePath, $savePath, 78);
 
             return [
-                'url' => env('APP_URL') . $filePath,
+                'url' => config('app.url') . $filePath,
             ];
         } catch (\Throwable $exception) {
+            Log::error('upload error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }

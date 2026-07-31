@@ -42,6 +42,17 @@ class ApplyGuideRequest extends FormRequest
             'driver_license_front' => 'sometimes',
             'driver_license_back' => 'sometimes',
             'car_pictures' => 'sometimes',
+            'resident_city_id' => 'required_if:is_new_city,0',
+            'resident_city_name' => 'nullable',
+            'is_new_city' => 'required|in:0,1',
+            'new_city_name' => 'required_if:is_new_city,1|max:255',
+            'new_city_name_en' => 'required_if:is_new_city,1|max:255',
+            'new_city_continents_id' => 'required_if:is_new_city,1',
+            'new_city_continents_name' => 'nullable',
+            'new_city_area_id' => 'required_if:is_new_city,1',
+            'new_city_area_name' => 'nullable',
+            'new_city_country_id' => 'required_if:is_new_city,1',
+            'new_city_country_name' => 'nullable',
         ];
     }
 
