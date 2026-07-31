@@ -492,8 +492,8 @@ class _CityBlockSectionState extends State<_CityBlockSection> {
           final recs = ctrl.cityRecommendations[di];
           if (recs == null || recs.isEmpty) return const SizedBox.shrink();
 
-          // 只显示属于当前城市块的推荐
-          final myItems = recs.where((r) => r.cityId == block.cityId).toList();
+          // 只显示属于当前城市块的推荐，并排除已添加到行程的资源
+          final myItems = recs.where((r) => r.cityId == block.cityId && !ctrl.isResourceUsed(r)).toList();
           if (myItems.isEmpty) return const SizedBox.shrink();
 
           final Map<String, List<CityResource>> groups = {};
@@ -820,7 +820,7 @@ class _EmergencyForm extends StatelessWidget {
 }
 
 // ================================================================
-// 提交按钮
+// 提交 & 删除按钮
 // ================================================================
 class _SubmitRow extends StatelessWidget {
   final JourneyEditorController ctrl;
@@ -851,6 +851,22 @@ class _SubmitRow extends StatelessWidget {
         ]),
       ),
     ),
+    if (ctrl.isEdit.value) ...[
+      SizedBox(height: 10.w),
+      SizedBox(width: double.infinity, height: 40.w,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22.w)),
+            side: BorderSide(color: Colors.red.shade300)),
+          onPressed: () => ctrl.onDeleteWork(),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.delete_outline, size: 16.sp, color: Colors.red.shade400),
+            SizedBox(width: 6.w),
+            Text('删除此工作', style: TextStyle(fontSize: 14.sp, color: Colors.red.shade400)),
+          ]),
+        ),
+      ),
+    ],
   ]);
 }
 

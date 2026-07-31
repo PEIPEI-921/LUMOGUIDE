@@ -9,41 +9,44 @@ class BusinessTypeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MerchantEntryController>();
-    return Obx(
-      () => SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('商家類型'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
-            15.w.verticalSpace,
-            Column(
-                  children: [
-                    LabelSelectField(
-                      label: '經營類型'.tr,
-                      hintText: '請選擇企業經營類型'.tr,
-                      value: controller.merchantEntry.businessType ?? '',
-                      onTap: controller.selectBusinessType,
-                      isRightArrow: !controller.isReadOnly,
-                    ),
-                    15.w.verticalSpace,
-                    CustomTextField(
-                      controller: controller.introductionController,
-                      hintText: '請輸入企業簡介'.tr,
-                      labelText: '簡介'.tr,
-                      maxLines: 8,
-                      isReadOnly: controller.isReadOnly,
-                    ),
-                    20.w.verticalSpace,
-                  ],
-                )
-                .padding(all: 10.w)
-                .decorated(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10.w),
-                ),
-          ],
-        ).padding(horizontal: 12.w),
-      ),
+    // isReadOnly 只在进入/退出编辑模式时变化，由页面级 Obx 处理重建
+    final isReadOnly = controller.isReadOnly;
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('商家類型'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
+          15.w.verticalSpace,
+          Column(
+                children: [
+                  // 经营类型选择器 — 标签需要响应 model 变化
+                  Obx(() => LabelSelectField(
+                        label: '經營類型'.tr,
+                        hintText: '請選擇企業經營類型'.tr,
+                        value: controller.merchantEntry.businessType ?? '',
+                        isRequired: true,
+                        onTap: controller.selectBusinessType,
+                        isRightArrow: !isReadOnly,
+                      )),
+                  15.w.verticalSpace,
+                  CustomTextField(
+                    controller: controller.introductionController,
+                    hintText: '請輸入企業簡介'.tr,
+                    labelText: '簡介'.tr,
+                    maxLines: 8,
+                    isRequired: true,
+                    isReadOnly: isReadOnly,
+                  ),
+                  20.w.verticalSpace,
+                ],
+              )
+              .padding(all: 10.w)
+              .decorated(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.w),
+              ),
+        ],
+      ).padding(horizontal: 12.w),
     );
   }
 }

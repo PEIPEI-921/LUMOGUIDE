@@ -168,6 +168,27 @@ abstract class ApiUrl {
   /// 我的历程
   static const userJourneyList = '/user/journeyList';
 
+  /// 历程详情
+  static const userJourneyDetail = '/user/journeyDetail';
+
+  /// 历程创建
+  static const userJourneyCreate = '/user/journeyCreate';
+
+  /// 历程更新
+  static const userJourneyUpdate = '/user/journeyUpdate';
+
+  /// 历程删除
+  static const userJourneyDelete = '/user/journeyDelete';
+
+  /// 历程模板列表
+  static const userJourneyTemplateList = '/user/journeyTemplateList';
+
+  /// 历程模板保存
+  static const userJourneyTemplateSave = '/user/journeyTemplateSave';
+
+  /// 历程模板删除
+  static const userJourneyTemplateDelete = '/user/journeyTemplateDelete';
+
   /// 地址列表
   static const addressLists = '/user/address';
 

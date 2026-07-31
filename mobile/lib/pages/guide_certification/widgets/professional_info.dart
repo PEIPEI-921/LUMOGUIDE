@@ -9,67 +9,63 @@ class ProfessionalInfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<GuideCertificationController>();
+    // isReadOnly 只在进入/退出编辑模式时变化，由页面级 Obx 处理重建
+    final isReadOnly = controller.isReadOnly;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('專業信息'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
           10.w.verticalSpace,
-          Obx(() => Column(
-                children: [
-                  LabelSelectField(
+          Column(
+            children: [
+              // 语言选择器 — 标签需要响应 certification 变化
+              Obx(() => LabelSelectField(
                     isRequired: true,
                     label: '您熟練掌握的語言(可多選)'.tr,
                     hintText: '請選擇語言'.tr,
                     value: controller.certification.language.join(','),
                     onTap: () => controller.onSelectLanguage(),
-                    isRightArrow: !controller.isReadOnly,
-                  ),
-                  10.w.verticalSpace,
-                  LabelSelectField(
+                    isRightArrow: !isReadOnly,
+                  )),
+              10.w.verticalSpace,
+              // 从业年份 — 标签需要响应 certification 变化
+              Obx(() => LabelSelectField(
                     isRequired: true,
                     label: '從業年份'.tr,
                     value: controller.certification.year ?? '',
                     hintText: '請選擇從業年份'.tr,
                     onTap: () => controller.onSelectYear(),
-                    isRightArrow: !controller.isReadOnly,
-                  ),
-                  // 10.w.verticalSpace,
-                  // CustomTextField(
-                  //   controller: controller.inviteCodeController,
-                  //   hintText: '請輸入邀請碼'.tr,
-                  //   labelText: '您邀請人的邀請碼'.tr,
-                  //   isRequired: true,
-                  //   isReadOnly: true,
-                  // ),
-                  15.w.verticalSpace,
-                  const _IndustryTypeWidget(),
-                  15.w.verticalSpace,
-                  const _IdentityTypeWidget(),
-                  15.w.verticalSpace,
-                  CustomTextField(
-                    controller: controller.introductionController,
-                    hintText: '請輸入個人或公司簡介(比如經歷，專長，特色，擅長領域，收費標準等)'.tr,
-                    labelText: '個人或公司簡介'.tr,
-                    isRequired: true,
-                    maxLines: 5,
-                    isReadOnly: controller.isReadOnly,
-                  ),
-                  10.w.verticalSpace,
-                  CustomTextField(
-                    controller: controller.businessContactController,
-                    hintText: '請輸入業務聯繫人'.tr,
-                    labelText: '業務聯繫人'.tr,
-                    isRequired: true,
-                    isReadOnly: controller.isReadOnly,
-                  ),
-                  10.w.verticalSpace,
-                  const _VehicleWidget(),
-                ],
-              ).padding(all: 10.w).decorated(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10.w),
+                    isRightArrow: !isReadOnly,
                   )),
+              15.w.verticalSpace,
+              const _IndustryTypeWidget(),
+              15.w.verticalSpace,
+              const _IdentityTypeWidget(),
+              15.w.verticalSpace,
+              CustomTextField(
+                controller: controller.introductionController,
+                hintText: '請輸入個人或公司簡介(比如經歷，專長，特色，擅長領域，收費標準等)'.tr,
+                labelText: '個人或公司簡介'.tr,
+                isRequired: true,
+                maxLines: 5,
+                isReadOnly: isReadOnly,
+              ),
+              10.w.verticalSpace,
+              CustomTextField(
+                controller: controller.businessContactController,
+                hintText: '請輸入業務聯繫人'.tr,
+                labelText: '業務聯繫人'.tr,
+                isRequired: true,
+                isReadOnly: isReadOnly,
+              ),
+              10.w.verticalSpace,
+              const _VehicleWidget(),
+            ],
+          ).padding(all: 10.w).decorated(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.w),
+              ),
         ],
       ).padding(horizontal: 14.w),
     );

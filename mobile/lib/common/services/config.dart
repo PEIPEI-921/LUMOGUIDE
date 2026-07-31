@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../index.dart';
@@ -9,6 +9,9 @@ import 'package:dio/dio.dart' as dio;
 
 class ConfigService extends GetxService with ApiMixin {
   static ConfigService get to => Get.find();
+
+  /// 最近一次文件上传的错误信息（供调用方展示给用户）
+  String lastUploadError = '';
 
   bool _isFirstOpen = false;
   bool get isFirstOpen => _isFirstOpen;
@@ -107,38 +110,128 @@ class ConfigService extends GetxService with ApiMixin {
     }
   }
 
-  Future<String> uploadFile(String path, {String ext = 'png'}) async {
-    Uint8List? compressedData;
-    String filename = '';
-    if (ext == 'png') {
-      compressedData = await compressImageToSize(File(path));
-      filename = '${DateTime.now().millisecondsSinceEpoch}.png';
-    } else {
-      compressedData = File(path).readAsBytesSync();
-      filename = path.split('/').last;
+  /// 根据文件扩展名获取 MIME 类型
+  static String _mimeType(String filename) {
+    final ext = filename.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'heic':
+        return 'image/heic';
+      case 'heif':
+        return 'image/heif';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      case 'png':
+      default:
+        return 'image/png';
     }
-    final uploadFile = dio.MultipartFile.fromBytes(
-      compressedData!,
-      filename: filename,
-      contentType: dio.DioMediaType.parse("image/png"),
-    );
-    final res = await post(
-      ApiUrl.fileUpload,
-      data: dio.FormData.fromMap({'image': uploadFile}),
-    );
-    return res.dataJson['url'] ?? '';
+  }
+
+  /// 从 ApiResult 中提取上传后的文件 URL，兼容多种后端响应格式
+  static String _extractUrl(ApiResult res) {
+    // 格式1: {"code":200, "data": {"url": "https://..."}}
+    if (res.dataJson['url'] is String && (res.dataJson['url'] as String).isNotEmpty) {
+      return res.dataJson['url'];
+    }
+    // 格式2: {"code":200, "data": "https://..."} — data 直接就是 URL 字符串
+    if (res.data is String && (res.data as String).startsWith('http')) {
+      return res.data;
+    }
+    // 格式3: {"code":200, "url": "https://..."} — URL 在顶层
+    if (res.rawValue != null && res.rawValue!['url'] is String) {
+      return res.rawValue!['url'];
+    }
+    // 格式4-8: 常见变体 key 名
+    for (final key in ['path', 'file_url', 'file_path', 'src', 'link']) {
+      if (res.dataJson[key] is String && (res.dataJson[key] as String).isNotEmpty) {
+        return res.dataJson[key];
+      }
+    }
+    // 格式9: data 内部嵌套了另一个 data 对象，如 {"code":200, "data": {"data": {"url": "..."}}}
+    if (res.dataJson['data'] is Map) {
+      final inner = res.dataJson['data'] as Map;
+      if (inner['url'] is String && (inner['url'] as String).isNotEmpty) {
+        return inner['url'];
+      }
+    }
+    // 格式10: 兜底 — 扫描 dataJson 中任意以 http 开头的字符串值
+    for (final value in res.dataJson.values) {
+      if (value is String && value.startsWith('http')) {
+        return value;
+      }
+    }
+    return '';
+  }
+
+  /// 上传文件（支持任意图片格式）
+  /// 自动根据文件扩展名检测 MIME 类型，GIF 保留动画不压缩
+  Future<String> uploadFile(String path) async {
+    try {
+      final originalFilename = path.split('/').last;
+      final originalExt = originalFilename.split('.').last.toLowerCase();
+      final originalMime = _mimeType(originalFilename);
+      debugPrint('[uploadFile] START path=$path ext=$originalExt mime=$originalMime');
+      final originalSize = await File(path).length();
+      debugPrint('[uploadFile] Original file size: ${(originalSize / 1024).toStringAsFixed(1)} KB');
+
+      // [DIAGNOSTIC] 使用 MultipartFile.fromFile 直接上传原文件，不压缩
+      // 这样可以隔离压缩是否导致 500 的问题
+      final upload = await dio.MultipartFile.fromFile(
+        path,
+        filename: originalFilename,
+        contentType: dio.DioMediaType.parse(originalMime),
+      );
+      debugPrint('[uploadFile] MultipartFile.fromFile: filename=$originalFilename mime=$originalMime');
+
+      debugPrint('[uploadFile] POST to ${ApiUrl.fileUpload}...');
+      final res = await post(
+        ApiUrl.fileUpload,
+        data: dio.FormData.fromMap({'image': upload}),
+      );
+      debugPrint('[uploadFile] Response: isSuccess=${res.isSuccess} code=${res.code} message=${res.message}');
+      if (!res.isSuccess) {
+        debugPrint('[uploadFile] FAILED: code=${res.code} message=${res.message} rawValue=${res.rawValue}');
+        lastUploadError = res.message ?? '未知錯誤';
+        return '';
+      }
+      final url = _extractUrl(res);
+      if (url.isEmpty) {
+        debugPrint('[uploadFile] URL EXTRACTION FAILED: rawValue=${res.rawValue} data=${res.data} dataJson=${res.dataJson}');
+        lastUploadError = '伺服器回應格式異常，無法提取文件鏈接';
+      } else {
+        lastUploadError = '';
+      }
+      debugPrint('[uploadFile] SUCCESS url=$url');
+      return url;
+    } catch (e) {
+      debugPrint('[uploadFile] EXCEPTION: $e');
+      lastUploadError = e.toString();
+      return '';
+    }
   }
 
   Future<String> uploadFileDebug(String path) async {
+    final originalFilename = path.split('/').last;
+    final mime = _mimeType(originalFilename);
     final compressedData = await compressImageToSize(File(path));
-    final uploadFile = dio.MultipartFile.fromBytes(
-      compressedData!,
+    if (compressedData == null) {
+      AlertUtils.error('压缩失败'.tr);
+      return '';
+    }
+    final upload = dio.MultipartFile.fromBytes(
+      compressedData,
       filename: '${DateTime.now().millisecondsSinceEpoch}.png',
-      contentType: dio.DioMediaType.parse("image/png"),
+      contentType: dio.DioMediaType.parse(mime),
     );
     final res = await post(
       ApiUrl.fileUpload,
-      data: dio.FormData.fromMap({'image': uploadFile}),
+      data: dio.FormData.fromMap({'image': upload}),
     );
     if (!res.isSuccess) {
       AlertUtils.error(res.message);

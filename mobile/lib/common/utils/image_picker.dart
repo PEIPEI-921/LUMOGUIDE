@@ -10,6 +10,9 @@ import '../utils/alert.dart';
 import '../values/colors.dart';
 
 class ImagePickerUtil {
+  /// image_cropper 不支持 macOS 桌面端，桌面端跳过裁剪
+  static bool get _supportsCrop => !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux;
+
   static Future<String> selectImageFromGallery(
     BuildContext context, {
     bool canEdit = true,
@@ -25,7 +28,7 @@ class ImagePickerUtil {
       source: ImageSource.gallery,
     );
     if (file == null) return '';
-    if (!canEdit) return file.path;
+    if (!canEdit || !_supportsCrop) return file.path;
 
     final cropperFile = await ImageCropper().cropImage(
       sourcePath: file.path,
@@ -125,7 +128,7 @@ class ImagePickerUtil {
       imageQuality: 50,
     );
     if (file == null) return '';
-    if (!canEdit) return file.path;
+    if (!canEdit || !_supportsCrop) return file.path;
 
     final cropperFile = await ImageCropper().cropImage(
       sourcePath: file.path,
@@ -154,7 +157,7 @@ class ImagePickerUtil {
     final files = await ImagePicker().pickMultiImage(limit: limit);
     if (files.isEmpty) return [];
     final paths = files.map((e) => e.path).toList();
-    if (!canEdit) return paths;
+    if (!canEdit || !_supportsCrop) return paths;
 
     List<String> editedPaths = [];
     for (final file in files) {

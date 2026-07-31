@@ -125,14 +125,52 @@ class PublishAttractionController extends GetxController with ApiMixin {
     if (index >= 0 && index < pictures.length) pictures.removeAt(index);
   }
 
+  /// 上传本地图片，已是远程 URL 的跳过。单文件失败不影响其他文件
+  Future<List<String>> _uploadFiles() async {
+    if (pictures.isEmpty) return [];
+    final results = <String>[];
+    for (final e in pictures) {
+      if (e.startsWith('http://') || e.startsWith('https://')) {
+        results.add(e);
+      } else {
+        try {
+          final url = await ConfigService.to.uploadFile(e);
+          if (url.isNotEmpty) results.add(url);
+        } catch (_) {
+          // 单个文件上传失败，跳过继续
+        }
+      }
+    }
+    return results;
+  }
+
   onSubmit() async {
     Loading.show();
+    final uploadedUrls = await _uploadFiles();
+
+    // 同步文本输入框 + 图片到 model
+    _publish.update((val) {
+      val?.name = nameController.text;
+      val?.startTime = openTimeController.text;
+      val?.price = priceController.text;
+      val?.phone = phoneController.text;
+      val?.email = emailController.text;
+      val?.website = websiteController.text;
+      val?.address = addressController.text;
+      val?.howArrive = arriveController.text;
+      val?.introduce = introController.text;
+      val?.pictures = uploadedUrls;
+    });
+
     final url = editor == GuidePublishEditor.add
         ? ApiUrl.guideAttractionAdd
         : ApiUrl.guideAttractionEdit;
-    final res = await post(url, data: publish.toJson());
+    final payload = publish.toJson();
+    debugPrint('[PublishAttraction] POST $url payload keys: ${payload.keys}, name: ${payload['name']}');
+    final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
+      debugPrint('[PublishAttraction] Submit failed: code=${res.code}, message=${res.message}');
       AlertUtils.error(res.message);
       return;
     }

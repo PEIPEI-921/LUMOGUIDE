@@ -16,7 +16,7 @@ import 'widgets/client_itinerary_preview.dart';
 import 'widgets/format_picker_dialog.dart';
 import 'widgets/template_save_dialog.dart';
 
-class JourneyDetailController extends GetxController {
+class JourneyDetailController extends GetxController with ApiMixin {
   final work = Rxn<JourneyWork>();
   final activeTab = 0.obs;
   int workId = 0;
@@ -29,15 +29,123 @@ class JourneyDetailController extends GetxController {
   }
 
   void _loadDetail(int? id) {
-    // TODO: 对接后端 API
-    final list = JourneyWork.mockData();
-    work.value = list.firstWhere((w) => w.id == id, orElse: () => list.first);
+    // 优先使用传入的 work 对象
+    final w = Get.arguments?['work'] as JourneyWork?;
+    if (w != null) {
+      work.value = w;
+      return;
+    }
+    // 兜底：从 API 获取
+    if (id != null) {
+      _fetchFromApi(id);
+    }
+  }
+
+  Future<void> _fetchFromApi(int id) async {
+    final res = await get(ApiUrl.userJourneyDetail, parameters: {'id': id});
+    if (res.isSuccess && res.dataJson != null) {
+      work.value = JourneyWork.fromJson(res.dataJson!);
+    }
   }
 
   void onEdit() {
     Get.toNamed(AppRoutes.JOURNEY_EDITOR, arguments: {
       'work': work.value,
     })?.then((_) => _loadDetail(work.value?.id));
+  }
+
+  // ================================================================
+  // 删除工作
+  // ================================================================
+  void onDeleteWork() async {
+    final confirm = await AlertUtils.show(
+      title: '确认删除',
+      content: '删除后无法恢复，确定要删除这个工作吗？',
+      confirmText: '删除',
+      cancelText: '取消',
+    );
+    if (confirm != true) return;
+
+    Loading.show();
+    final res = await post(ApiUrl.userJourneyDelete, data: {'id': workId});
+    Loading.dismiss();
+    if (res.isSuccess) {
+      Loading.success('删除成功');
+      Get.back(result: true);
+    } else {
+      Loading.error(res.message.isNotEmpty ? res.message : '删除失败');
+    }
+  }
+
+  // ================================================================
+  // 行程城市 / 内容点击跳转
+  // ================================================================
+  void onTapCityBlock(DayCityBlock block) {
+    if (block.cityId != null && block.cityId! > 0) {
+      Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': block.cityId});
+    } else {
+      Get.toNamed(AppRoutes.PUBLISH_CITY);
+    }
+  }
+
+  void onTapItineraryItem(ItineraryItem item, int? cityId) {
+    // 有 resourceId → 跳转对应详情页
+    if (item.resourceId != null && item.resourceId! > 0 && item.resourceType != null) {
+      final typeId = _mapResourceTypeToCommonDetailType(item.resourceType!);
+      if (typeId != null) {
+        Get.toNamed(AppRoutes.COMMON_DETAIL, arguments: {
+          'id': item.resourceId,
+          'city_id': cityId ?? 0,
+          'type_id': typeId,
+        });
+        return;
+      }
+    }
+    // 无 resourceId → 跳转对应发布页
+    _navigateToPublishPage(item.resourceType ?? item.type ?? '');
+  }
+
+  int? _mapResourceTypeToCommonDetailType(String resourceType) {
+    switch (resourceType) {
+      case 'attraction':
+        return CommonDetailType.scenic.id;
+      case 'activity':
+        return CommonDetailType.activity.id;
+      case 'restaurant':
+      case 'meal':
+        return CommonDetailType.restaurant.id;
+      case 'shopping':
+        return CommonDetailType.shopping.id;
+      case 'transport':
+        return CommonDetailType.traffic.id;
+      case 'hotel':
+        return CommonDetailType.hotel.id;
+      default:
+        return null;
+    }
+  }
+
+  void _navigateToPublishPage(String type) {
+    switch (type) {
+      case 'attraction':
+        Get.toNamed(AppRoutes.PUBLISH_ATTRACTION);
+        break;
+      case 'activity':
+        Get.toNamed(AppRoutes.PUBLISH_ACTIVITY);
+        break;
+      case 'restaurant':
+      case 'meal':
+        Get.toNamed(AppRoutes.PUBLISH_FACILITY);
+        break;
+      case 'shopping':
+        Get.toNamed(AppRoutes.PUBLISH_FACILITY);
+        break;
+      case 'transport':
+        Get.toNamed(AppRoutes.PUBLISH_TRANSPORTATION);
+        break;
+      default:
+        break;
+    }
   }
 
   // ================================================================

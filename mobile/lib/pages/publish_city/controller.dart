@@ -153,13 +153,49 @@ class PublishCityController extends GetxController with ApiMixin {
     if (index >= 0 && index < pictures.length) pictures.removeAt(index);
   }
 
-  onSubmit() async {
+  /// 上传本地图片，已是远程 URL 的跳过。单文件失败不影响其他文件
+  Future<List<String>> _uploadFiles() async {
+    if (pictures.isEmpty) return [];
+    final results = <String>[];
+    for (final e in pictures) {
+      if (e.startsWith('http://') || e.startsWith('https://')) {
+        results.add(e);
+      } else {
+        try {
+          final url = await ConfigService.to.uploadFile(e);
+          if (url.isNotEmpty) results.add(url);
+        } catch (_) {
+          // 单个文件上传失败，跳过继续
+        }
+      }
+    }
+    return results;
+  }
 
+  onSubmit() async {
     Loading.show();
+    final uploadedUrls = await _uploadFiles();
+
+    // 同步文本输入框的值到 cityInfo（文本字段不会自动同步，级联选择器已通过 _cityInfo.update 同步）
+    _cityInfo.update((val) {
+      val?.name = nameController.text;
+      val?.nameEn = nameEnController.text;
+      val?.currency = currencyController.text;
+      val?.language = languageController.text;
+      val?.population = populationController.text;
+      val?.race = raceController.text;
+      val?.overview = overviewController.text;
+      val?.history = historyController.text;
+      val?.pictures = uploadedUrls;
+    });
+
     final url = id == 0 ? ApiUrl.guidePublishCity : ApiUrl.guideEditCity;
-    final res = await post(url, data: cityInfo.toJson());
+    final payload = cityInfo.toJson();
+    debugPrint('[PublishCity] POST $url payload keys: ${payload.keys}, name: ${payload['name']}, pictures count: ${(payload['pictures'] as List?)?.length ?? 0}');
+    final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
+      debugPrint('[PublishCity] Submit failed: code=${res.code}, message=${res.message}');
       AlertUtils.error(res.message);
       return;
     }

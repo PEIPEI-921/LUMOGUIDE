@@ -122,8 +122,16 @@ class EvaluationController extends GetxController with ApiMixin {
   }
 
   _uploadFiles() async {
-    final futures = files.map((e) => ConfigService.to.uploadFile(e.path));
-    final res = await Future.wait(futures);
-    return res.map((e) => e).toList();
+    // 逐文件串行上传（单文件失败不影响其他）
+    final uploadedUrls = <String>[];
+    for (final e in files) {
+      try {
+        final url = await ConfigService.to.uploadFile(e.path);
+        if (url.isNotEmpty) uploadedUrls.add(url);
+      } catch (_) {
+        // 单文件上传失败，跳过继续
+      }
+    }
+    return uploadedUrls;
   }
 }

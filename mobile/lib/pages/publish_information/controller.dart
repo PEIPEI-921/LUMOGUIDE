@@ -93,18 +93,43 @@ class PublishInformationController extends GetxController with ApiMixin {
     });
   }
 
+  /// 上传本地图片，已是远程 URL 的跳过。单文件失败不影响其他文件
+  Future<List<String>> _uploadFiles() async {
+    if (_pictures.isEmpty) return [];
+    final results = <String>[];
+    for (final e in _pictures) {
+      if (e.startsWith('http://') || e.startsWith('https://')) {
+        results.add(e);
+      } else {
+        try {
+          final url = await ConfigService.to.uploadFile(e);
+          if (url.isNotEmpty) results.add(url);
+        } catch (_) {
+          // 单个文件上传失败，跳过继续
+        }
+      }
+    }
+    return results;
+  }
+
   onSubmit() async {
+    Loading.show();
+    final uploadedUrls = await _uploadFiles();
+
     _guidePublish.update((val) {
       val?.title = titleController.text.trim();
       val?.content = contentController.text.trim();
+      val?.pictures = uploadedUrls;
     });
-    Loading.show();
     final url = editor == GuidePublishEditor.add
         ? ApiUrl.guideInformationAdd
         : ApiUrl.guideInformationEdit;
-    final res = await post(url, data: guidePublish.toJson());
+    final payload = guidePublish.toJson();
+    debugPrint('[PublishInfo] POST $url payload keys: ${payload.keys}, title: ${payload['title']}');
+    final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
+      debugPrint('[PublishInfo] Submit failed: code=${res.code}, message=${res.message}');
       AlertUtils.error(res.message);
       return;
     }

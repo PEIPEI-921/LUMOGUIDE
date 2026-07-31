@@ -29,6 +29,17 @@ class GuideCertification {
     this.wechat,
     this.whatsApp,
     this.line,
+    this.residentCityId,
+    this.residentCityName,
+    this.isNewCity = 0,
+    this.newCityName,
+    this.newCityNameEn,
+    this.newCityContinentsId,
+    this.newCityContinentsName,
+    this.newCityAreaId,
+    this.newCityAreaName,
+    this.newCityCountryId,
+    this.newCityCountryName,
   });
 
   /// 照片/LOGO
@@ -57,6 +68,39 @@ class GuideCertification {
 
   /// Line
   String? line;
+
+  /// 常駐城市 ID（現有城市）
+  int? residentCityId;
+
+  /// 常駐城市名稱
+  String? residentCityName;
+
+  /// 是否為新增城市 0否 1是
+  int? isNewCity;
+
+  /// 新城市中文名
+  String? newCityName;
+
+  /// 新城市英文名
+  String? newCityNameEn;
+
+  /// 新城市大洲 ID
+  int? newCityContinentsId;
+
+  /// 新城市大洲名
+  String? newCityContinentsName;
+
+  /// 新城市區域 ID
+  int? newCityAreaId;
+
+  /// 新城市區域名
+  String? newCityAreaName;
+
+  /// 新城市國家 ID
+  int? newCityCountryId;
+
+  /// 新城市國家名
+  String? newCityCountryName;
 
   /// 其他联系方式
   String? otherContact;
@@ -141,6 +185,17 @@ class GuideCertification {
       carPictures: json.safeList<String>('car_pictures') ?? [],
       auditStatus: json.safeInt('audit_status'),
       auditFeedback: json.safeString('audit_feedback'),
+      residentCityId: json.safeInt('resident_city_id'),
+      residentCityName: json.safeString('resident_city_name'),
+      isNewCity: json.safeInt('is_new_city') ?? 0,
+      newCityName: json.safeString('new_city_name'),
+      newCityNameEn: json.safeString('new_city_name_en'),
+      newCityContinentsId: json.safeInt('new_city_continents_id'),
+      newCityContinentsName: json.safeString('new_city_continents_name'),
+      newCityAreaId: json.safeInt('new_city_area_id'),
+      newCityAreaName: json.safeString('new_city_area_name'),
+      newCityCountryId: json.safeInt('new_city_country_id'),
+      newCityCountryName: json.safeString('new_city_country_name'),
     );
   }
 
@@ -173,6 +228,17 @@ class GuideCertification {
       'car_pictures': carPictures,
       'audit_status': auditStatus,
       'audit_feedback': auditFeedback,
+      'resident_city_id': residentCityId,
+      'resident_city_name': residentCityName,
+      'is_new_city': isNewCity,
+      'new_city_name': newCityName,
+      'new_city_name_en': newCityNameEn,
+      'new_city_continents_id': newCityContinentsId,
+      'new_city_continents_name': newCityContinentsName,
+      'new_city_area_id': newCityAreaId,
+      'new_city_area_name': newCityAreaName,
+      'new_city_country_id': newCityCountryId,
+      'new_city_country_name': newCityCountryName,
     };
   }
 }

@@ -139,6 +139,8 @@ class MessageSystemModel {
   int? contentId;
   int? cityId;
   int? cityContentType;
+  String? cityName; // 城市中文名（如「首爾」）
+  String? cityNameEn; // 城市英文名（如「Seoul」）
 
   String? get formatDate {
     if (time == null) return null;
@@ -156,19 +158,32 @@ class MessageSystemModel {
     this.contentId,
     this.cityId,
     this.cityContentType,
+    this.cityName,
+    this.cityNameEn,
   });
 
   bool get hasLinkedContent {
+    final t = (contentType ?? '').trim();
+    // 會員到期類型：始終可跳轉會員中心
+    if (t == 'membership') return true;
+    // 其他類型需要有效的 contentId
     final id = contentId;
     if (id == null || id <= 0) return false;
-    final t = (contentType ?? '').trim();
     return t == 'city' || t == 'city_content';
   }
 
   void openLinkedContent() {
+    final t = (contentType ?? '').trim();
+
+    // 會員到期 → 跳轉會員中心
+    if (t == 'membership') {
+      Get.toNamed(AppRoutes.MEMBER_CENTER);
+      return;
+    }
+
     final id = contentId;
     if (id == null || id <= 0) return;
-    switch ((contentType ?? '').trim()) {
+    switch (t) {
       case 'city':
         Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': id});
         return;
@@ -197,6 +212,8 @@ class MessageSystemModel {
       contentId: json.safeInt('content_id'),
       cityId: json.safeInt('city_id'),
       cityContentType: json.safeInt('city_content_type'),
+      cityName: json.safeString('city_name'),
+      cityNameEn: json.safeString('city_name_en'),
     );
   }
 
@@ -210,6 +227,8 @@ class MessageSystemModel {
       'content_id': contentId,
       'city_id': cityId,
       'city_content_type': cityContentType,
+      'city_name': cityName,
+      'city_name_en': cityNameEn,
     };
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 Future<Uint8List?> compressImageToSize(
   File file, {
   int targetSizeInKB = 350,
+  CompressFormat format = CompressFormat.jpeg,
 }) async {
   int quality = 60;
   Uint8List? compressedBytes;
@@ -12,6 +13,7 @@ Future<Uint8List?> compressImageToSize(
     compressedBytes = await FlutterImageCompress.compressWithFile(
       file.absolute.path,
       quality: quality,
+      format: format,
     );
     if (compressedBytes == null) {
       return null;

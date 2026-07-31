@@ -394,6 +394,61 @@ class CityDetailController extends GetxController
       },
     );
   }
+
+  onTapTicketItem(MerchantList item) {
+    Get.toNamed(
+      AppRoutes.COMMON_DETAIL,
+      arguments: {
+        'id': item.id,
+        'city_id': cityId,
+        'type_id': CommonDetailType.ticket.id,
+      },
+    );
+  }
+
+  onTapActivityItem(MerchantList item) {
+    Get.toNamed(
+      AppRoutes.COMMON_DETAIL,
+      arguments: {
+        'id': item.id,
+        'city_id': cityId,
+        'type_id': CommonDetailType.activity.id,
+      },
+    );
+  }
+
+  onTapFacilityItem(MerchantList item) {
+    Get.toNamed(
+      AppRoutes.COMMON_DETAIL,
+      arguments: {
+        'id': item.id,
+        'city_id': cityId,
+        'type_id': CommonDetailType.facility.id,
+      },
+    );
+  }
+
+  onTapHotelItem(MerchantList item) {
+    Get.toNamed(
+      AppRoutes.COMMON_DETAIL,
+      arguments: {
+        'id': item.id,
+        'city_id': cityId,
+        'type_id': CommonDetailType.hotel.id,
+      },
+    );
+  }
+
+  onTapRestaurantItem(MerchantList item) {
+    Get.toNamed(
+      AppRoutes.COMMON_DETAIL,
+      arguments: {
+        'id': item.id,
+        'city_id': cityId,
+        'type_id': CommonDetailType.restaurant.id,
+      },
+    );
+  }
 }
 
 extension CityDetailOverviewExt on CityDetailController {

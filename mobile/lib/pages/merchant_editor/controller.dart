@@ -382,23 +382,27 @@ class MerchantEditorController extends GetxController with ApiMixin {
   }
 
   Future<bool> _uploadImages() async {
-    final picturesRes = await Future.wait(
-      pictures
-          .map(
-            (e) => e.startsWith('http')
-                ? Future.value(e)
-                : ConfigService.to.uploadFile(e),
-          )
-          .toList(),
-    );
-
-    if (picturesRes.any((e) => e.isEmpty)) {
+    // 逐文件串行上传（单文件失败不影响其他）
+    final uploadedPics = <String>[];
+    for (final e in pictures) {
+      if (e.startsWith('http://') || e.startsWith('https://')) {
+        uploadedPics.add(e);
+      } else {
+        try {
+          final url = await ConfigService.to.uploadFile(e);
+          if (url.isNotEmpty) uploadedPics.add(url);
+        } catch (_) {
+          // 单文件上传失败，跳过继续
+        }
+      }
+    }
+    if (pictures.isNotEmpty && uploadedPics.isEmpty) {
       AlertUtils.error('圖片上傳失敗'.tr);
       return false;
     }
 
     _merchantShop.update((val) {
-      val?.pictures = picturesRes.toList();
+      val?.pictures = uploadedPics;
     });
     return true;
   }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LUMOGUIDE (`lumotrip`) — a Flutter travel guide app for iOS and Android. App name in code: **LUMOGUIDE**, version 1.0.6+19. Backend API at `https://api.lumoguide.com/api/`.
+LUMOGUIDE (`lumotrip`) — a Flutter travel guide app for iOS and Android. App name in code: **LUMOGUIDE**, version 1.0.6+21. Backend API at `https://api.lumoguide.com/api/`.
 
 ## Environment
 
@@ -175,7 +175,7 @@ See [[calendar-redesign]], [[booking-color-coding]].
 **3 pages:**
 | Route | Page | Purpose |
 |-------|------|---------|
-| `/journey` | `JourneyPage` | Work list with search, status/region filters, calendar, work cards |
+| `/journey` | `JourneyPage` | Work list with search (title+city+country), status/continent filters, calendar, work cards |
 | `/journey_detail` | `JourneyDetailPage` | Work detail: 2 tabs (行程/详情), save as template, generate & share client itinerary |
 | `/journey_editor` | `JourneyEditorPage` | Create/edit work trip form with auto day-by-day content |
 
@@ -191,14 +191,25 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - 已结束：endDate < today
 - Filtering and card display use `effectiveStatus`/`effectiveStatusValue`
 
-**Calendar (iPhone-style event bars):** `_JourneyCalendar` redesigned (2026-07):
-- Events span **continuously across days** (no cell margins): `margin: EdgeInsets.zero` + `CalendarStyle(cellMargin: EdgeInsets.zero)`
-- Event titles **flow across cells**: `TextPainter` binary search measures actual character widths per cell, fills each cell completely before flowing to next cell
-- **Responsive**: cell content width computed from `MediaQuery.of(context).size.width`, recalculated when width changes >2px
-- `_DayEvent` data class: `work` + `dayIndex` + `totalDays` + `segments` (pre-computed text segments per cell)
-- `_JourneyCalendarState`: uses `ever(_ctrl.focusedMonthRx, setState)` to trigger rebuild on month change; `ValueKey(focusedMonth)` on `TableCalendar`
-- Title font: 9.sp, `rowHeight: 42.w`. Priority when overlapping: inProgress > pending > ended. See [[journey-feature]].
-- **Month switching fix:** `JourneyController` exposes `focusedMonthRx` getter; StatefulWidget listens via `ever` + `setState` (TableCalendar NOT wrapped in Obx to avoid `_dependents.isEmpty` crash).
+**Calendar (30-day grid, redesigned 2026-07-27):** `_JourneyCalendar` replaced `TableCalendar` with a custom 5×6 grid:
+- **30 days, today centered:** 10 days before today (gray text, past) + today + 19 days after (black text, future)
+- **No external dependency:** `table_calendar` package removed from journey page imports
+- Each cell: weekday label (7.sp) + date number (12.sp) + colored dots per work (max 3 dots, status-colored: green=inProgress, purple=pending, gray=ended)
+- **Today:** purple outlined circle (26.w, no background fill). **Past dates:** gray text. **Future dates:** black text.
+- **Click date with works** → bottom sheet lists all works for that day (color-coded left border, title, date range, status badge) → tap work → detail page
+- Sorting in bottom sheet: inProgress > pending > ended, then by startDate ascending
+- `Obx(() { final _ = controller.allWorks; ... })` triggers rebuild on data change — StatelessWidget, no Worker/StatefulWidget needed
+- `_DayCell` StatelessWidget, `_JourneyCalendar` StatelessWidget with Obx. `_kCalBefore = 10` controls past/future ratio (10 past + 1 today + 19 future = 30)
+- See [[journey-feature]].
+
+**Search (enhanced 2026-07-27):** Matches title + city name + country name + region:
+  - `_workMatchesSearch(w, kw)` checks multiple fields; `_allCityNames(w)` collects city names from all sources (cities list, departureCity, endCity, cityBlocks)
+  - `_cityNameToCountry` map filled by `_mergeCityNamesFromStore()` for country-name lookup
+
+**Continent filter (fixed 2026-07-27):** Continent-level only (Asia, Europe, etc.):
+  - **Root cause:** `systemContinents` API returns simplified Chinese but work data stores traditional Chinese city names → string mismatch
+  - **Fix:** `_mergeCityNamesFromStore()` populates `_cityNameToContinent` via `CityListStore.to.cityList` names bridged by city ID → `_cityCountryMap` → `_countryContinentMap`
+  - `_allCityNames(w)` aggregates from all sources; filter hidden when `regions.length <= 1`
 
 **Editor redesign (2026-07):** Simplified to natural trip-planning flow:
 - Departure: date (tap → system date picker) + city
@@ -256,14 +267,10 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - `fromJson` backward-compatible: migrates old `city_ids`/`city_names`/`items` format → `cityBlocks` (items assigned to first city block).
 - PDF/Word/HTML exports and detail page adapted to render city blocks as sub-sections with `📍 cityName` headers.
 
-**Template display in journey list (2026-07-25):**
-- Saved templates automatically appear in the journey list as cards with a 📑「模板」badge (amber color).
-- `JourneyWork.fromTemplate()` factory converts `JourneyTemplate` → `JourneyWork` with `isTemplate: true` and `templateSource` reference.
-- `JourneyController.fetchData()` calls `_loadLocalTemplates()` to merge templates from SharedPreferences into `allWorks` list.
-- Template cards show: region tag, title, people count, day count, cities, and 「点击使用模板创建行程」hint. No date range or status badge.
-- Clicking a template card opens editor pre-filled with template data (via `JOURNEY_EDITOR` route with `template` argument).
-- Templates are excluded from status/date filtering (always visible).
-- Bug fix: API empty response no longer overwrites mock data — `fetchData()` skips replacing `allWorks` if API returns empty list.
+**Template display in journey list (2026-07-27 redesigned):**
+- **Templates no longer appear in the work card list.** Previously loaded via `_loadLocalTemplates()` and merged into `allWorks` as template cards. Now templates are only accessible via FAB → 「从模板创建」→ `TemplatePickerSheet`.
+- `_loadLocalTemplates()`, `fromTemplate()` conversion, `isTemplate` skip-logic in `_applyFilters()`, `onTapWork()` template routing, and `_buildTemplateCard()` widget all removed.
+- Template save/load still works via `TemplatePickerSheet` reading directly from `STORAGE_JOURNEY_TEMPLATES_KEY`.
 
 **全部模式排序 & 已结束折叠 (2026-07):**
 - 全部模式（`statusFilter==0`）下默认隐藏已结束行程，列表按 `startDate` 升序纯平排列（不分块）
@@ -274,7 +281,7 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - 4 entries: 空白创建 → editor / 从模板创建 → `TemplatePickerSheet` / 拍照导入 (reserved) / 文件导入 (reserved)
 - Reserved entries show "即将上线" tag and `Loading.toast`
 
-**Editor draft auto-save (2026-07):**
+**Editor draft auto-save (2026-07, fixed 2026-07-27):**
 - 新建工作模式下，表单有内容后自动定时保存草稿到 SharedPreferences（`STORAGE_JOURNEY_DRAFT_KEY`）
 - 30 秒定时器 + `onClose()` 最终保存（编辑模式不保存草稿）
 - 下次打开新建编辑器时检测草稿：弹窗提示「发现未完成的行程」→ 继续编辑 / 重新开始
@@ -283,6 +290,10 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - 提交成功后自动清除草稿
 - 核心方法：`_saveDraft()` (序列化→JSON→SharedPreferences)、`_loadDraft()` / `_restoreFromDraft()` (反序列化恢复)、`_clearDraft()`、`checkDraftAndPrompt(context)` (弹窗)
 - `_hasContent()` 判断是否有填写内容；`_toDraftJson()` 序列化所有表单字段
+- **Bug fix (2026-07-27): `_restoring` flag** — prevents `_syncDays` and `_autoGenerateTitle` from overwriting the saved title during draft restore (date controllers trigger `_syncDays` → `_autoGenerateTitle` before `_cityCountryMap` is loaded). After `_loadSystemContinents()` completes, regenerates title with proper country info.
+- **Bug fix (2026-07-27): `_restoreDayRecommendations()`** — after restoring itinerary days from draft, iterates all city blocks and calls `_loadDayRecommendations()` to fetch attraction/activity/restaurant/shopping recommendations. Also rebuilds `usedResourceKeys` from restored items.
+- **Bug fix (2026-07-27): `_submitted` flag** — prevents `onClose()` from re-saving draft after successful submit. Root cause: `onSubmit()` → `_clearDraft()` → `Get.back()` → `onClose()` → `_hasContent()` still true → `_saveDraft()` re-creates draft.
+- **Bug fix (2026-07-27): Resource dedup** — `usedResourceKeys` (`Set<String>.obs`, format: `"$type:$id"`) tracks which recommendation items have been added to the itinerary. `isResourceUsed(r)` filters UI, `_markResourceUsed(r)` on add, key released on `removeDayItem()`/`removeDayCity()`. Ensures same recommendation is selected only once per work.
 
 **Template picker/viewer (2026-07):** `TemplatePickerSheet` (`lib/pages/journey/widgets/template_picker_sheet.dart`):
 - Bottom sheet (75% height) listing saved templates from SharedPreferences
@@ -294,7 +305,9 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - Tab 0: **行程** (moved to first position, with 「保存为模板」&「生成客户行程」buttons at bottom)
 - Tab 1: **详情** (merged 概览 + 原详情: cities/description/personnel → flights/costs/emergency → action buttons)
 
-**Save as template (2026-07):** `onSaveAsTemplate()` → `TemplateSaveDialog` → builds `JourneyTemplate` → saves to SharedPreferences (`STORAGE_JOURNEY_TEMPLATES_KEY`). New files: `widgets/template_save_dialog.dart`.
+**Save as template (2026-07, fixed 2026-07-27):** 
+- Detail page: `onSaveAsTemplate()` → `TemplateSaveDialog` → builds `JourneyTemplate` → saves to SharedPreferences (`STORAGE_JOURNEY_TEMPLATES_KEY`).
+- Editor page: **Fixed from stub.** `onSaveAsTemplate()` was a no-op (only showed toast). Now implemented: collects cities/hotels from form → shows `TemplateSaveDialog` for naming → builds `JourneyTemplate` → appends to SharedPreferences list. Imports `TemplateSaveDialog` from `journey_detail/widgets/template_save_dialog.dart`.
 
 **Generate client itinerary (2026-07):** `onGenerateClientItinerary()` → `FormatPickerDialog` (image/PDF/Word) → preview dialog with `ClientItineraryPreview` watermark card → generate file → `Share.shareXFiles()`. See [[journey-feature]].
 - Three export formats: RepaintBoundary capture (PNG), `pdf: ^3.11.1` package (PDF), HTML string → `.doc` (Word)
@@ -313,11 +326,43 @@ See [[calendar-redesign]], [[booking-color-coding]].
 1. **`Obx` wrapping `CustomScrollView` → `_dependents.isEmpty` crash:** `CustomScrollView` internally creates `Scrollable` (StatefulWidget). Fixed by removing outer `Obx` and using local `Obx` only for the sliver list/empty section (returns `SliverPadding` > `SliverList` or `SliverToBoxAdapter`, neither is StatefulWidget).
 2. **Nested ScrollView → RenderViewport error:** `EmptyListWidget` (contains `ListView`) inside `SliverToBoxAdapter` caused Viewport nesting. Fixed with `_JourneyEmptyWidget` (Center + Column, no ListView).
 3. **Page blank for 2-3 seconds:** `fetchData()` waited for API timeout before fallback. Fixed: mock data renders immediately, API request runs in background.
-4. **Calendar month switching not working:** `_focusedMonth` Rx updated but `TableCalendar` outside `Obx` so it didn't rebuild. Fixed: expose `focusedMonthRx` in controller, use `ever(focusedMonthRx, setState)` in `_JourneyCalendarState.initState`.
+4. ~~**Calendar month switching not working:**~~ **Obsolete (2026-07-27).** `TableCalendar` removed entirely. Replaced with custom 5×6 grid calendar (`_JourneyCalendar` StatelessWidget + Obx).
 
 ### IM (Tencent Cloud Chat)
 
 `TIMStore` manages the IM SDK lifecycle: init → login with userSig → register push → maintain conversation/friend lists. SDK App ID: `1600121769`. User credentials (`userNumber`, `userSig`) come from the login API response and are stored in shared_preferences. On `onKickedOffline` or `onUserSigExpired`, the user is force-logged-out.
+
+### System Messages（系統消息 / 系统消息，2026-07-27）
+
+消息模塊位於 `lib/pages/message/`，系統消息子模塊在 `lib/pages/message_system/`。
+
+**架構：**
+| 路由 | 頁面 | 說明 |
+|------|------|------|
+| `/message` | `MessagePage` | 消息大廳：頂部固定入口（關注/評論/預定）+ IM 會話列表 |
+| `/message_system` | `MessageSystemPage` | 系統消息列表，分頁加載，點擊進入詳情 |
+| 詳情（push） | `MessageSystemDetailPage` | 系統消息詳情頁，支援富文本及跳轉 |
+
+**數據模型：** `MessageSystemModel`（`lib/common/models/message.dart:133`）
+- `title` — 標題（列表和詳情頁標題行顯示）
+- `desc` — 簡短摘要（列表頁顯示）
+- `content` — 完整正文（詳情頁 RichText 渲染）
+- `content_type` — 內容類型，決定跳轉行為：
+  - `"city"` → 城市詳情（`/city_detail`）
+  - `"city_content"` → 通用詳情（景點/活動/餐廳等）
+  - `"membership"` → 會員中心（`/member_center`）
+- `content_id` / `city_id` / `cityContentType` — 跳轉參數
+
+**詳情頁富文本（2026-07-27 重構）：**
+- 城市名高亮顯示（`#666FFF`），中英雙語格式「首爾 (Seoul)」，可點擊跳轉城市詳情
+- 會員類型消息連結文字顯示「前往會員中心」，點擊跳轉會員中心頁面
+- 使用 `StatefulWidget` + `TapGestureRecognizer` 管理手勢生命週期
+- 當城市名已高亮可點擊時，不再重複顯示「查看詳情」連結
+
+**會員到期提醒（2026-07-27）：**
+- 前端 `MessageSystemModel` 已支援 `content_type: "membership"`，後端排程發送消息後前端自動適配
+- 詳情頁連結文字為「前往會員中心」，點擊跳轉 `/member_center`
+- 後端實現文檔：`docs/backend-member-expiry-reminder.md`（含 Laravel Command、Mailable、四階段雙語內容模板、API 合約）
 
 ### Multi-language
 
@@ -379,14 +424,18 @@ See [[calendar-redesign]], [[booking-color-coding]].
    - `ios/.symlinks/plugins/tencent_cloud_chat_sdk/ios/tencent_cloud_chat_sdk.podspec` — 将 `"~> 8.8.7373"` 改为 `">= 8.8.7373"`
    - 然后删除 `ios/Podfile.lock`，运行 `pod install --repo-update`
    - 详见 [[ios-podspec-patches]]
-7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable`、`TableCalendar` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
+7. **`Obx` 包裹 `CustomScrollView` 或含 StatefulWidget 的子组件会导致 `_dependents.isEmpty` 崩溃:** GetX 的 `Obx` 重建时会 dispose 旧 widget tree。如果包裹了 StatefulWidget（如 `CustomScrollView` 内建的 `Scrollable` 等），旧 state 被 dispose 时仍有依赖残留，触发断言失败。解决方案：① 只用 `Obx` 包裹非 StatefulWidget 的叶子组件（如 `Text`、`Container`）；② 如果必须包裹 StatefulWidget，用 `ValueKey` 强制重建；③ 把 StatefulWidget 拆成独立 StatefulWidget + 内部局部 `Obx`。
 8. **macOS App Sandbox 缺网络权限导致所有 API 请求失败:** `DebugProfile.entitlements` 和 `Release.entitlements` 需要添加 `com.apple.security.network.client` 权限，否则沙箱会阻止所有 HTTP 请求。已在两个 entitlements 文件中添加。详见 [[macos-network-entitlement]]。
-9. **Journey Editor `onSubmit()` 未调用 API:** 后端 JourneyWork CRUD 接口已就绪，API 验证结果（2026-07-26）：
-   - `POST /user/journeyCreate` → 200 ✅ 创建成功
-   - `GET /user/journeyDetail?id=` → 200 ✅ 详情读取成功
-   - `PUT /user/journeyUpdate` → 200 ✅ 更新成功（需 PUT，非 POST）
-   - `DELETE /user/journeyDelete` → 200 ✅ 删除成功
-   - 前端 `lib/pages/journey_editor/controller.dart:714` 的 `onSubmit()` 和 `onSaveAsTemplate()` 仍是 stub（仅显示 toast 并关闭页面，不发送 HTTP 请求）。后续需对接 API。
+9. ✅ **Journey Editor `onSubmit()` 已对接 API（2026-07-27 更新）:** 
+   - `onSubmit()` 实现完整 API 调用：新建调 `POST /user/journeyCreate`，编辑调 **`PUT /user/journeyUpdate`**（后端对 POST 返回 405 Method Not Allowed，必须用 PUT）
+   - `_buildSubmitPayload()` 构建完整提交数据（航班、日行程、费用、应急、区域等）
+   - `_buildFlightJson()` 从 3 个独立 controller 组装航班 JSON
+   - `_computeRegion()` 根据城市集合计算所属大洲/地区
+   - JSON 字段采用 snake_case（如 `departure_city`、`arrival_flight`），匹配后端 `expandJourneyWork()` 输出格式
+   - 新增 API 地址常量：`userJourneyDetail`/`Create`/`Update`/`Delete`/`TemplateList`/`TemplateSave`/`TemplateDelete`
+   - `JourneyDetailController` 已添加 `ApiMixin`，详情优先使用传入 work 对象，兜底调 API
+   - **Mock 数据已移除:** `JourneyWork.mockData()` 返回空数组，`JourneyController.fetchData()` 直接从 API 加载
+   - 编辑模式需通过 `isEdit.obs` + `_workId` 判断，`_workId` 从传入的 `work.id` 获取
 10. **Android NDK 下载损坏导致编译失败:** AGP 自动下载的 NDK 可能缺少 `source.properties`，报错 `[CXX1101] NDK at ... did not have a source.properties file`。解决方案：删除损坏的 NDK 目录（如 `~/Library/Android/sdk/ndk/28.2.13676358`），重新编译时 AGP 会自动重新下载。Flutter 也会提示具体路径和修复步骤。
 11. **Flutter 3.44.4 Android 版本要求:** Flutter 3.44.4 会警告并要求以下最低版本，否则编译会失败（不仅仅是 warning）：
     - Gradle ≥ 8.14.0（`android/gradle/wrapper/gradle-wrapper.properties`）
@@ -395,6 +444,36 @@ See [[calendar-redesign]], [[booking-color-coding]].
     
     当前已升级到这些版本（2026-07-24）。
 12. **Android APK 编译需要代理/VPN:** 国内网络环境无法直接访问 `repo.maven.apache.org`（Cloudflare 403）和 `dl.google.com`（Connection refused），导致 Gradle 插件依赖（kotlin-dsl、AGP buildscript classpath）和 Android SDK 组件无法下载。解决方案：开启系统代理后在 `android/gradle.properties` 中配置 `systemProp.java.net.useSystemProxies=true`，或配置 `systemProp.https.proxyHost/Port`。
+13. ✅ **发布页面文本字段/图片未提交 bug（2026-07-26 修复，2026-07-30 补齐提交）:** 6 个发布页面（city/activity/attraction/facility/information/transportation）的 `onSubmit()` 直接调用 `model.toJson()`，但 TextEditingController 的值和 RxList pictures 从未同步到 model 对象。级联选择器正常是因为直接调 `_publish.update()`。**⚠️ 2026-07-30 发现：此修复只存在于 working tree，从未 git commit。** 修复已补齐提交：在每个 `onSubmit()` 调 `toJson()` 之前，先 `_publish.update()` 同步所有 controller 值 + `pictures.toList()`。受影响文件：`lib/pages/publish_*/controller.dart`（6 个文件）。详见 [[publish-form-sync-bug]]。
+14. ✅ **macOS 桌面端图片选择器不工作（2026-07-26 修复）:** 两个原因：
+    - `macOS/Runner/*.entitlements` 缺少 `com.apple.security.files.user-selected.read-only` 权限，系统文件选择器无法弹出
+    - `image_cropper` 插件不支持 macOS 桌面端，`ImageCropper().cropImage()` 返回 null 导致 `selectImage()` 返回空字符串
+    - 修复：entitlements 添加文件权限；`ImagePickerUtil` 新增 `_supportsCrop` getter（`!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux`），桌面端跳过裁剪直接返回原图
+15. ✅ **发布页面图片上传缺失（2026-07-27 修复，2026-07-30 补齐提交）:** 6 个发布页面的 `onSubmit()` 直接把本地文件路径发给后端，未先上传图片获取远程 URL。其他页面（评价、商家编辑等）都使用 `ConfigService.to.uploadFile()` 先上传再提交 URL。**⚠️ 2026-07-30 发现：此修复只存在于 working tree，从未 git commit。** 修复已补齐提交：每个 `onSubmit()` 开始前调 `_uploadFiles()` 逐一上传本地图片（已是远程 URL 的跳过），最后用 URL 列表替换本地路径提交。`_uploadFiles()` 方法：遍历 `pictures` 列表，`http` 开头的保留原值，其余调 `ConfigService.to.uploadFile(e)` 上传。受影响文件：`lib/pages/publish_*/controller.dart`（6 个文件）。
+16. **Journey 详情页增强（2026-07-27）:**
+    - **删除按钮**：AppBar 新增 🗑 图标，编辑器底部新增「删除此工作」红色按钮。`onDeleteWork()`（注意不能叫 `onDelete`，GetX 生命周期有同名方法）先弹确认框，再调 `POST /user/journeyDelete`。两处入口：详情页 `JourneyDetailController` + 编辑器 `JourneyEditorController`。
+    - **行程内容可点击**：`_DayDetailCard` 中城市名和行程项改为 `GestureDetector` 包裹。城市点击：有 `cityId` → `/city_detail?id=cityId`，无 → `/publish_city`。行程项点击：有 `resourceId` + `resourceType` → `/common_detail` 对应详情，无 → 对应发布页（attraction→publish_attraction, activity→publish_activity, restaurant/meal→publish_facility, shopping→publish_facility, transport→publish_transportation）。映射方法：`_mapResourceTypeToCommonDetailType()`（attraction→scenic, activity→activity, restaurant→restaurant, shopping→shopping, transport→traffic, hotel→hotel）。
+17. ✅ **Journey 列表地区筛选修复 v2（2026-07-27）:** API 返回的 `region` 字段为 null，且 `_cityNameToContinent` 的 77 个条目无法匹配到任何工作的城市名 → 地区筛选消失。**根因：繁简中文不匹配** — `systemContinents` API 返回简体中文城市名（萨尔茨堡），但工作数据是繁体中文（薩爾茨堡），字符串匹配失败。**修复：** 新增 `_mergeCityNamesFromStore()` 方法，用 `CityListStore.to.cityList`（app 当前语言，与编辑器一致）的城市名通过 city ID 桥接填充 `_cityNameToContinent`。同时填充 `_cityNameToCountry`（城市名→国家名）供搜索使用。`_allCityNames(w)` 汇总所有城市名来源（cities + departureCity + endCity + cityBlocks）。搜索增强：`_workMatchesSearch()` 匹配标题 + 城市名 + 国家名 + region。
+18. **ApiResult 错误消息增强（2026-07-27）:** `_getBasicErrorMessage()` 在 `response.data` 非 Map 时，现在返回 `Request failed [状态码] 响应体` 格式（原只返回 `Request failed`），便于调试后端 405/500 等错误。
+19. ✅ **发布流程健壮性增强 + 401 拦截修复（2026-07-30）:** 详见 [[publish-form-sync-bug]]。
+20. ✅ **導遊認證新增「常駐城市」（2026-07-31）:** 導遊認證「基礎信息」頁新增必填欄位「我的常駐城市」。兩種模式：① 選擇現有城市 → `CityPickerSheet`；② 新增城市 → 輸入中/英文名 + 大洲→地區→國家三級聯動。Model 新增 12 個字段（`resident_city_id/name`, `is_new_city`, `new_city_*`）。提交 payload 區分 `is_new_city=0`（現有）和 `is_new_city=1`（新增）。後端文檔：`docs/backend-guide-resident-city.md`。詳見 [[guide-certification]]。
+21. ✅ **導遊認證 + 企業入駐 — 草稿自動保存/恢復（2026-07-31）:** 表單任一字段變化 → 400ms 防抖 → `SharedPreferences` 保存 JSON。進入頁面 → 非只讀 → 檢測草稿 → `DraftPromptCard` 彈窗「繼續編輯/重新填寫」。圖片只保存 http URL，不保存本地路徑。提交成功或點擊重新填寫時清除。`guide_certify_draft` / `merchant_entry_draft`。共用 widget：`lib/common/widgets/draft_prompt.dart`。詳見 [[guide-certification]]、[[publish-form-sync-bug]]。
+22. ✅ **企業入駐三個 Bug 修復（2026-07-31）:** ① `_uploadImages()` 改用逐文件串行上傳（不再 `Future.wait` 批量），單文件失敗不影響其他；② `_restoreFromDraft()` 補回 `cityId` 恢復邏輯；③ 所在城市/經營類型/簡介/Email/聯繫電話補上 `isRequired: true` + 驗證邏輯取消註解。詳見 [[publish-form-sync-bug]]。
+23. ✅ **城市詳情頁 5 個內容 tab 列表渲染 bug（2026-07-31 修復）:** 票務(type=8)、活動(type=7)、設施(type=6)、住宿(type=4)、餐廳(type=2) 五個 tab 的 widget 中，`if (list.isEmpty)` 和 `else` 分支都返回 `EmptyListWidget()` → 即使 API 成功返回數據也永遠顯示空白。**根因：這 5 個 widget 是未完成的 stub，非空分支未實現實際列表渲染。**
+
+   **修復：** 5 個 widget 的非空分支改為 2 列 `GridView.builder`（卡片佈局：封面圖 + 名稱 + 電話 + 地址），與已正常工作的交通(traffic)/購物(shopping) widget 一致。同時 controller 新增 5 個 `onTap*Item()` 方法（ticket/activity/facility/hotel/restaurant），點擊卡片導航到 `/common_detail` 對應 type_id。
+
+   **受影響文件：**
+   - `lib/pages/city_detail/widgets/ticket.dart` — `_TicketItem` + `onTapTicketItem()`
+   - `lib/pages/city_detail/widgets/activity.dart` — `_Item` + `onTapActivityItem()`
+   - `lib/pages/city_detail/widgets/facility.dart` — `_Item` + `onTapFacilityItem()`
+   - `lib/pages/city_detail/widgets/hotel.dart` — `_Item` + `onTapHotelItem()`
+   - `lib/pages/city_detail/widgets/restaurant.dart` — `_Item` + `onTapRestaurantItem()`
+   - `lib/pages/city_detail/controller.dart` — 新增 5 個 `onTap*Item()` 方法 + 保留已有的 `onTapTicketItem()`
+
+   **注意：** 各 `_Item` 類是 widget 文件私有的（非共用），因為每個需要調用不同的 `controller.onTap*Item()` 方法。未來可考慮抽取共用卡片 widget 通過 callback 參數區分導航目標。
+
+   詳見 [[city-detail-tab-rendering-bug]]。
 
 ## New machine setup
 

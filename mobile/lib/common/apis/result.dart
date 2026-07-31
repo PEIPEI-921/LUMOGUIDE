@@ -79,10 +79,38 @@ class ApiResult<T> {
   String _getBasicErrorMessage(DioException exception) {
     if (exception.response?.data is Map) {
       final data = exception.response?.data as Map<String, dynamic>;
-      final message = data['message'];
-      return '$message';
+      final message = data['message'] ?? data['msg'] ?? data['error'];
+      if (message != null && message.toString().isNotEmpty) {
+        return message.toString();
+      }
+      // If no recognizable message field, return the raw data as string
+      return 'Server error: ${_truncateMap(data)}';
     }
-    return 'Request failed';
+    final statusCode = exception.response?.statusCode;
+    final data = exception.response?.data;
+    // Truncate long string responses (e.g., HTML error pages) to keep toasts readable
+    String detail;
+    if (data is String) {
+      if (data.trimLeft().startsWith('<!DOCTYPE') || data.trimLeft().startsWith('<html')) {
+        detail = '[HTML error page — check server logs for details]';
+      } else if (data.length > 200) {
+        detail = '${data.substring(0, 200)}...';
+      } else {
+        detail = data;
+      }
+    } else if (data != null) {
+      detail = data.toString().length > 200 ? '${data.toString().substring(0, 200)}...' : data.toString();
+    } else {
+      detail = exception.message ?? '';
+    }
+    return 'Request failed [$statusCode] $detail';
+  }
+
+  /// Truncate map to a readable single-line summary for error display
+  String _truncateMap(Map<String, dynamic> map) {
+    final entries = map.entries.take(5).map((e) => '${e.key}: ${e.value}').join(', ');
+    if (map.length > 5) return '$entries...';
+    return entries;
   }
 }
 

@@ -33,6 +33,10 @@ class JourneyDetailPage extends StatelessWidget {
             icon: Icon(Icons.edit_outlined, size: 18.sp, color: AppColors.primary),
             onPressed: () => ctrl.onEdit(),
           ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, size: 18.sp, color: Colors.red.shade400),
+            onPressed: () => ctrl.onDeleteWork(),
+          ),
         ],
       ),
       body: Obx(() {
@@ -351,7 +355,7 @@ class _ItineraryTab extends StatelessWidget {
     return SingleChildScrollView(
       padding: EdgeInsets.all(14.w),
       child: Column(children: [
-        ...work.itineraryDays.map((day) => _DayDetailCard(day: day)),
+        ...work.itineraryDays.map((day) => _DayDetailCard(day: day, ctrl: ctrl)),
         // 操作按钮 — 保存的主要是行程
         SizedBox(height: 20.w),
         _ActionButton(Icons.bookmark_outline, '保存为模板', () => ctrl.onSaveAsTemplate()),
@@ -365,7 +369,8 @@ class _ItineraryTab extends StatelessWidget {
 
 class _DayDetailCard extends StatelessWidget {
   final ItineraryDay day;
-  const _DayDetailCard({required this.day});
+  final JourneyDetailController ctrl;
+  const _DayDetailCard({required this.day, required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
@@ -401,14 +406,23 @@ class _DayDetailCard extends StatelessWidget {
             if (block.cityName?.isNotEmpty == true)
               Padding(
                 padding: EdgeInsets.only(top: 2.w, bottom: 4.w),
-                child: Row(children: [
-                  Container(width: 6.w, height: 6.w,
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(3.w))),
-                  SizedBox(width: 6.w),
-                  Text(block.cityName!, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.primary)),
-                ]),
+                child: GestureDetector(
+                  onTap: () => ctrl.onTapCityBlock(block),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(children: [
+                    Container(width: 6.w, height: 6.w,
+                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(3.w))),
+                    SizedBox(width: 6.w),
+                    Text(block.cityName!, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    SizedBox(width: 4.w),
+                    Icon(Icons.open_in_new, size: 11.sp, color: AppColors.primary.withValues(alpha: 0.4)),
+                  ]),
+                ),
               ),
-            ...block.items.map((item) => Padding(
+            ...block.items.map((item) => GestureDetector(
+            onTap: () => ctrl.onTapItineraryItem(item, block.cityId),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
             padding: EdgeInsets.only(bottom: 6.w),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(width: 40.w, child: Text(item.time ?? '', style: TextStyle(
@@ -416,14 +430,18 @@ class _DayDetailCard extends StatelessWidget {
               Container(width: 2, height: 40, color: AppColors.primary.withValues(alpha: 0.15)),
               SizedBox(width: 8.w),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(item.title ?? '', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500, color: AppColors.primaryText)),
+                Row(children: [
+                  Expanded(child: Text(item.title ?? '', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500, color: AppColors.primaryText))),
+                  if (item.resourceId != null || item.resourceType != null)
+                    Icon(Icons.chevron_right, size: 14.sp, color: AppColors.assistantText),
+                ]),
                 if (item.description?.isNotEmpty == true) ...[
                   SizedBox(height: 2.w),
                   Text(item.description!, style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
                 ],
               ])),
             ]),
-          )),
+          ))),
           ]),
         ],
         // 底部信息

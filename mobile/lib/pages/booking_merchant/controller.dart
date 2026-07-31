@@ -266,10 +266,7 @@ class BookingMerchantController extends GetxController
     if (file == null) {
       return '';
     }
-    final path = await ConfigService.to.uploadFile(
-      file!.path!,
-      ext: file!.extension!,
-    );
+    final path = await ConfigService.to.uploadFile(file!.path!);
     return path;
   }
 }
