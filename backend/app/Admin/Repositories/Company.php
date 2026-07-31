@@ -212,8 +212,11 @@ class Company extends EloquentRepository
 
         $pictures = json_decode($company->picture, true);
         if (is_array($pictures) && !empty($pictures)) {
+            $pictures = array_map(function ($url) {
+                return str_starts_with($url, '/storage') ? config('app.url') . $url : $url;
+            }, $pictures);
             $shop->first_picture = $pictures[0];
-            $shop->pictures = $company->picture;
+            $shop->pictures = json_encode($pictures);
         }
 
         $shop->save();
