@@ -40,5 +40,11 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # 為缺少 dSYM 的 Tencent IM SDK framework 生成 stub dSYM
+    if ['TXIMSDK_Plus_iOS_XCFramework', 'TIMPush'].include?(target.name)
+      target.build_configurations.each do |config|
+        config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      end
+    end
   end
 end

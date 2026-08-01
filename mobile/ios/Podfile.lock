@@ -204,7 +204,7 @@ PODS:
   - TIMPush (8.9.7538):
     - TXIMSDK_Plus_iOS_XCFramework (>= 8.9.7537)
   - TOCropViewController (2.7.4)
-  - TXIMSDK_Plus_iOS_XCFramework (9.0.7661)
+  - TXIMSDK_Plus_iOS_XCFramework (9.0.7662)
   - url_launcher_ios (0.0.1):
     - Flutter
   - video_player_avfoundation (0.0.1):
@@ -392,17 +392,17 @@ SPEC CHECKSUMS:
   StripePaymentsUI: e2f00f9be6fea280d6188b805fdb5199a96e1151
   StripeUICore: bfe8754c2d78eeb0fc4ce147316a7e5129b58423
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
-  tencent_cloud_chat_push: 765c1a20e3bd731ca13b570f4047fdcdbee46fee
+  tencent_cloud_chat_push: 1fcd855b890b9a0ca8417f59ba1a808b127aa737
   tencent_cloud_chat_sdk: 15bfcd971d7a7da0740d6498496ef7d18701d8b3
   tencent_cloud_uikit_core: 137e8ae40882b1929508e688182b2818708cc078
   TIMPush: 96b1344a4f6d4fae75b440a469ac9603552c6f85
   TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
-  TXIMSDK_Plus_iOS_XCFramework: 833d9b6cd4fec18531b17d35d89c7f0f55060272
+  TXIMSDK_Plus_iOS_XCFramework: 8945dc509d1271c4a5b3361695f996118aafdeae
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
   wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: a57f30d18f102dd3ce366b1d62a55ecbef2158e5
+PODFILE CHECKSUM: 983a1fa06a2b343cd19495d0563a6009e71bf7ff
 
 COCOAPODS: 1.16.2
