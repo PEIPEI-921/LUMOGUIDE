@@ -47,28 +47,37 @@ class _Content extends StatelessWidget {
     return Column(
       children: [
         const _TopBar(),
-        EasyRefresh.builder(
-          childBuilder: (context, physics) {
-            return Obx(
-              () => controller.home == null
-                  ? const Column(children: []).scrollable(physics: physics)
-                  : const Column(
-                      children: [
-                        HomeSearchBar(),
-                        HomeStrategyWidget(),
-                        HomeHotCityWidget(),
-                        HomeCityGuideWidget(),
-                        HomeMerchantWidget(),
-                        HomeInformationWidget(),
-                        SizedBox(height: 30),
-                      ],
-                    ).scrollable(physics: physics),
-            );
+        NotificationListener<ScrollUpdateNotification>(
+          onNotification: (notification) {
+            // 用户手动拖拽滑动 → 停止资讯自动轮播
+            if (notification.dragDetails != null) {
+              controller.stopInfoAutoScroll();
+            }
+            return false;
           },
-          controller: controller.refreshController,
-          header: const MaterialHeader(),
-          onRefresh: controller.fetchData,
-        ).expanded(),
+          child: EasyRefresh.builder(
+            childBuilder: (context, physics) {
+              return Obx(
+                () => controller.home == null
+                    ? const Column(children: []).scrollable(physics: physics)
+                    : const Column(
+                        children: [
+                          HomeSearchBar(),
+                          HomeStrategyWidget(),
+                          HomeHotCityWidget(),
+                          HomeCityGuideWidget(),
+                          HomeMerchantWidget(),
+                          HomeInformationWidget(),
+                          SizedBox(height: 30),
+                        ],
+                      ).scrollable(physics: physics),
+              );
+            },
+            controller: controller.refreshController,
+            header: const MaterialHeader(),
+            onRefresh: controller.fetchData,
+          ).expanded(),
+        ),
       ],
     );
   }

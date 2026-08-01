@@ -53,6 +53,14 @@ class MerchantEntryController extends GetxController
       cities.firstWhereOrNull((e) => e.id == merchantEntry.cityId)?.name ?? '';
   final cities = <CityList>[].obs;
 
+  /// 當前經營類型顯示名稱
+  String get typeTitle {
+    if (merchantEntry.typeId != null) {
+      return MerchantShopTypeExt.fromId(merchantEntry.typeId!).title;
+    }
+    return merchantEntry.businessType ?? '';
+  }
+
   bool get isReadOnly =>
       merchantEntry.auditStatus == 0 || merchantEntry.auditStatus == 1;
 
@@ -182,8 +190,12 @@ class MerchantEntryController extends GetxController
   }
 
   bool validateBusinessType() {
-    if (merchantEntry.businessType == null || merchantEntry.businessType!.isEmpty) {
+    if (merchantEntry.typeId == null) {
       Loading.toast('請選擇經營類型'.tr);
+      return false;
+    }
+    if (merchantEntry.typeClassId == null) {
+      Loading.toast('請選擇具體分類'.tr);
       return false;
     }
     if (introductionController.text.isEmpty) {
@@ -373,20 +385,79 @@ extension MerchantEntrySelection on MerchantEntryController {
     _scheduleDraftSave();
   }
 
-  // 选择经营类型
+  // 选择经营类型（一级：MerchantShopType）
   void selectBusinessType() async {
-    if (isReadOnly) {
-      return;
-    }
-    final businessTypes = ConfigService.to.systemConfig.businessType;
+    if (isReadOnly) return;
+    final data = MerchantShopType.values.map((e) => e.title).toList();
+    final currentTitle = typeTitle;
     final res = await ValuePicker.show(
       title: '請選擇企業經營類型'.tr,
-      datas: businessTypes,
-      selectedDatas: [merchantEntry.businessType ?? ''],
+      datas: data,
+      selectedDatas: currentTitle.isNotEmpty ? [currentTitle] : [],
     );
     if (res != null && res.isNotEmpty) {
+      final selectedType = MerchantShopType.values.firstWhere(
+        (e) => e.title == res.first,
+      );
       _merchantEntry.update((val) {
-        val?.businessType = res.first;
+        val?.typeId = selectedType.id;
+        val?.businessType = selectedType.title;
+        // 切換類型時清除舊的子分類
+        val?.typeClassId = null;
+        val?.typeClassName = null;
+      });
+      _scheduleDraftSave();
+    }
+  }
+
+  // 选择具体经营分类（二级：Category）
+  void selectBusinessSubtype() async {
+    if (isReadOnly) return;
+    final typeId = merchantEntry.typeId;
+    if (typeId == null) {
+      Loading.toast('請先選擇經營類型'.tr);
+      return;
+    }
+    var data = ConfigService.to
+        .getCategories(typeId)
+        .map((e) => e.name ?? '')
+        .toList();
+    // 本地緩存為空時，從 API 即時載入
+    if (data.isEmpty) {
+      Loading.show();
+      final apiRes = await get(
+        ApiUrl.typeClass,
+        parameters: {'type_id': typeId},
+      );
+      Loading.dismiss();
+      if (!apiRes.isSuccess) {
+        Loading.toast('載入分類失敗'.tr);
+        return;
+      }
+      data = apiRes.dataList
+          .map((e) => Category.fromJson(e).name ?? '')
+          .toList();
+    }
+    if (data.isEmpty) {
+      Loading.toast('暫無可用分類'.tr);
+      return;
+    }
+    final res = await ValuePicker.show(
+      title: '請選擇具體經營分類'.tr,
+      datas: data,
+      selectedDatas: [
+        if ((merchantEntry.typeClassName ?? '').isNotEmpty)
+          merchantEntry.typeClassName!,
+      ],
+    );
+    if (res != null && res.isNotEmpty) {
+      final categories = ConfigService.to.getCategories(typeId);
+      final selected = categories.firstWhereOrNull(
+        (e) => e.name == res.first,
+      );
+      _merchantEntry.update((val) {
+        val?.typeClassName = res.first;
+        val?.typeClassId = selected?.id;
       });
       _scheduleDraftSave();
     }
@@ -494,6 +565,9 @@ extension on MerchantEntryController {
         'id_card_back': '',
       },
       'selectedTypes': [merchantEntry.businessType ?? ''],
+      'typeId': merchantEntry.typeId,
+      'typeClassId': merchantEntry.typeClassId,
+      'typeClassName': merchantEntry.typeClassName ?? '',
       'storePics': merchantPictures.where((e) => e.startsWith('http')).toList(),
     };
   }
@@ -564,6 +638,10 @@ extension on MerchantEntryController {
       val?.businessType = ((draft['selectedTypes'] as List?)?.isNotEmpty == true)
           ? (draft['selectedTypes'] as List).first as String?
           : null;
+      // 恢復經營類型分類
+      val?.typeId = draft['typeId'] as int?;
+      val?.typeClassId = draft['typeClassId'] as int?;
+      val?.typeClassName = draft['typeClassName'] as String?;
       // 恢復城市選擇
       final cityIdStr = form['city_id'] as String?;
       if (cityIdStr != null && cityIdStr.isNotEmpty) {

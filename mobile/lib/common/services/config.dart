@@ -169,27 +169,56 @@ class ConfigService extends GetxService with ApiMixin {
     return '';
   }
 
-  /// 上传文件（支持任意图片格式）
-  /// 自动根据文件扩展名检测 MIME 类型，GIF 保留动画不压缩
+  /// 上传文件（支持任意图片格式：PNG/JPEG/GIF/HEIC/HEIF/WebP/BMP）
+  ///
+  /// 策略：
+  /// 1. GIF 跳过压缩，直接上传原文件（保留动画）
+  /// 2. 其他格式：先尝试 flutter_image_compress 压缩为 JPEG
+  /// 3. 压缩失败（HEIC 等格式）→ 回退为上传原文件
   Future<String> uploadFile(String path) async {
     try {
       final originalFilename = path.split('/').last;
       final originalExt = originalFilename.split('.').last.toLowerCase();
       final originalMime = _mimeType(originalFilename);
-      debugPrint('[uploadFile] START path=$path ext=$originalExt mime=$originalMime');
-      final originalSize = await File(path).length();
-      debugPrint('[uploadFile] Original file size: ${(originalSize / 1024).toStringAsFixed(1)} KB');
+      final originalFile = File(path);
+      final originalSize = await originalFile.length();
+      debugPrint('[uploadFile] START path=$path ext=$originalExt mime=$originalMime size=${(originalSize / 1024).toStringAsFixed(1)}KB');
 
-      // [DIAGNOSTIC] 使用 MultipartFile.fromFile 直接上传原文件，不压缩
-      // 这样可以隔离压缩是否导致 500 的问题
-      final upload = await dio.MultipartFile.fromFile(
-        path,
-        filename: originalFilename,
-        contentType: dio.DioMediaType.parse(originalMime),
-      );
-      debugPrint('[uploadFile] MultipartFile.fromFile: filename=$originalFilename mime=$originalMime');
+      late final dio.MultipartFile upload;
 
-      debugPrint('[uploadFile] POST to ${ApiUrl.fileUpload}...');
+      // GIF 跳过压缩，保留动画
+      if (originalExt == 'gif') {
+        debugPrint('[uploadFile] GIF detected — skip compression, upload raw');
+        final bytes = await originalFile.readAsBytes();
+        upload = dio.MultipartFile.fromBytes(
+          bytes,
+          filename: originalFilename,
+          contentType: dio.DioMediaType.parse(originalMime),
+        );
+      } else {
+        // 尝试压缩（flutter_image_compress 会将 HEIC/WebP 等转为 JPEG）
+        final compressed = await compressImageToSize(originalFile);
+        if (compressed != null) {
+          final compressedSizeKB = (compressed.length / 1024).toStringAsFixed(1);
+          debugPrint('[uploadFile] Compressed OK: $compressedSizeKB KB (from ${(originalSize / 1024).toStringAsFixed(1)} KB)');
+          upload = dio.MultipartFile.fromBytes(
+            compressed,
+            filename: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+            contentType: dio.DioMediaType.parse('image/jpeg'),
+          );
+        } else {
+          // 压缩失败（HEIC 在部分平台不支持）→ 上传原文件
+          debugPrint('[uploadFile] Compression failed — fallback to raw upload');
+          final bytes = await originalFile.readAsBytes();
+          upload = dio.MultipartFile.fromBytes(
+            bytes,
+            filename: originalFilename,
+            contentType: dio.DioMediaType.parse(originalMime),
+          );
+        }
+      }
+
+      debugPrint('[uploadFile] Uploading: filename=${upload.filename} mime=${upload.contentType}');
       final res = await post(
         ApiUrl.fileUpload,
         data: dio.FormData.fromMap({'image': upload}),
@@ -218,16 +247,54 @@ class ConfigService extends GetxService with ApiMixin {
 
   Future<String> uploadFileDebug(String path) async {
     final originalFilename = path.split('/').last;
-    final mime = _mimeType(originalFilename);
-    final compressedData = await compressImageToSize(File(path));
+    final originalExt = originalFilename.split('.').last.toLowerCase();
+    final originalMime = _mimeType(originalFilename);
+    final originalFile = File(path);
+
+    // GIF 跳过压缩
+    if (originalExt == 'gif') {
+      final bytes = await originalFile.readAsBytes();
+      final upload = dio.MultipartFile.fromBytes(
+        bytes,
+        filename: originalFilename,
+        contentType: dio.DioMediaType.parse(originalMime),
+      );
+      final res = await post(
+        ApiUrl.fileUpload,
+        data: dio.FormData.fromMap({'image': upload}),
+      );
+      if (!res.isSuccess) {
+        AlertUtils.error(res.message);
+        return '';
+      }
+      AlertUtils.success(_extractUrl(res));
+      return _extractUrl(res);
+    }
+
+    final compressedData = await compressImageToSize(originalFile);
     if (compressedData == null) {
-      AlertUtils.error('压缩失败'.tr);
-      return '';
+      // 压缩失败 → 回退上传原文件
+      final bytes = await originalFile.readAsBytes();
+      final upload = dio.MultipartFile.fromBytes(
+        bytes,
+        filename: originalFilename,
+        contentType: dio.DioMediaType.parse(originalMime),
+      );
+      final res = await post(
+        ApiUrl.fileUpload,
+        data: dio.FormData.fromMap({'image': upload}),
+      );
+      if (!res.isSuccess) {
+        AlertUtils.error(res.message);
+        return '';
+      }
+      AlertUtils.success(_extractUrl(res));
+      return _extractUrl(res);
     }
     final upload = dio.MultipartFile.fromBytes(
       compressedData,
-      filename: '${DateTime.now().millisecondsSinceEpoch}.png',
-      contentType: dio.DioMediaType.parse(mime),
+      filename: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+      contentType: dio.DioMediaType.parse('image/jpeg'),
     );
     final res = await post(
       ApiUrl.fileUpload,
@@ -237,8 +304,8 @@ class ConfigService extends GetxService with ApiMixin {
       AlertUtils.error(res.message);
       return '';
     }
-    AlertUtils.success(res.dataJson['url'] ?? '');
-    return res.dataJson['url'] ?? '';
+    AlertUtils.success(_extractUrl(res));
+    return _extractUrl(res);
   }
 }
 

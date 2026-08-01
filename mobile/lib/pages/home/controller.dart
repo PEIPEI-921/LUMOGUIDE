@@ -29,6 +29,11 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
   int _previousMerchantBannerIndex = 0;
   Timer? _merchantSingleBannerTimer;
 
+  // 资讯分类自动轮播
+  Timer? _infoAutoScrollTimer;
+  bool _infoAutoScrollEnabled = true;
+  static const _infoAutoScrollInterval = Duration(seconds: 5);
+
   final _home = Rxn<HomeModel>();
   HomeModel? get home => _home.value;
 
@@ -75,6 +80,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     searchController.dispose();
     _searchDebounceWorker?.dispose();
     _stopGuideAutoScroll();
+    _stopInfoAutoScroll();
     _resetMerchantBannerState();
     super.onClose();
   }
@@ -226,6 +232,8 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     merchantCategoryIndex.value = 0;
     informationCategoryIndex.value = 0;
     _stopGuideAutoScroll();
+    _stopInfoAutoScroll();
+    _infoAutoScrollEnabled = true;
     _merchantAutoRotateEnabled = true;
     _resetMerchantBannerState();
   }
@@ -301,6 +309,40 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     merchantCategoryIndex.value = index;
   }
 
+  void _startInfoAutoScroll() {
+    _stopInfoAutoScroll();
+    final count = _home.value?.information.length ?? 0;
+    if (count <= 1) return;
+    _infoAutoScrollEnabled = true;
+    _infoAutoScrollTimer = Timer.periodic(_infoAutoScrollInterval, (_) {
+      if (!_infoAutoScrollEnabled) return;
+      final count = _home.value?.information.length ?? 0;
+      if (count <= 1) return;
+      informationCategoryIndex.value = (informationCategoryIndex.value + 1) % count;
+    });
+  }
+
+  void _stopInfoAutoScroll() {
+    _infoAutoScrollTimer?.cancel();
+    _infoAutoScrollTimer = null;
+  }
+
+  /// 用户滑动页面 → 永久停止资讯自动轮播
+  void stopInfoAutoScroll() {
+    if (!_infoAutoScrollEnabled) return;
+    _infoAutoScrollEnabled = false;
+    _stopInfoAutoScroll();
+  }
+
+  /// 手动点击资讯分类 → 暂停 5s 后恢复
+  void onInfoCategoryTap(int index) {
+    informationCategoryIndex.value = index;
+    _stopInfoAutoScroll();
+    _infoAutoScrollTimer = Timer(_infoAutoScrollInterval, () {
+      _startInfoAutoScroll();
+    });
+  }
+
   @override
   Future<void> fetchData() async {
     _resetCategoryIndex();
@@ -311,6 +353,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
         final jsonData = jsonDecode(cacheData) as Map<String, dynamic>;
         _home.value = HomeModel.fromJson(jsonData);
         _startGuideAutoScroll();
+        _startInfoAutoScroll();
         endLoad([]);
       }
     } catch (e) {}
@@ -328,6 +371,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     _home.refresh();
     StorageStone.setHomeData(jsonEncode(_home.value!.toJson()));
     _startGuideAutoScroll();
+    _startInfoAutoScroll();
     endLoad([]);
   }
 }

@@ -475,6 +475,41 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
    詳見 [[city-detail-tab-rendering-bug]]。
 
+24. ✅ **企業入駐經營類型二級聯動（2026-08-01）:** 企業入駐表單第二步「商家類型」從單一平鋪字串選擇器改造為二級聯動選擇器。第一級選 `MerchantShopType`（餐廳/購物/住宿/票務/景點），第二級根據第一級動態載入子分類（來自 `ConfigService.typeCategories`，快取空時即時請求 `/common/getTypeClass`）。`MerchantEntry` 模型新增 `typeId`(int)、`typeClassId`(int)、`typeClassName`(String)，保留 `businessType` 相容舊資料。提交 payload 同時輸出 `type_id`/`type_class_id`/`type_class_name`，後端審核通過後可直接建立對應商鋪。詳見 [[enterprise-business-type-cascade]]。
+
+    **受影響文件：**
+    - `lib/common/models/merchant_entry.dart` — 新增 3 個字段
+    - `lib/pages/merchant_entry/widgets/business_type.dart` — 單一選擇器 → 二級聯動
+    - `lib/pages/merchant_entry/controller.dart` — `selectBusinessType()` 改用枚舉 + 新增 `selectBusinessSubtype()` + 驗證/草稿適配
+
+25. ✅ **企業會員隱藏「我的歷程」（2026-08-01）:** `MineController.menus` getter 中，企業會員（`isEnterprise`）分支移除 `MineMenu.journey`。導遊和普通用戶不受影響。詳見 [[enterprise-hide-journey]]。
+
+    **受影響文件：** `lib/pages/mine/controller.dart`
+
+26. ✅ **圖片上傳支援所有格式 HEIC/GIF/WebP/BMP（2026-08-01）:** `ConfigService.uploadFile()` 重構為智能上傳流程：
+    - GIF → 跳過壓縮，直接上傳原檔以保留動畫
+    - 其他格式 → 先嘗試 `compressImageToSize()` 壓縮為 JPEG
+    - 壓縮失敗（HEIC 在部分平台）→ 自動回退上傳原檔（保留原始 MIME 類型）
+    - `readAsBytesSync()` → `await readAsBytes()` 避免阻塞主線程
+    - MIME 根據副檔名自動檢測（heic→`image/heic`, webp→`image/webp`…）
+    - `uploadFileDebug()` 同步更新為相同邏輯
+    
+    詳見 [[image-upload-all-formats]]。
+
+    **受影響文件：** `lib/common/services/config.dart`
+
+27. ✅ **首頁資訊分類自動輪播（2026-08-01）:** 首頁資訊區塊自動每 5 秒切換下一個分類（與導遊輪播類似）。
+    - 用戶手動點擊分類 pill → 暫停 5 秒後恢復
+    - 用戶向下滑動頁面（`ScrollUpdateNotification.dragDetails != null`）→ **永久停止**自動輪播
+    - 下拉刷新後恢復自動輪播
+    
+    詳見 [[homepage-info-auto-scroll]]。
+
+    **受影響文件：**
+    - `lib/pages/home/controller.dart` — 新增 `_infoAutoScrollTimer` + 3 個公開方法
+    - `lib/pages/home/page.dart` — `NotificationListener<ScrollUpdateNotification>` 包裹 `EasyRefresh`
+    - `lib/pages/home/widgets/information.dart` — 分類點擊改用 `onInfoCategoryTap()`
+
 ## New machine setup
 
 见 `SETUP.md` — 含完整环境检查清单和安装命令，可供 Claude Code 逐条执行配置新 MacBook。

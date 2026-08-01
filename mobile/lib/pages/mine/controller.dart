@@ -31,7 +31,6 @@ class MineController extends GetxController with UserStoreMixin {
         MineMenu.mall,
         // MineMenu.exchange,
         MineMenu.invite,
-        MineMenu.journey,
         MineMenu.certificate,
         if (!userInfo.inAudit) MineMenu.vip,
       ];

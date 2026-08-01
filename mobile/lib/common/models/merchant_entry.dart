@@ -8,6 +8,9 @@ class MerchantEntry {
     this.address,
     this.taxId,
     this.businessType,
+    this.typeId,
+    this.typeClassId,
+    this.typeClassName,
     this.introduction,
     this.email,
     this.phone,
@@ -37,8 +40,17 @@ class MerchantEntry {
   /// 公司税号
   String? taxId;
 
-  /// 经营类型
+  /// 经营类型（字串，保留相容舊資料）
   String? businessType;
+
+  /// 經營類型 ID（對應 MerchantShopType 枚舉值）
+  int? typeId;
+
+  /// 經營類型子分類 ID（對應 typeClass API 返回的 Category.id）
+  int? typeClassId;
+
+  /// 經營類型子分類名稱
+  String? typeClassName;
 
   /// 简介
   String? introduction;
@@ -84,6 +96,9 @@ class MerchantEntry {
       address: json.safeString('address'),
       taxId: json.safeString('tax_id'),
       businessType: json.safeString('business_type'),
+      typeId: json.safeInt('type_id'),
+      typeClassId: json.safeInt('type_class_id'),
+      typeClassName: json.safeString('type_class_name'),
       introduction: json.safeString('introduction'),
       email: json.safeString('email'),
       phone: json.safeString('phone'),
@@ -107,6 +122,9 @@ class MerchantEntry {
       'address': address,
       'tax_id': taxId,
       'business_type': businessType,
+      'type_id': typeId,
+      'type_class_id': typeClassId,
+      'type_class_name': typeClassName,
       'introduction': introduction,
       'email': email,
       'phone': phone,
