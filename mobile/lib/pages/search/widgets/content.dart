@@ -191,6 +191,12 @@ class _Item extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ).expanded(),
                       ],
+                    ).gestures(
+                      onTap: () => openAddressMap(
+                        name: item.name,
+                        address: item.address,
+                      ),
+                      behavior: HitTestBehavior.opaque,
                     ),
                 ],
                 if (item.startTime.isNotEmpty &&

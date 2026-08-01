@@ -81,6 +81,14 @@ class MerchantInfoWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ).expanded(),
                   ],
+                ).gestures(
+                  onTap: () => openAddressMap(
+                    name: controller.merchantInfo.name,
+                    address: controller.merchantInfo.address,
+                    latitude: controller.merchantInfo.latitude,
+                    longitude: controller.merchantInfo.longitude,
+                  ),
+                  behavior: HitTestBehavior.opaque,
                 ),
               ],
             ).expanded(),

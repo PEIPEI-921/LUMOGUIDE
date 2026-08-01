@@ -111,6 +111,12 @@ class MerchantInfoWidget extends StatelessWidget {
                   content: controller.merchantInfo!.content!.address!,
                   isLast: true,
                   isGrey: controller.merchantInfo!.isGrey,
+                  onTap: () => openAddressMap(
+                    name: controller.merchantInfo!.content!.name,
+                    address: controller.merchantInfo!.content!.address!,
+                    latitude: controller.merchantInfo!.content!.latitude,
+                    longitude: controller.merchantInfo!.content!.longitude,
+                  ),
                 ),
             ],
           ),

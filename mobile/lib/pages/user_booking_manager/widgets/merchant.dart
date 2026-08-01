@@ -242,6 +242,14 @@ class _Item extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ).expanded(),
                     ],
+                  ).gestures(
+                    onTap: () => openAddressMap(
+                      name: item.content?.name,
+                      address: item.content?.address,
+                      latitude: item.content?.latitude,
+                      longitude: item.content?.longitude,
+                    ),
+                    behavior: HitTestBehavior.opaque,
                   ),
                 ],
               ).expanded(),

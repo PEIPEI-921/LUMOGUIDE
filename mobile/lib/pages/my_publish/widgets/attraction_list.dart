@@ -158,7 +158,15 @@ class _Item extends StatelessWidget {
                           assets: Assets.iconLocation,
                           title: '地址'.tr,
                           content: item.address ?? '',
-                        ).padding(bottom: 4.w),
+                        ).padding(bottom: 4.w).gestures(
+                          onTap: () => openAddressMap(
+                            name: item.name,
+                            address: item.address,
+                            latitude: item.latitude,
+                            longitude: item.longitude,
+                          ),
+                          behavior: HitTestBehavior.opaque,
+                        ),
                       ],
                     ).expanded(),
                   ],

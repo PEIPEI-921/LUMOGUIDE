@@ -59,6 +59,12 @@ class CompanyInfoCard extends StatelessWidget {
             Text(
               '${companyInfo.cityName}: ${companyInfo.address}',
               style: TextStyle(color: AppColors.secondaryText, fontSize: 14.sp),
+            ).gestures(
+              onTap: () => openAddressMap(
+                name: companyInfo.name,
+                address: companyInfo.address,
+              ),
+              behavior: HitTestBehavior.opaque,
             ),
           12.w.verticalSpace,
           if (companyInfo.introduction != null) ...[

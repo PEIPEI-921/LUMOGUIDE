@@ -97,7 +97,14 @@ class CommonDetailController extends GetxController with ApiMixin {
 
   void openWebsite() {}
 
-  void viewAddress() {}
+  void viewAddress() {
+    openAddressMap(
+      name: merchantInfo.name,
+      address: merchantInfo.address,
+      latitude: merchantInfo.latitude,
+      longitude: merchantInfo.longitude,
+    );
+  }
 
   void sendMessage() async {
     final conversation = await TIMStore.to.createOrGetConversation(

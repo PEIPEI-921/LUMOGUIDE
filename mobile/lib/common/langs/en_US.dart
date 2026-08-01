@@ -198,6 +198,10 @@ const Map<String, String> en_US = {
   '門票': 'Tickets',
   '電話': 'Phone',
   '地址': 'Address',
+  '查看位置': 'View location',
+  '規劃路線': 'Plan route',
+  '暫無地址資訊': 'No address information',
+  '無法開啟地圖': 'Unable to open map',
   '關注成功': 'Followed successfully',
   '已取消關注': 'Unfollowed',
 

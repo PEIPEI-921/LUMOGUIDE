@@ -160,6 +160,14 @@ class _ShopInfo extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ).expanded(),
             ],
+          ).gestures(
+            onTap: () => openAddressMap(
+              name: shop.name,
+              address: shop.address,
+              latitude: shop.latitude,
+              longitude: shop.longitude,
+            ),
+            behavior: HitTestBehavior.opaque,
           ),
         ],
       ),

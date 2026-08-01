@@ -402,6 +402,21 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **Bug fix（2026-07-26）：** `_handleDeepLink` 中 `int.parse(id)` 在非数字 ID 时会抛 FormatException → stream 订阅被取消 → 后续所有 deep link 永久失效。已修复：`int.tryParse()` + try-catch + stream `onError` handler。
 
+### 地址點擊開啟地圖（2026-08-01）
+
+點擊 App 內所有地址顯示位置 → 彈出「查看位置 / 規劃路線」底部選單 → 開啟手機系統地圖 App（iOS → Apple Maps，Android → 系統預設地圖）。**未新增依賴**，使用既有 `url_launcher`。
+
+**核心工具：** `lib/common/utils/map.dart` → `openAddressMap({name, address, latitude, longitude})`
+- iOS：`maps.apple.com/?ll=` 顯示、`?daddr=` 路線；Android：`geo:0,0?q=` 顯示、路線用 `google.navigation:q=`（失敗退回 geo:）
+- 座標優先（`latitude`/`longitude` 為 **String** 型別，`double.tryParse` 解析），無座標用地址搜尋；兩者皆無 → `Loading.toast('暫無地址資訊')`
+- 底部選單用 `Get.bottomSheet` + 兩個 ListTile（`Icons.place` / `Icons.directions`）
+
+**串接點（18 處）：** city_detail 6 卡片、merchant_list、search、company_info shop_item/company_info_card、booking_merchant、user_booking_merchant_info、user_booking_manager、my_publish 3 列表、merchant_management。統一用 `.gestures(onTap: () => openAddressMap(...), behavior: HitTestBehavior.opaque)` 包地址 Row；common_detail 走既有 `viewAddress()`（原為空 stub，已實作）。有座標的模型（MerchantInfo/MerchantShop/GuidePublish*）傳座標，僅 address 的（MerchantList/SearchSectionItem/CompanyInfo）只傳地址。
+
+**刻意排除：** shipping_address / integral 的地址「選擇」流程、share_card 分享卡片、publish_* 表單輸入、guide_detail 僅城市名（非街道地址）。
+
+**i18n：** 三語系新增 查看位置/規劃路線/暫無地址資訊/無法開啟地圖。詳見 [[map-open-feature]]。
+
 ### TestFlight 部署
 
 `docs/testflight-deploy-with-claude.md` — 配合 Claude Code 使用的 TestFlight 上传教程，供同事的 Claude Code 逐步骤引导操作。
