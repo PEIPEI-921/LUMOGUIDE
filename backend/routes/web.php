@@ -30,6 +30,7 @@ Route::get('/', function () use ($resolveSpaIndex) {
 });
 
 // Deep link bridge pages — open app or fallback to app store
+Route::get('/share', fn() => response()->file(base_path('frontend/share.html')));
 Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
 Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
 

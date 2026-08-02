@@ -503,7 +503,7 @@ class CommonController extends BaseController
             $user->save();
         }
 
-        $shareUrl = env('WEB_URL') . '/share.html?c=' . $inviterCode . '&t=' . $type . '&i=' . $id;
+        $shareUrl = config('app.web_url') . '/share?c=' . $inviterCode . '&t=' . $type . '&i=' . $id;
 
         $result = Builder::create()
             ->writer(new PngWriter())

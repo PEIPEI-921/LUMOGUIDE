@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Reserve as ReserveCode;
 use App\Enums\System;
 use App\Exceptions\ApiException;
+use App\Mail\AuditMail;
 use App\Models\City;
 use App\Models\CityContent;
 use App\Models\Company;
@@ -28,6 +29,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
@@ -149,7 +151,7 @@ class UserService
             // 二维码
             $result = Builder::create()
                 ->writer(new PngWriter())
-                ->data(env('WEB_URL') . '/invite.html?code=' . $user->inviter_code)
+                ->data(config('app.web_url') . '/invite.html?code=' . $user->inviter_code)
                 ->build();
             $result->saveToFile($path);
         }
@@ -185,7 +187,7 @@ class UserService
             'fans_remind_count' => $follow_my_count,
             'reg_time' => substr($user->created_at, 0, 10),
             'user_status' => $user_status,
-            'invite_url' => env('WEB_URL') . '/invite.html?code=' . $user->inviter_code,
+            'invite_url' => config('app.web_url') . '/invite.html?code=' . $user->inviter_code,
             'invite_img' => config('app.url') . "/storage/user_invite/{$user->id}.png",
         ];
     }
@@ -447,6 +449,51 @@ class UserService
             }
         }
         return ['inviter_code' => $user->inviter_code, 'total' => $data['total'], 'list' => $res];
+    }
+
+
+    /**
+     * 绑定邀请人（扫码深链后补绑）
+     * @param string $inviter_code
+     * @return void
+     * @throws ApiException
+     */
+    public function bindInviter(string $inviter_code): void
+    {
+        $user = auth('api')->user();
+
+        if ($user->inviter_id && $user->inviter_id > 0) {
+            throw new ApiException(__('res.inviter_bind_repeat'));
+        }
+
+        if ($user->inviter_code === $inviter_code) {
+            throw new ApiException(__('res.inviter_bind_self'));
+        }
+
+        $inviter = User::query()->where('inviter_code', $inviter_code)->first();
+        if (!$inviter) {
+            throw new ApiException(__('res.inviter_error'));
+        }
+
+        DB::beginTransaction();
+        try {
+            $user->inviter_id = $inviter->id;
+            $user->save();
+
+            $inviteLog = new UserInviteLog();
+            $inviteLog->user_id = $inviter->id;
+            $inviteLog->invitees_uid = $user->id;
+            $inviteLog->save();
+
+            // 给邀请人增加积分（与注册时邀请逻辑一致）
+            SystemIntegralConfig::saveData($inviter->id, 'invite_user');
+
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+            Log::error('bindInviter error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
     }
 
 
@@ -1076,6 +1123,14 @@ class UserService
             Db::rollBack();
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
+
+        // 发送待审核邮件（非关键路径，须在事务外）
+        try {
+            $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/users?tab=guide";
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核導遊資料，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+        } catch (Throwable $e) {
+            Log::error('applyGuide mail error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        }
     }
 
 
@@ -1270,6 +1325,14 @@ class UserService
             Log::error('applyCompany error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             Db::rollBack();
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
+        }
+
+        // 发送待审核邮件（非关键路径，须在事务外）
+        try {
+            $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/users?tab=company";
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核企業資料，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+        } catch (Throwable $e) {
+            Log::error('applyCompany mail error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 

@@ -56,6 +56,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Web 前端域名（分享/邀请链接用，不可在 Service 中直接 env()）
+    'web_url' => env('WEB_URL', 'https://lumoguide.com'),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

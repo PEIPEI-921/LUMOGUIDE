@@ -277,6 +277,7 @@ $resolveSpaIndex = function () {
 Route::get('/', fn() => response()->file($resolveSpaIndex()));
 
 // Deep link bridge pages — open app or fallback to app store
+Route::get('/share', fn() => response()->file(base_path('frontend/share.html')));
 Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
 Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
 
@@ -372,6 +373,10 @@ Standard Eloquent models. Key relationships:
 
 **Graceful skip** if business_type not in map, type_class_id missing, or city not found.
 
+**Image URL fix (2026-08-01)**: `autoCreateFirstShop()` now checks pictures for relative paths (starting with `/storage`) and prepends `config('app.url')`. Company `picture` field may have relative paths from uploads during `config:cache` windows. Without this fix, auto-created shop images would have broken URLs.
+
+**Backfill missing shops**: Companies approved before this feature was deployed (2026-07-26) have `is_finish=1` but no auto-created shop — the method is `private` and only triggers on first approval. Three companies (4, 7, 8) were backfilled on 2026-08-01. To backfill more, replicate the logic or make the method public temporarily.
+
 **Related**: `app/Mail/AuditMail.php` (was missing — created 2026-07-26, caused all content uploads to fail), [[company-audit-auto-create-shop]].
 
 ### Admin Menu Merge — Unified User Management (2026-07-26)
@@ -403,6 +408,28 @@ Standard Eloquent models. Key relationships:
 **Schedule** (`Kernel.php`): `$schedule->command('clean:rejected-content')->daily()`
 
 **Cron required**: Must run as `www` user (`crontab -u www -e`): `* * * * * /www/server/php/80/bin/php /www/wwwroot/lumo/artisan schedule:run >> /dev/null 2>&1`
+
+### Email Verification Code Debugging (2026-08-01)
+
+**How verification codes work**:
+1. `POST /api/auth/sendCode` → `AuthService::sendCode()` generates 6-digit code
+2. `Mail::to($email)->queue(new SendCodeMail($code))` → dispatches to Redis `emails` queue
+3. `Cache::put("verification_email_{$email}", $code, 600)` → caches code for 10 min (`CACHE_DRIVER=file`)
+4. Queue worker (cron every minute) picks up job, sends via `smtp.easyname.com:465`
+5. User enters code → `POST /api/auth/verifyCode` → compares against cache
+
+**AuthService fixes (2026-08-01)**:
+- **Error logging added** to all catch blocks (`sendCode`, `sendSmsCode`, `resetPassword`) — was silently swallowing errors
+- **Email format validation** — `filter_var($email, FILTER_VALIDATE_EMAIL)` added before queuing, catches invalid emails early
+- **Success logging** — `Log::info("sendCode: code generated and queued for {$email}, type={$type}")` for audit trail
+
+**Debugging "not received" checklist**:
+1. Check spam/junk folder (most common cause — `no-reply@lumoguide.com` via easyname may have poor deliverability vs old Gmail)
+2. Check `storage/logs/laravel-*.log` for `sendCode:` entries (confirms code was generated)
+3. Check `failed_jobs` table for SMTP errors (e.g., "550 Recipient not found")
+4. Verify queue: `redis-cli LLEN "queues:emails"` (should be 0 or low)
+5. Verify cron: `grep queue:work /var/log/syslog`
+6. Test SMTP directly: `Mail::raw('test', fn($m) => $m->to('user@example.com'))` in tinker
 
 ### Draft Save for Multi-Step Forms (2026-07-31)
 
@@ -438,6 +465,16 @@ Multi-step certification forms auto-save drafts to `localStorage`. Pattern from 
 - Default (≥861px): 40px
 - Tablet (≤860px): 34px
 - Mobile (≤480px): 28px
+
+### Flutter City Detail — Ticket Tab Missing (2026-08-01)
+
+Flutter 手机端城市详情页看不到票務（type_id=8）内容，但 Web 端正常。**根因**：票務是后期新增类型，ID=8 不在 1-7 连续范围内，Flutter app 大概率硬编码了 `[1,2,3,4,5,6,7]` 漏掉了 8。
+
+**验证过正常的部分**：后端 API `/city/ticket`、`cityClass`、`city_type` 表（id=8 name=票務）、图片文件、Web 端 `detail.js`。
+
+**修复方向**：Flutter 项目 (`lumotrip/`) 城市详情页 tab 定义需包含 type_id=8。Web 端 tab 顺序参考（`frontend/js/pages/city/detail.js`）：概覽→導遊→景點→餐廳→購物→票務→住宿→交通→設施→活動，对应 type_id `[0,0,1,2,3,8,4,5,6,7]`。
+
+文档：`docs/flutter-ticket-tab-missing.md`。See [[flutter-ticket-tab-missing]].
 
 ### Location / Longitude-Latitude Pattern (2026-07-27)
 
@@ -536,16 +573,36 @@ Global functions loaded via composer autoload:
 
 Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 
-### Share / Deep Link System (2026-07-24)
+### Share / Deep Link System (2026-08-02)
 
-Two standalone HTML pages (`frontend/share.html`, `frontend/invite.html`) act as deep-link bridges:
-- QR codes encode URLs like `https://www.lumoguide.com/share.html?c=INVCODE&t=guide&i=123`
-- The pages attempt to open the Flutter app via URL scheme `lumoguide://share?...`
-- If the app isn't installed, they fallback to the app store
-- Invite codes are tracked via `c` param to attribute new user signups
+**QR 碼 URL 格式**：`https://lumoguide.com/share?c={inviteCode}&t={type}&i={id}`（2026-08-02 起。舊格式 `https://www.lumoguide.com/share.html?...` 僅向後兼容）。手機相機/掃碼器只識別 http(s) 鏈接，不識別自定義 scheme。
 
-API: `GET /api/common/shareQrcode?type=guide|city|content|trip&id=N` (auth required, returns PNG).
-Flutter integration docs: `docs/flutter-share-deeplink.md`.
+**域名架構**（Nginx，`/www/server/panel/vhost/nginx/lumoguide.com.conf`）：
+- `lumoguide.com` 是完整站點（root = `/www/wwwroot/luomoguide`，與 www 同目錄），2026-08-02 由「純 301→www」改造
+- 新 Let's Encrypt 證書：`/etc/letsencrypt/live/lumoguide.com/`（certbot webroot 申請，自動續期；注意 www 證書 SAN 不含 apex 域名）
+- `.well-known` 不重定向 + `default_type application/json`（AASA 無擴展名必須 json。坑：`location ~ \.well-known` 先匹配時後面的 default_type location 永不生效，須寫在同一個 location 內）
+- `/share`、`/share.html`、`/invite.html` 精確匹配直出（無 301 — Universal Links 要求）；其他路徑仍 301→www
+
+**驗證文件**（`/www/wwwroot/luomoguide/.well-known/`）：
+- `apple-app-site-association`：appID `FLVV24Q9HH.com.app.lumotrip`，paths `/share`,`/share/*`
+- `assetlinks.json`：package `com.app.lumotrip`，**SHA256 仍是佔位符 `<RELEASE_KEYSTORE_SHA256>`，待前端提供替換**（2026-08-02 狀態）
+
+**share.html（v3，2026-08-02）**：`<button>` 替代 `<a>`（iOS Safari 點擊干擾）、按鈕點擊直接 `location.href`（有手勢時最可靠）、自動觸發用溫和方式（iOS iframe / Android `intent://` 雙通道 + 500ms scheme fallback）、spinner「正在打開」2.5s 超時後顯示按鈕、localStorage 存 `lumoguide_deep_link`（JSON `{code,type,id,ts}`，App 安裝後可恢復）、微信內顯示瀏覽器引導。文件位置：`/www/wwwroot/luomoguide/share.html` + `lumo/frontend/share.html`（兩處須保持同步）。
+
+**下載分發 `/dl`**（`/www/wwwroot/luomoguide/dl/index.php`）：
+- UA + IP 自動分發：iOS→App Store（id6749853105）、Android+中國 IP→`/dl/app-release.apk`、Android+外國→Google Play、其他→`/share`
+- 中國 IP 判斷：APNIC delegated 離線段表 `dl/cn_ipv4.txt`（8788 條合併為 4110 段）+ 二分查找；RFC1918 私有段按中國處理。註：ip2region 的 gitee/github/jsdelivr 下載在中國全部失敗，APNIC ftp 可達
+- `dl/version.txt` 存版本號（現 1.0.6）；**`dl/app-release.apk` 待前端上傳（當前 404）**
+- APK 響應頭（已配）：`Content-Type: application/vnd.android.package-archive` + `Content-Disposition: attachment`
+
+**API `POST /user/bindInviter`**（auth:api，2026-08-02）：掃碼深鏈後補綁邀請關係
+- 參數：`inviter_code`。錯誤：已綁定→`inviter_bind_repeat`、綁自己→`inviter_bind_self`、無效碼→`inviter_error`
+- 成功：寫 `user_invite_log` + 給邀請人 `invite_user` 積分（與註冊邏輯一致）
+- 實現：`BindInviterRequest` + `UserService::bindInviter` + `UserController::bindInviter` + `routes/api.php`
+
+**配置**：`.env` `WEB_URL=https://lumoguide.com`（原 www.lumoguide.com）；`config/app.php` 新增 `'web_url'`；`shareQrcode`/`UserService` 的 `env('WEB_URL')` 已全部替換為 `config('app.web_url')`（2026-08-02）。
+
+**歷史（2026-07-24）**：`lumoguide://share` 自定義 scheme、App Store fallback、邀請碼 `c` 參數追蹤。API：`GET /api/common/shareQrcode?type=guide|city|content|trip&id=N`（auth required，返回 PNG）。Flutter 集成文檔：`docs/flutter-share-deeplink.md`；前端配合需求：`docs/deep-link-frontend-todo.md`。
 
 ## Key Integrations
 
@@ -553,7 +610,7 @@ Flutter integration docs: `docs/flutter-share-deeplink.md`.
 |-------------|--------|---------|
 | Stripe | `.env` STRIPE_* keys, `stripe/stripe-php` | VIP subscription payments, webhook at `/api/payment/webhook` |
 | Tencent IM | `config/im.php`, SDK_APP_ID/SECRET_KEY in `.env` | Instant messaging for users |
-| Gmail SMTP | MAIL_* in `.env` | Verification codes (`SendCodeMail`), invoices, VIP expiry notices |
+| easyname SMTP | MAIL_* in `.env` | Verification codes (`SendCodeMail`), invoices, VIP expiry notices. Uses `smtp.easyname.com:465` SSL, `no-reply@lumoguide.com`. Previously Gmail (`zhouguanpei@gmail.com`). |
 | JWT | `config/jwt.php`, HS256 | API authentication |
 | Redis | `config/queue.php` | Queue backend + system config cache |
 
@@ -604,7 +661,7 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 
 - **Mail::queue() MUST be outside DB transactions**: If `Mail::queue()` throws inside a `DB::beginTransaction()`...`DB::commit()` block, the entire transaction rolls back and the user's data is lost. Move `Mail::queue()` AFTER the transaction commit/catch block, wrapped in its own try-catch. If mail fails, log it but don't fail the API response. The email is a notification — it's not critical to the operation.
 
-- **`php artisan config:cache` DISABLES all `env()` calls in application code — CRITICAL**: After running `config:cache`, **EVERY `env()` call in Service/Controller/application code returns `null`/empty**. This is NOT a freeze — it's a complete shutdown. `config:cache` compiles all config files into a single cached array, and Laravel's `env()` helper is designed to only work during config bootstrapping. Once cached, `env('APP_URL')` returns `""`, `env('STRIPE_KEY')` returns `""`, etc. **You MUST NEVER use `env()` directly in Service or Controller code — always use `config()` instead.** After config:cache, if `.env` changes, you MUST run `config:clear` + `config:cache` to pick up changes. All `env('APP_URL')` in `CommonService`, `AuthService`, `GuideService`, `UserService` were replaced with `config('app.url')` (2026-08-01). Remaining `env()` calls in Services/ (~15 instances: SDK_APP_ID, SECRET_KEY, STRIPE_KEY, WEB_URL, AUDIT_EMAIL, APP_DEBUG) still need migration to `config()`. See [[app-timezone-upload-fix]] in memory.
+- **`php artisan config:cache` DISABLES all `env()` calls in application code — CRITICAL**: After running `config:cache`, **EVERY `env()` call in Service/Controller/application code returns `null`/empty**. This is NOT a freeze — it's a complete shutdown. `config:cache` compiles all config files into a single cached array, and Laravel's `env()` helper is designed to only work during config bootstrapping. Once cached, `env('APP_URL')` returns `""`, `env('STRIPE_KEY')` returns `""`, etc. **You MUST NEVER use `env()` directly in Service or Controller code — always use `config()` instead.** After config:cache, if `.env` changes, you MUST run `config:clear` + `config:cache` to pick up changes. All `env('APP_URL')` in `CommonService`, `AuthService`, `GuideService`, `UserService` were replaced with `config('app.url')` (2026-08-01); `env('WEB_URL')` replaced with `config('app.web_url')` (2026-08-02, new `web_url` key in `config/app.php`). Remaining `env()` calls in Services/ (~12 instances: SDK_APP_ID, SECRET_KEY, STRIPE_KEY, AUDIT_EMAIL, APP_DEBUG) still need migration to `config()`. See [[app-timezone-upload-fix]] in memory.
 
 - **Queue worker required for emails**: `Mail::queue()` dispatches to Redis but requires a queue worker to actually send. The worker runs via www user's crontab every minute. Without a running worker, emails pile up in Redis but are never delivered. Check with `ps aux | grep queue:work` and `redis-cli LLEN lumo_database_queues:emails`.
 

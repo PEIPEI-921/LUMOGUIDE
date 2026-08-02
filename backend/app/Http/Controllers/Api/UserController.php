@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\ApplyCompanyRequest;
 use App\Http\Requests\ApplyGuideRequest;
+use App\Http\Requests\BindInviterRequest;
 use App\Http\Requests\BindPhoneRequest;
 use App\Http\Requests\ContactUsRequest;
 use App\Http\Requests\EditInfoRequest;
@@ -189,6 +190,20 @@ class UserController extends BaseController
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    /**
+     * 绑定邀请人（扫码深链后补绑）
+     * @param UserService $service
+     * @param BindInviterRequest $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \App\Exceptions\ApiException
+     */
+    public function bindInviter(UserService $service, BindInviterRequest $request)
+    {
+        $service->bindInviter($request->input('inviter_code'));
+        return $this->success(__('res.success'));
+    }
+
+
     public function inviteLog(UserService $service, Request $request)
     {
         $limit = $request->get('limit', 15) ?? 15;

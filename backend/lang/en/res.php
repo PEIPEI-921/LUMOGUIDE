@@ -13,6 +13,8 @@ return [
     'code_error' => 'Verification code error',
     'password_error' => 'Incorrect password',
     'inviter_error' => 'Invalid invitation code',
+    'inviter_bind_repeat' => 'You have already bound an inviter',
+    'inviter_bind_self' => 'You cannot bind yourself',
     'follow_self_error' => 'You cannot follow yourself',
     'follow_repeat_error' => 'You have already followed',
     'follow_no_error' => 'You have not followed yet',

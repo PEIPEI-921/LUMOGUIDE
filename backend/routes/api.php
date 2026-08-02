@@ -78,6 +78,7 @@ Route::middleware('auth:api')->prefix('user')->group(function () {
     Route::post('contactUs', [UserController::class, 'contactUs']);
     Route::post('feedback', [UserController::class, 'feedback']);
     Route::get('inviteLog', [UserController::class, 'inviteLog']);
+    Route::post('bindInviter', [UserController::class, 'bindInviter']);
 
     Route::get('reserveGuide', [UserController::class, 'reserveGuide']);
     Route::get('reserveGuideInfo', [UserController::class, 'reserveGuideInfo']);
