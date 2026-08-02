@@ -72,6 +72,10 @@ class AuthService
      */
     public function sendCode(string $email, string $type): void
     {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new ApiException(__('res.email_required'));
+        }
+
         if ($type == 'reg') {
             if (DB::table('users')->where('email', $email)->exists()) {
                 throw new ApiException(__('res.account_in'));
@@ -82,7 +86,9 @@ class AuthService
             $code = rand(100000, 999999);
             Mail::to($email)->queue((new SendCodeMail($code))->onQueue('emails'));
             Cache::put("verification_email_{$email}", $code, 600);
+            Log::info("sendCode: code generated and queued for {$email}, type={$type}");
         } catch (\Throwable $exception) {
+            Log::error('sendCode error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -100,6 +106,7 @@ class AuthService
             $code = rand(1000, 9999);
             Cache::put("verification_phone_{$phone}", $code, 600);
         } catch (\Throwable $exception) {
+            Log::error('sendSmsCode error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }
@@ -220,6 +227,7 @@ class AuthService
 
             Cache::forget("verification_email_{$data['email']}");
         } catch (\Throwable $exception) {
+            Log::error('resetPassword error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
     }

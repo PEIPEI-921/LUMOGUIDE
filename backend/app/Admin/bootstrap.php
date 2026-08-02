@@ -51,9 +51,12 @@ Admin::style(
 CSS
 );
 
-$guideCount = \App\Models\GuideEdit::query()->where('audit_status', 0)->count();
+// 待審核數量：初次申請(主表 audit_status=0) + 修改申請(Edit 表 audit_status=0)
+$guideCount = \App\Models\Guide::query()->where('audit_status', 0)->count()
+    + \App\Models\GuideEdit::query()->where('audit_status', 0)->count();
 
-$companyCount = \App\Models\CompanyEdit::query()->where('audit_status', 0)->count();
+$companyCount = \App\Models\Company::query()->where('audit_status', 0)->count()
+    + \App\Models\CompanyEdit::query()->where('audit_status', 0)->count();
 $reserveCount = \App\Models\Reserve::query()->where('status', 1)->count();
 $companyAllCount = $reserveCount + $companyCount;
 

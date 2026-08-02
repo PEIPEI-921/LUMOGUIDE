@@ -9,7 +9,9 @@ use App\Admin\Renderable\UserIntegralLogTable;
 use App\Admin\Renderable\UserInviteLogTable;
 use App\Admin\Repositories\User;
 use App\Models\Company;
+use App\Models\CompanyEdit;
 use App\Models\Guide;
+use App\Models\GuideEdit;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
@@ -237,16 +239,28 @@ class UserController extends AdminController
 
     protected function addTabHeader($grid, $active)
     {
+        // 待審核數量：初次申請(主表 audit_status=0) + 修改申請(Edit 表 audit_status=0)
+        $pending = [
+            'guide'   => Guide::query()->where('audit_status', 0)->count()
+                + GuideEdit::query()->where('audit_status', 0)->count(),
+            'company' => Company::query()->where('audit_status', 0)->count()
+                + CompanyEdit::query()->where('audit_status', 0)->count(),
+        ];
+
         $tabs = [
             'all'     => '全部用户',
             'guide'   => '導遊',
             'company' => '企業',
         ];
-        $html = '<div style="margin-bottom:8px;display:flex;gap:4px">';
+        $html = '<div style="margin-bottom:8px;display:flex;gap:4px;align-items:center">';
         foreach ($tabs as $key => $label) {
             $url = admin_url('users?tab=' . $key);
             $activeClass = $key === $active ? 'background:#666FFF;color:#fff;border-color:#666FFF' : 'background:#fff;color:#666;border-color:#d9d9d9';
-            $html .= '<a href="' . $url . '" style="padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid;text-decoration:none;' . $activeClass . '">' . $label . '</a>';
+            $count = $pending[$key] ?? 0;
+            $badge = $count > 0
+                ? '<span style="display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 5px;border-radius:9px;background:#EF4444;color:#fff;font-size:11px;text-align:center">' . $count . '</span>'
+                : '';
+            $html .= '<a href="' . $url . '" style="padding:6px 16px;border-radius:20px;font-size:13px;border:1px solid;text-decoration:none;' . $activeClass . '">' . $label . ' ' . $badge . '</a>';
         }
         $html .= '</div>';
         $grid->header(function () use ($html) {

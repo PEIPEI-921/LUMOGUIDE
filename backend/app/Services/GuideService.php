@@ -168,7 +168,7 @@ class GuideService
         // 发送待审核邮件（非关键路径）
         try {
             $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/city?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
             Log::error('publishCity mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
@@ -409,7 +409,7 @@ class GuideService
         // 发送待审核邮件（非关键路径）
         try {
             $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/city?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核城市，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
             Log::error('editCity mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
@@ -560,7 +560,7 @@ class GuideService
         // 发送待审核邮件（非关键路径）
         try {
             $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/cityContent?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
             Log::error('cityContentAdd mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
@@ -732,7 +732,7 @@ class GuideService
 
         try {
             $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/cityContent?status=1";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("346234211346226260347232204345276205345257251346240270345237216345270202345205247345256271357274214350253213347233241345277253350231225347220206,<br><a href='" . $url . "'>351273236346223212346237245347234213</a>"))->onQueue('emails'));
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核城市內容，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
             Log::error('cityContentEdit mail error: ' . $exception->getMessage() . "
 " . $exception->getTraceAsString());
@@ -812,7 +812,7 @@ class GuideService
         if (!env('APP_DEBUG')) {
             try {
                 $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/information";
-                Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+                Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
             } catch (Throwable $exception) {
                 Log::error('informationAdd mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             }
@@ -905,7 +905,7 @@ class GuideService
         // 发送待审核邮件（非关键路径，失败不影响编辑结果）
         try {
             $url = config('app.url') . '/' . config('admin.route.prefix', 'admin') . "/information";
-            Mail::to(env('AUDIT_EMAIL'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
+            Mail::to(config('mail.audit_email'))->queue((new AuditMail("有新的待審核資訊，請盡快處理,<br><a href='" . $url . "'>點擊查看</a>"))->onQueue('emails'));
         } catch (Throwable $exception) {
             Log::error('informationEdit mail error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
         }

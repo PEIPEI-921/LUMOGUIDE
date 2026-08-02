@@ -96,6 +96,9 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    // 管理員審核通知收件人 (Service 中一律用 config('mail.audit_email'),禁用 env())
+    'audit_email' => env('AUDIT_EMAIL'),
+
     /*
     |--------------------------------------------------------------------------
     | Markdown Mail Settings
