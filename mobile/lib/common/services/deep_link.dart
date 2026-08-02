@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../apis/provider.dart';
+import '../apis/urls.dart';
 import '../routers/names.dart';
 import '../stores/user.dart';
 
@@ -25,11 +27,23 @@ class DeepLinkService {
 
   static void _handleDeepLink(Uri uri) {
     try {
-      if (uri.host != 'share') return;
+      String? code, type, id;
 
-      final code = uri.queryParameters['c'] ?? '';
-      final type = uri.queryParameters['t'] ?? '';
-      final id = uri.queryParameters['i'] ?? '';
+      // 自定義 scheme: lumoguide://share?c=...&t=...&i=...
+      if (uri.scheme == 'lumoguide' && uri.host == 'share') {
+        code = uri.queryParameters['c'] ?? '';
+        type = uri.queryParameters['t'] ?? '';
+        id = uri.queryParameters['i'] ?? '';
+      }
+      // Universal Link / App Link: https://lumoguide.com/share?c=...&t=...&i=...
+      else if (uri.scheme == 'https' && uri.host == 'lumoguide.com' && uri.path == '/share') {
+        code = uri.queryParameters['c'] ?? '';
+        type = uri.queryParameters['t'] ?? '';
+        id = uri.queryParameters['i'] ?? '';
+      }
+      else {
+        return;
+      }
 
       if (type.isEmpty || id.isEmpty) return;
 
@@ -50,17 +64,23 @@ class DeepLinkService {
     switch (type) {
       case 'guide':
         Get.toNamed(AppRoutes.GUIDE_DETAIL, arguments: {'id': id});
+        break;
       case 'city':
         Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': id});
+        break;
       case 'content':
         Get.toNamed(AppRoutes.COMMON_DETAIL, arguments: {'id': id});
+        break;
       case 'trip':
         Get.toNamed(AppRoutes.JOURNEY_DETAIL, arguments: {'id': id});
+        break;
     }
   }
 
-  static void _bindInviter(String code) {
-    // TODO: 调用 /user/bindInviter 接口
+  static Future<void> _bindInviter(String code) async {
+    try {
+      await ApiProvider().post(ApiUrl.bindInviter, data: {'inviter_code': code});
+    } catch (_) {}
   }
 }
 

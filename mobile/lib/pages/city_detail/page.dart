@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../common/index.dart';
 import 'controller.dart';
 import 'widgets/banner.dart';
+import 'widgets/share_card.dart';
 import 'widgets/tab.dart';
 
 class CityDetailPage extends StatelessWidget {
@@ -19,18 +20,38 @@ class CityDetailPage extends StatelessWidget {
       body: Obx(
         () => controller.cityInfo.id == null
             ? const SizedBox.shrink()
-            : NestedScrollView(
-                controller: controller.scrollController,
-                headerSliverBuilder:
-                    (BuildContext context, bool innerBoxIsScrolled) {
-                      return [_CustomAppBar(controller: controller)];
-                    },
-                body: PageView.builder(
-                  controller: controller.pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemBuilder: (context, index) => controller.pages[index],
-                  itemCount: controller.pages.length,
-                ),
+            : Stack(
+                children: [
+                  NestedScrollView(
+                    controller: controller.scrollController,
+                    headerSliverBuilder:
+                        (BuildContext context, bool innerBoxIsScrolled) {
+                          return [_CustomAppBar(controller: controller)];
+                        },
+                    body: PageView.builder(
+                      controller: controller.pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index) =>
+                          controller.pages[index],
+                      itemCount: controller.pages.length,
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.01,
+                        child: SizedBox(
+                          width: 375.w,
+                          child: CityShareCardWidget(
+                            repaintKey: controller.shareCardKey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
       ),
       floatingActionButton: Obx(
@@ -74,16 +95,13 @@ class _CustomAppBar extends StatelessWidget {
         foregroundColor: controller.showPinned ? Colors.black : Colors.white,
         actions: [
           Icon(
-            Icons.qr_code,
+            Icons.share,
             size: 20.w,
             color: controller.showPinned ? Colors.black : Colors.white,
           )
               .padding(all: 12.w)
               .gestures(
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => ShareQrcodeDialog(type: 'city', id: controller.cityId),
-                ),
+                onTap: controller.shareCityCard,
                 behavior: HitTestBehavior.opaque,
               ),
         ],

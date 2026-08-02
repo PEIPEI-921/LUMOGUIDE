@@ -24,19 +24,6 @@ class GuideDetailPage extends StatelessWidget {
                 onTap: controller.shareGuideCard,
                 behavior: HitTestBehavior.opaque,
               ),
-          Icon(
-            Icons.qr_code,
-            size: 20.w,
-            color: AppColors.primaryText,
-          )
-              .padding(all: 12.w)
-              .gestures(
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => ShareQrcodeDialog(type: 'guide', id: controller.id),
-                ),
-                behavior: HitTestBehavior.opaque,
-              ),
         ],
       ),
       backgroundColor: const Color(0xFFF8F8F9),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 import 'controller.dart';
+import 'widgets/peer_share_card.dart';
 
 class JourneyDetailPage extends StatelessWidget {
   const JourneyDetailPage({super.key});
@@ -17,16 +18,13 @@ class JourneyDetailPage extends StatelessWidget {
         title: '工作详情',
         actions: [
           Icon(
-            Icons.qr_code,
+            Icons.share,
             size: 20.w,
             color: AppColors.primaryText,
           )
               .padding(all: 12.w)
               .gestures(
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => ShareQrcodeDialog(type: 'trip', id: ctrl.workId),
-                ),
+                onTap: () => ctrl.shareToPeer(),
                 behavior: HitTestBehavior.opaque,
               ),
           IconButton(
@@ -43,16 +41,32 @@ class JourneyDetailPage extends StatelessWidget {
         final w = ctrl.work.value;
         if (w == null) return const SizedBox.shrink();
 
-        return Column(children: [
-          _HeaderCard(work: w),
-          _TabBar(ctrl: ctrl),
-          Expanded(child: IndexedStack(
-            index: ctrl.activeTab.value,
-            children: [
-              _ItineraryTab(work: w, ctrl: ctrl),
-              _MergedDetailTab(work: w, ctrl: ctrl),
-            ],
-          )),
+        return Stack(children: [
+          Column(children: [
+            _HeaderCard(work: w),
+            _TabBar(ctrl: ctrl),
+            Expanded(child: IndexedStack(
+              index: ctrl.activeTab.value,
+              children: [
+                _ItineraryTab(work: w, ctrl: ctrl),
+                _MergedDetailTab(work: w, ctrl: ctrl),
+              ],
+            )),
+          ]),
+          Positioned(
+            left: 0, top: 0,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.01,
+                child: SizedBox(
+                  width: 375.w,
+                  child: JourneyPeerShareCardWidget(
+                    repaintKey: ctrl.shareCardKey,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ]);
       }),
     );

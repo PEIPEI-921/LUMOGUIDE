@@ -126,19 +126,6 @@ class _CustomAppBar extends StatelessWidget with UserStoreMixin {
                 onTap: controller.shareMerchantCard,
                 behavior: HitTestBehavior.opaque,
               ),
-          Icon(
-                Icons.qr_code,
-                size: 20.w,
-                color: controller.showPinned ? Colors.black : Colors.white,
-              )
-              .padding(all: 12.w)
-              .gestures(
-                onTap: () => showDialog(
-                  context: context,
-                  builder: (_) => ShareQrcodeDialog(type: 'content', id: controller.id),
-                ),
-                behavior: HitTestBehavior.opaque,
-              ),
           if (controller.merchantInfo.isShop == 1 &&
               controller.merchantInfo.canFollow == 1)
             Row(

@@ -1,4 +1,5 @@
 export 'alert.dart';
+export 'share_url.dart';
 export 'app_qr_code.dart';
 export 'leading_plus_phone_formatter.dart';
 export 'loading.dart';

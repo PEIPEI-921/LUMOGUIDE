@@ -35,12 +35,19 @@
               <category android:name="android.intent.category.BROWSABLE" />
               <data android:scheme="flutterstripe" android:host="safepay" />
             </intent-filter>
-            <!-- LUMOGUIDE深度链接 -->
+            <!-- LUMOGUIDE深度链接（自定义 scheme，向后兼容） -->
             <intent-filter>
               <action android:name="android.intent.action.VIEW" />
               <category android:name="android.intent.category.DEFAULT" />
               <category android:name="android.intent.category.BROWSABLE" />
               <data android:scheme="lumoguide" android:host="share" />
+            </intent-filter>
+            <!-- LUMOGUIDE App Links（https:// 扫码直接打开 App） -->
+            <intent-filter android:autoVerify="true">
+              <action android:name="android.intent.action.VIEW" />
+              <category android:name="android.intent.category.DEFAULT" />
+              <category android:name="android.intent.category.BROWSABLE" />
+              <data android:scheme="https" android:host="lumoguide.com" android:pathPrefix="/share" />
             </intent-filter>
         </activity>
         <activity

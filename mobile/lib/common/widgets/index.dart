@@ -18,3 +18,4 @@ export 'calendar_selector.dart';
 export 'date_picker_calendar.dart';
 export 'reject_reason_sheet.dart';
 export 'share_qrcode_dialog.dart';
+export 'share_watermark.dart';

@@ -89,6 +89,7 @@ class Assets {
   static const iconLock = 'assets/images/icon_lock.webp';
   static const iconLogoText = 'assets/images/icon_logo_text.webp';
   static const iconLogo = 'assets/images/icon_logo.png';
+  static const iconWatermark = 'assets/images/icon_integral.png';
   static const iconMail = 'assets/images/icon_mail.webp';
   static const iconMemberArrow = 'assets/images/icon_member_arrow.webp';
   static const iconMsgCommentMe = 'assets/images/icon_msg_comment_me.webp';

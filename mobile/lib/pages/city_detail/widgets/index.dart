@@ -1,6 +1,7 @@
 export 'guide.dart';
 export 'hotel.dart';
 export 'scenic.dart';
+export 'share_card.dart';
 export 'shopping.dart';
 export 'restaurant.dart';
 export 'banner.dart';

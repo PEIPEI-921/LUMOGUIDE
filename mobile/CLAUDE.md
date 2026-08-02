@@ -398,9 +398,43 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **依赖：** `app_links: ^6.4.0`（deep link 监听）
 
-**设计文档：** `flutter-share-deeplink.md`（服务端配合的完整流程，含 share.html 落地页、延迟 deep link、邀请码绑定）
+**设计文档：** `docs/backend-deep-link-share.md`（後端配合的完整流程，含 AASA/assetlinks.json 驗證文件、新版 share.html、APK 託管、bindInviter API 規格）。舊版 `flutter-share-deeplink.md` 已廢棄。
 
 **Bug fix（2026-07-26）：** `_handleDeepLink` 中 `int.parse(id)` 在非数字 ID 时会抛 FormatException → stream 订阅被取消 → 后续所有 deep link 永久失效。已修复：`int.tryParse()` + try-catch + stream `onError` handler。
+
+**分享功能全面修復與增強（2026-08-02）：** 詳見 [[share-system-overhaul]]。
+
+**Bug fix（2026-08-02）：** `_navigateToContent` switch-case 缺少 `break`，導致所有 type 都 fall-through 到 journey_detail。已補上 4 個 `break`。
+
+**QR 碼 URL 改用 https://（2026-08-02 修訂）：** `buildContentShareUrl(type, id)` (`lib/common/utils/share_url.dart`) 改為 `https://lumoguide.com/share?c={inviteCode}&t={type}&i={id}`。**根因：手機相機/掃碼器只識別 http/https 鏈接，不識別自定義 scheme `lumoguide://`，導致掃碼報「沒有任何應用程式可以使用此QR碼中的資訊」。**
+
+**Deep Link 雙格式支援（2026-08-02）：** `_handleDeepLink()` (`lib/common/services/deep_link.dart`) 同時支援 `lumoguide://share?...`（自定義 scheme，向後兼容）和 `https://lumoguide.com/share?...`（Universal Link / App Link）。
+
+**iOS Universal Links（2026-08-02）：** `ios/Runner/Runner.entitlements` 新增 `com.apple.developer.associated-domains` → `applinks:lumoguide.com`。需服務端部署 AASA 文件。**iOS 僅在 App 首次安裝/更新時下載 AASA，若 App 在 AASA 部署前安裝需刪除重裝才能讓 Universal Links 生效。**
+
+**Android App Links（2026-08-02）：** `android/app/src/main/AndroidManifest.xml` 新增 `https://lumoguide.com/share` intent filter + `android:autoVerify="true"`。保留 `lumoguide://share` 自定義 scheme。
+
+**Android Keystore & SHA256（2026-08-02）：** Release keystore 已創建於 `key.jks`（項目根目錄，alias=key, storepass/keypass=123456）。Release SHA256: `5BACAB02269E9F8AAFEB0C3D0A5231271F800FFF2BAC8EC20840EDBBE105D579`。Debug SHA256: `01F80B37279B8C4430C527FDC42A131385D28A54DF47EB18A06A58B23A54ABBD`。
+
+**Android 構建配置升級（2026-08-02）：** `compileSdk` 35→36, `targetSdk` 35→36, `buildToolsVersion = "36.0.0"`, AGP 8.7.3→8.9.1。APK 構建需 VPN/代理（`dl.google.com` 被牆）。
+
+**share.html 落地頁修復 v3（2026-08-02）：** 
+   - **v2:** `docs/backend-deep-link-share.md` 第 4.3 節修訂版，改用 `window.open(url, '_top')` + 頁面載入自動觸發 + spinner loading + 2.5s 超時後顯示按鈕。Android 使用 `intent://` + `lumoguide://` 雙通道。
+   - **v3（按鈕無反應修復）:** `<a href="#">` → `<button>`（消除 iOS Safari href 干擾），分離「自動觸發」(iframe) 與「按鈕點擊」(直接 location.href) 策略。按鈕文字改為「在 LUMOGUIDE App 中打開」。獨立文件：`docs/share.html`（可直接部署）、`docs/share-html-update.md`（後端修改說明）。
+
+**分享浮水印（2026-08-02）：** 新建 `ShareWatermark` 組件 (`lib/common/widgets/share_watermark.dart`) — 4×3 網格排列 `Assets.iconWatermark`（icon-integral.png），透明度 0.07，輕微交替旋轉。所有分享卡片（guide_detail、common_detail、city_detail、journey peer/client、invite×3）+ PDF/Word 匯出已應用。
+
+**新建分享卡片（2026-08-02）：**
+- `lib/pages/city_detail/widgets/share_card.dart` — `CityShareCardWidget`：城市封面+基本信息+QR
+- `lib/pages/journey_detail/widgets/peer_share_card.dart` — `JourneyPeerShareCardWidget`：行程摘要+QR+邀請碼（同行分享）
+
+**分享入口 UI 統一（2026-08-02）：**
+- 4 個詳情頁 QR 碼按鈕已移除，統一為 🔗 分享按鈕
+- 行程詳情：同行分享（AppBar）+ 客戶分享（底部「生成客戶行程」）
+- 客戶行程預覽：換用 ShareWatermark + 新增導遊認證名（`UserStore.to.profile.guideInfo?.name ?? work.leaderName`）
+- `_bindInviter()` 已實現：調用 `POST /user/bindInviter`
+
+詳見 [[share-system-overhaul]]、[[deep-link-https-universal-links]]。
 
 ### 地址點擊開啟地圖（2026-08-01）
 

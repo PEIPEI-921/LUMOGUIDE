@@ -135,6 +135,9 @@ abstract class ApiUrl {
   /// 邀请记录
   static const inviteLog = '/user/inviteLog';
 
+  /// 绑定邀请人
+  static const bindInviter = '/user/bindInviter';
+
   /// 预约导游列表
   static const userReserveGuide = '/user/reserveGuide';
 

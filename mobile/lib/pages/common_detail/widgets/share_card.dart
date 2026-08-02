@@ -26,10 +26,12 @@ class MerchantShareCardWidget extends StatelessWidget {
             width: 1.w,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -210,7 +212,7 @@ class MerchantShareCardWidget extends StatelessWidget {
                 ).expanded(),
                 16.w.horizontalSpace,
                 QrImageView(
-                  data: UserStore.to.profile.inviteUrl ?? '',
+                  data: buildContentShareUrl('content', controller.id),
                   version: QrVersions.auto,
                   backgroundColor: Colors.white,
                   size: 80.w,
@@ -220,7 +222,9 @@ class MerchantShareCardWidget extends StatelessWidget {
             ),
           ],
         ),
-      ),
+        const ShareWatermark(),
+      ]),
+    ),
     );
   }
 }

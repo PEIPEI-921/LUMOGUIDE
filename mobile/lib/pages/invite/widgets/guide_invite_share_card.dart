@@ -27,9 +27,11 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
               width: 1.w,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,8 +251,10 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
               ),
             ],
           ),
-        );
-      }),
+        const ShareWatermark(),
+      ]),
+    );
+    }),
     );
   }
 }

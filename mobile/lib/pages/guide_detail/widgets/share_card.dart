@@ -26,10 +26,12 @@ class GuideShareCardWidget extends StatelessWidget {
             width: 1.w,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -225,7 +227,7 @@ class GuideShareCardWidget extends StatelessWidget {
                 ).expanded(),
                 16.w.horizontalSpace,
                 QrImageView(
-                  data: UserStore.to.profile.inviteUrl ?? '',
+                  data: buildContentShareUrl('guide', controller.id),
                   version: QrVersions.auto,
                   backgroundColor: Colors.white,
                   size: 80.w,
@@ -235,7 +237,9 @@ class GuideShareCardWidget extends StatelessWidget {
             ),
           ],
         ),
-      ),
+        const ShareWatermark(),
+      ]),
+    ),
     );
   }
 }

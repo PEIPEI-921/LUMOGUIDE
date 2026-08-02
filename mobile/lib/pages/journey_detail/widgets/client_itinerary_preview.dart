@@ -45,7 +45,7 @@ class ClientItineraryPreview extends StatelessWidget {
               ),
             ),
             // --- 水印 ---
-            const IgnorePointer(child: _Watermark()),
+            const ShareWatermark(),
           ],
         ),
       ),
@@ -60,22 +60,39 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Image.asset(Assets.iconLogoText, height: 22.h),
-      SizedBox(width: 10.w),
-      Expanded(
-        child: Text(
-          work.title ?? '',
-          style: TextStyle(
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primaryText,
+    final guideName = UserStore.to.profile.guideInfo?.name ??
+        work.leaderName;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Image.asset(Assets.iconLogoText, height: 22.h),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              work.title ?? '',
+              style: TextStyle(
+                fontSize: 17.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryText,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    ]);
+        ]),
+        if (guideName?.isNotEmpty == true) ...[
+          SizedBox(height: 6.w),
+          Text(
+            '導遊: $guideName',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: AppColors.assistantText,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -256,28 +273,3 @@ class _Footer extends StatelessWidget {
   }
 }
 
-/// 水印层 — 居中倾斜大字 LUMO
-class _Watermark extends StatelessWidget {
-  const _Watermark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Transform.rotate(
-        angle: -0.785,
-        child: Opacity(
-          opacity: 0.08,
-          child: Text(
-            'LUMO',
-            style: TextStyle(
-              fontSize: 36.sp,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 6.w,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

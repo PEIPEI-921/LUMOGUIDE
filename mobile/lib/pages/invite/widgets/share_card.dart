@@ -23,10 +23,12 @@ class InviteShareCardWidget extends StatelessWidget with UserStoreMixin {
             width: 1.w,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Row(
               children: [
                 NetImageCached(
@@ -135,7 +137,9 @@ class InviteShareCardWidget extends StatelessWidget with UserStoreMixin {
             ),
           ],
         ),
-      ),
+        const ShareWatermark(),
+      ]),
+    ),
     );
   }
 }

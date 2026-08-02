@@ -1,7 +1,16 @@
+import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
+import 'package:path_provider/path_provider.dart';
 
+import '../../pages/guide_detail/widgets/share_preview_dialog.dart';
 import 'index.dart';
 
 class CityDetailController extends GetxController
@@ -448,6 +457,207 @@ class CityDetailController extends GetxController
         'type_id': CommonDetailType.restaurant.id,
       },
     );
+  }
+
+  // ---- 分享卡片 ----
+
+  final shareCardKey = GlobalKey();
+
+  Future<void> shareCityCard() async {
+    if (cityInfo.id == null) return;
+
+    File? tempFile;
+    try {
+      Loading.show('正在生成分享圖片...'.tr);
+
+      try {
+        log('[分享] 步驟1: 等待初始渲染完成');
+        await _waitForInitRender();
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('分享失敗'.tr, content: '請稍後再試'.tr);
+        return;
+      }
+
+      RenderRepaintBoundary renderObject;
+      try {
+        log('[分享] 步驟2: 獲取 RenderRepaintBoundary');
+        final obj = await _getRenderObj();
+        if (obj == null) {
+          Loading.dismiss();
+          AlertUtils.error('生成圖片失敗'.tr);
+          return;
+        }
+        renderObject = obj;
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗'.tr);
+        return;
+      }
+
+      try {
+        log('[分享] 步驟3: 等待渲染完成');
+        final ready = await _waitForPaint(renderObject);
+        if (!ready) {
+          Loading.dismiss();
+          AlertUtils.error('生成圖片失敗，請稍後再試'.tr);
+          return;
+        }
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗，請稍後再試'.tr);
+        return;
+      }
+
+      ui.Image? image;
+      try {
+        log('[分享] 步驟4: 捕獲圖片');
+        image = await _captureImg(renderObject);
+        if (image == null) {
+          Loading.dismiss();
+          AlertUtils.error('生成圖片失敗'.tr);
+          return;
+        }
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗'.tr);
+        return;
+      }
+
+      Uint8List? pngBytes;
+      try {
+        log('[分享] 步驟5: 轉換圖片為字節數據');
+        pngBytes = await _imgToBytes(image);
+        if (pngBytes == null) {
+          Loading.dismiss();
+          AlertUtils.error('生成圖片失敗'.tr);
+          return;
+        }
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗'.tr);
+        return;
+      }
+
+      try {
+        log('[分享] 步驟6: 保存圖片到臨時文件');
+        tempFile = await _saveFile(pngBytes, 'city_share');
+        if (tempFile == null) {
+          Loading.dismiss();
+          AlertUtils.error('保存圖片失敗'.tr);
+          return;
+        }
+      } catch (e) {
+        Loading.dismiss();
+        AlertUtils.error('保存圖片失敗'.tr);
+        return;
+      }
+
+      Loading.dismiss();
+
+      try {
+        log('[分享] 步驟7: 顯示分享預覽');
+        final shareText = '${cityInfo.name ?? ''} - ${'城市詳情'.tr}';
+        bool shouldDelete = false;
+
+        await Get.dialog(
+          SharePreviewDialog(
+            imageFile: tempFile,
+            shareText: shareText,
+            onShareComplete: () {
+              shouldDelete = true;
+            },
+          ),
+          barrierDismissible: true,
+        );
+
+        log('[分享] 步驟8: 清理臨時文件');
+        await _cleanup(tempFile, shouldDelete);
+      } catch (e) {
+        log('[分享] 步驟7或8失敗: $e');
+        AlertUtils.error('分享失敗'.tr);
+        await _cleanup(tempFile, false);
+      }
+    } catch (e, stackTrace) {
+      log('[分享] 發生未捕獲的錯誤: $e');
+      log('[分享] 堆棧跟踪: $stackTrace');
+      Loading.dismiss();
+      AlertUtils.error('分享失敗'.tr);
+
+      if (tempFile != null) {
+        await _cleanup(tempFile, false);
+      }
+    }
+  }
+
+  Future<void> _waitForInitRender() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    for (int i = 0; i < 3; i++) {
+      await SchedulerBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+  }
+
+  Future<RenderRepaintBoundary?> _getRenderObj() async {
+    return shareCardKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
+  }
+
+  Future<bool> _waitForPaint(RenderRepaintBoundary renderObject) async {
+    int retryCount = 0;
+    const maxRetries = 20;
+
+    bool needsPaint = false;
+    try {
+      needsPaint = renderObject.debugNeedsPaint;
+    } catch (_) {
+      needsPaint = false;
+    }
+
+    while (needsPaint && retryCount < maxRetries) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      await SchedulerBinding.instance.endOfFrame;
+      retryCount++;
+
+      try {
+        needsPaint = renderObject.debugNeedsPaint;
+      } catch (_) {
+        needsPaint = false;
+        break;
+      }
+    }
+    return true;
+  }
+
+  Future<ui.Image?> _captureImg(RenderRepaintBoundary renderObject) async {
+    return await renderObject.toImage(pixelRatio: 3.0);
+  }
+
+  Future<Uint8List?> _imgToBytes(ui.Image image) async {
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) return null;
+    return byteData.buffer.asUint8List();
+  }
+
+  Future<File?> _saveFile(Uint8List bytes, String prefix) async {
+    final tempDir = await getTemporaryDirectory();
+    final fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.png';
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+
+    if (!await file.exists()) return null;
+    return file;
+  }
+
+  Future<void> _cleanup(File file, bool shouldDelete) async {
+    try {
+      await Future.delayed(
+        Duration(seconds: shouldDelete ? 5 : 3),
+      );
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
   }
 }
 

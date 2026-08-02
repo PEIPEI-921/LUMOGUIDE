@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -12,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../pages/guide_detail/widgets/share_preview_dialog.dart'
+    as guide_detail;
 import 'widgets/client_itinerary_preview.dart';
 import 'widgets/format_picker_dialog.dart';
 import 'widgets/template_save_dialog.dart';
@@ -20,6 +24,8 @@ class JourneyDetailController extends GetxController with ApiMixin {
   final work = Rxn<JourneyWork>();
   final activeTab = 0.obs;
   int workId = 0;
+
+  final shareCardKey = GlobalKey();
 
   @override
   void onInit() {
@@ -146,6 +152,91 @@ class JourneyDetailController extends GetxController with ApiMixin {
       default:
         break;
     }
+  }
+
+  // ================================================================
+  // 分享给同行
+  // ================================================================
+  Future<void> shareToPeer() async {
+    if (work.value == null) return;
+
+    File? tempFile;
+    try {
+      Loading.show('正在生成分享圖片...'.tr);
+      await _waitInitRender();
+      final renderObj = shareCardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (renderObj == null) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗'.tr);
+        return;
+      }
+      final painted = await _awaitPaint(renderObj);
+      if (!painted) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗，請稍後再試'.tr);
+        return;
+      }
+      final image = await renderObj.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        Loading.dismiss();
+        AlertUtils.error('生成圖片失敗'.tr);
+        return;
+      }
+      final pngBytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'journey_peer_${DateTime.now().millisecondsSinceEpoch}.png';
+      tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsBytes(pngBytes);
+
+      Loading.dismiss();
+
+      final shareText = '${work.value!.title ?? ''} - ${'行程詳情'.tr}';
+      bool shouldDelete = false;
+
+      await Get.dialog(
+        guide_detail.SharePreviewDialog(
+          imageFile: tempFile!, shareText: shareText,
+          onShareComplete: () => shouldDelete = true,
+        ),
+        barrierDismissible: true,
+      );
+
+      await _cleanupTemp(tempFile, shouldDelete);
+    } catch (e, stackTrace) {
+      log('shareToPeer error: $e $stackTrace');
+      Loading.dismiss();
+      AlertUtils.error('分享失敗'.tr);
+      if (tempFile != null) await _cleanupTemp(tempFile, false);
+    }
+  }
+
+  Future<void> _waitInitRender() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    for (int i = 0; i < 3; i++) {
+      await SchedulerBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+  }
+
+  Future<bool> _awaitPaint(RenderRepaintBoundary renderObj) async {
+    const maxRetries = 20;
+    for (int i = 0; i < maxRetries; i++) {
+      bool needsPaint;
+      try { needsPaint = renderObj.debugNeedsPaint; } catch (_) { needsPaint = false; }
+      if (!needsPaint) return true;
+      await Future.delayed(const Duration(milliseconds: 50));
+      await SchedulerBinding.instance.endOfFrame;
+    }
+    return true;
+  }
+
+  Future<void> _cleanupTemp(File file, bool shouldDelete) async {
+    try {
+      await Future.delayed(Duration(seconds: shouldDelete ? 5 : 3));
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
   }
 
   // ================================================================
@@ -419,21 +510,30 @@ class JourneyDetailController extends GetxController with ApiMixin {
               ),
             ],
           ),
-          // 水印 — 居中倾斜 LUMO
-          pw.Center(
-            child: pw.Transform.rotate(
-              angle: -45 / 57.3,
-              child: pw.Opacity(
-                opacity: 0.08,
-                child: pw.Text('LUMO',
-                    style: pw.TextStyle(
-                        fontSize: 36,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColor.fromHex('#666FFF'),
-                        letterSpacing: 6)),
+          // 水印 — 重复 LUMOGUIDE 文字网格
+          ...List.generate(4, (row) {
+            return pw.Padding(
+              padding: pw.EdgeInsets.only(bottom: row < 3 ? 60 : 0),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+                children: List.generate(3, (col) {
+                  return pw.Transform.rotate(
+                    angle: (row + col).isEven ? 0 : -15 / 57.3,
+                    child: pw.Opacity(
+                      opacity: 0.05,
+                      child: pw.Text('LUMOGUIDE',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColor.fromHex('#666FFF'),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
-            ),
-          ),
+            );
+          }),
         ]),
       ),
     );
@@ -521,13 +621,15 @@ class JourneyDetailController extends GetxController with ApiMixin {
     .item-content .item-desc { font-size: 12px; color: #666; margin-top: 2px; }
     .hotel { font-size: 12px; color: #999; margin-top: 6px; padding-left: 72px; }
     .footer { font-size: 12px; color: #999; margin-top: 20px; text-align: center; }
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); opacity: 0.08; pointer-events: none; z-index: 9999; }
-    .watermark .wm-text { font-size: 36px; color: #666FFF; font-weight: 900; letter-spacing: 6px; }
+    .watermark { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;
+      display: flex; flex-wrap: wrap; align-content: center; justify-content: center; }
+    .watermark .wm-cell { width: 33.3%; text-align: center; padding: 40px 0; opacity: 0.05;
+      font-size: 14px; color: #666FFF; font-weight: 700; }
   </style>
 </head>
 <body>
   <div class="watermark">
-    <div class="wm-text">LUMO</div>
+    ${List.generate(12, (i) => '<div class="wm-cell" style="transform: rotate(${i.isEven ? '0' : '-15'}deg)">LUMOGUIDE</div>').join('\n    ')}
   </div>
 
   <div class="header">
