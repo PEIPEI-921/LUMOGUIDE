@@ -414,9 +414,14 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **Android App Links（2026-08-02）：** `android/app/src/main/AndroidManifest.xml` 新增 `https://lumoguide.com/share` intent filter + `android:autoVerify="true"`。保留 `lumoguide://share` 自定義 scheme。
 
-**Android Keystore & SHA256（2026-08-02）：** Release keystore 已創建於 `key.jks`（項目根目錄，alias=key, storepass/keypass=123456）。Release SHA256: `5BACAB02269E9F8AAFEB0C3D0A5231271F800FFF2BAC8EC20840EDBBE105D579`。Debug SHA256: `01F80B37279B8C4430C527FDC42A131385D28A54DF47EB18A06A58B23A54ABBD`。
+**Android Keystore & SHA256（2026-08-02，2026-08-03 更新）：** Release keystore `key.jks` 未提交到 repo（`.gitignore`），需聯繫項目負責人獲取或重新生成。`keystore.properties` 指向 `../key.jks`（alias=key, storepass/keypass=123456）。Release SHA256: `5BACAB02269E9F8AAFEB0C3D0A5231271F800FFF2BAC8EC20840EDBBE105D579`。Debug SHA256: `01F80B37279B8C4430C527FDC42A131385D28A54DF47EB18A06A58B23A54ABBD`。
 
-**Android 構建配置升級（2026-08-02）：** `compileSdk` 35→36, `targetSdk` 35→36, `buildToolsVersion = "36.0.0"`, AGP 8.7.3→8.9.1。APK 構建需 VPN/代理（`dl.google.com` 被牆）。
+**Android 構建配置（2026-08-03 更新）：** 
+- `compileSdk` 36, `targetSdk` 36, `buildToolsVersion = "36.0.0"`, `ndkVersion = "28.2.13676358"`
+- AGP 8.11.1（`android/settings.gradle`）、Kotlin 2.2.20、Gradle 8.13（`gradle-wrapper.properties`）
+- **阿里雲 Maven 鏡像**（`android/build.gradle` + `android/settings.gradle`）：`maven.aliyun.com/repository/google|public|gradle-plugin`
+- **Gradle init script**（`~/.gradle/init.d/aliyun-mirrors.gradle`）：為所有插件 buildscript 注入阿里雲鏡像，解決插件自有 `mavenCentral()` 不走 root `allprojects` 的問題
+- Debug APK 無需簽名可直接構建（`flutter build apk --debug`），Release 需 `android/key.jks`
 
 **share.html 落地頁修復 v3（2026-08-02）：** 
    - **v2:** `docs/backend-deep-link-share.md` 第 4.3 節修訂版，改用 `window.open(url, '_top')` + 頁面載入自動觸發 + spinner loading + 2.5s 超時後顯示按鈕。Android 使用 `intent://` + `lumoguide://` 雙通道。
@@ -487,12 +492,16 @@ See [[calendar-redesign]], [[booking-color-coding]].
    - 编辑模式需通过 `isEdit.obs` + `_workId` 判断，`_workId` 从传入的 `work.id` 获取
 10. **Android NDK 下载损坏导致编译失败:** AGP 自动下载的 NDK 可能缺少 `source.properties`，报错 `[CXX1101] NDK at ... did not have a source.properties file`。解决方案：删除损坏的 NDK 目录（如 `~/Library/Android/sdk/ndk/28.2.13676358`），重新编译时 AGP 会自动重新下载。Flutter 也会提示具体路径和修复步骤。
 11. **Flutter 3.44.4 Android 版本要求:** Flutter 3.44.4 会警告并要求以下最低版本，否则编译会失败（不仅仅是 warning）：
-    - Gradle ≥ 8.14.0（`android/gradle/wrapper/gradle-wrapper.properties`）
-    - AGP ≥ 8.11.1（`android/settings.gradle` 中 `com.android.application`）
-    - Kotlin ≥ 2.2.20（`android/settings.gradle` 中 `org.jetbrains.kotlin.android`）
+    - Gradle ≥ 8.14.0（推薦），AGP 8.11.1 最低要求 Gradle 8.13。當前使用 Gradle 8.13（緩存版本），無需聯網下載
+    - AGP ≥ 8.11.1（當前 `android/settings.gradle` 中已設為 8.11.1）
+    - Kotlin ≥ 2.2.20（當前 `android/settings.gradle` 中已設為 2.2.20）
     
-    当前已升级到这些版本（2026-07-24）。
-12. **Android APK 编译需要代理/VPN:** 国内网络环境无法直接访问 `repo.maven.apache.org`（Cloudflare 403）和 `dl.google.com`（Connection refused），导致 Gradle 插件依赖（kotlin-dsl、AGP buildscript classpath）和 Android SDK 组件无法下载。解决方案：开启系统代理后在 `android/gradle.properties` 中配置 `systemProp.java.net.useSystemProxies=true`，或配置 `systemProp.https.proxyHost/Port`。
+    **注意：** 遠端 origin/main 的 AGP 8.9.1 + Kotlin 2.1.0 + Gradle 8.11.1 組合無法通過 AGP 自身的最低 Gradle 版本檢查。每次 pull 後需確認這三個版本未被覆蓋。
+12. **Android APK 编译网络方案:** 国内网络无法直接访问 `repo.maven.apache.org`（Cloudflare 403）。解決方案（已實施）：
+    - **主要方案 — 阿里雲 Maven 鏡像：** `android/build.gradle` 和 `android/settings.gradle` 的 repositories 最前面添加 `maven.aliyun.com/repository/google|public|gradle-plugin`
+    - **插件 buildscript 鏡像注入：** `~/.gradle/init.d/aliyun-mirrors.gradle` 全局 init script，為所有插件的 `buildscript { repositories }` 注入阿里雲鏡像（因插件自有 `mavenCentral()` 不走 root `allprojects`）
+    - **NDK/SDK 下載：** `dl.google.com` 部分時段可直接訪問，NDK/CMake 通過 sdkmanager 自動下載安裝。若下載損壞，刪除對應目錄重試
+    - **備用方案：** `android/gradle.properties` 中已配置 `systemProp.https.proxyHost=127.0.0.1`、`systemProp.https.proxyPort=18064`，但代理對大文件（NDK zip）可能返回損壞數據，僅作備用
 13. ✅ **发布页面文本字段/图片未提交 bug（2026-07-26 修复，2026-07-30 补齐提交）:** 6 个发布页面（city/activity/attraction/facility/information/transportation）的 `onSubmit()` 直接调用 `model.toJson()`，但 TextEditingController 的值和 RxList pictures 从未同步到 model 对象。级联选择器正常是因为直接调 `_publish.update()`。**⚠️ 2026-07-30 发现：此修复只存在于 working tree，从未 git commit。** 修复已补齐提交：在每个 `onSubmit()` 调 `toJson()` 之前，先 `_publish.update()` 同步所有 controller 值 + `pictures.toList()`。受影响文件：`lib/pages/publish_*/controller.dart`（6 个文件）。详见 [[publish-form-sync-bug]]。
 14. ✅ **macOS 桌面端图片选择器不工作（2026-07-26 修复）:** 两个原因：
     - `macOS/Runner/*.entitlements` 缺少 `com.apple.security.files.user-selected.read-only` 权限，系统文件选择器无法弹出
@@ -559,6 +568,29 @@ See [[calendar-redesign]], [[booking-color-coding]].
     - `lib/pages/home/page.dart` — `NotificationListener<ScrollUpdateNotification>` 包裹 `EasyRefresh`
     - `lib/pages/home/widgets/information.dart` — 分類點擊改用 `onInfoCategoryTap()`
 
+28. **Git pull 後需確認 Android 構建版本（2026-08-03）：** origin/main 的 AGP/Kotlin/Gradle 版本低於 Flutter 3.44.4 要求，每次 pull 可能覆蓋本地修改。pull 後檢查：
+    - `android/settings.gradle`：AGP ≥ 8.11.1、Kotlin ≥ 2.2.20
+    - `android/gradle/wrapper/gradle-wrapper.properties`：Gradle ≥ 8.13
+    - `android/build.gradle` + `android/settings.gradle`：阿里雲鏡像是否保留
+    - 若被覆蓋，重新應用以上修改
+
 ## New machine setup
 
 见 `SETUP.md` — 含完整环境检查清单和安装命令，可供 Claude Code 逐条执行配置新 MacBook。
+
+## Gradle 全局配置
+
+`~/.gradle/init.d/aliyun-mirrors.gradle` — 全局 init script，為所有 Gradle 項目的插件 `buildscript` 塊注入阿里雲 Maven 鏡像。內容：
+
+```groovy
+allprojects {
+    buildscript {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/google' }
+            maven { url 'https://maven.aliyun.com/repository/public' }
+        }
+    }
+}
+```
+
+**Why:** Flutter 插件的 `build.gradle` 各有自己的 `buildscript { repositories { google(); mavenCentral() } }`，不走 root 項目的 `allprojects.repositories`。Gradle init script 是唯一能全局覆蓋所有插件 buildscript 倉庫的方式。
