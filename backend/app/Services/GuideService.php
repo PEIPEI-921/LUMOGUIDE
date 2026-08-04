@@ -133,8 +133,8 @@ class GuideService
             $model->country_id = $data['country_id'];
             $model->continents_id = $data['continents_id'];
             $model->area_id = $data['area_id'];
-            $model->longitude = $data['longitude'];
-            $model->latitude = $data['latitude'];
+            $model->longitude = !empty($data['longitude']) ? $data['longitude'] : null;
+            $model->latitude = !empty($data['latitude']) ? $data['latitude'] : null;
             $model->is_capital = $data['is_capital'];
             $model->currency = $data['currency'];
             $model->language = $data['language'];
@@ -364,8 +364,8 @@ class GuideService
                 $city->country_id = $data['country_id'];
                 $city->continents_id = $data['continents_id'];
                 $city->area_id = $data['area_id'];
-                $city->longitude = $data['longitude'] ?? null;
-                $city->latitude = $data['latitude'] ?? null;
+                $city->longitude = !empty($data['longitude']) ? $data['longitude'] : $city->longitude;
+                $city->latitude = !empty($data['latitude']) ? $data['latitude'] : $city->latitude;
                 $city->is_capital = $data['is_capital'];
                 $city->currency = $data['currency'];
                 $city->language = $data['language'];
@@ -388,8 +388,11 @@ class GuideService
                 $model->country_id = $data['country_id'];
                 $model->continents_id = $data['continents_id'];
                 $model->area_id = $data['area_id'];
-                $model->longitude = $data['longitude'] ?? null;
-                $model->latitude = $data['latitude'] ?? null;
+                $model->longitude = !empty($data['longitude']) ? $data['longitude'] : $city->longitude;
+                $model->latitude = !empty($data['latitude']) ? $data['latitude'] : $city->latitude;
+                $model->location = ($model->latitude && $model->longitude)
+                    ? trim($model->latitude) . ', ' . trim($model->longitude)
+                    : null;
                 $model->is_capital = $data['is_capital'];
                 $model->currency = $data['currency'];
                 $model->language = $data['language'];

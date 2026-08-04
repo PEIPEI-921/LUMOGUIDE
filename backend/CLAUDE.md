@@ -489,6 +489,22 @@ All coordinate inputs use a **single `location` field** in "latitude, longitude"
 
 **Format**: `纬度, 经度` (e.g., `48.86, 2.35`). The `saving` callback handles both full "lat,lng" and single-value inputs gracefully.
 
+### 審核覆蓋清空經緯度 Bug（2026-08-05 修復）
+
+**問題**：導遊提交城市審核後，審核通過時經緯度被清空。三層疊加根因：
+1. **前端** `publish-city-form.js` 提交時初始 `longitude:''`/`latitude:''`，location 解析不出值（未填、全形逗號 `，`、空格分隔）就發**空字符串**；原解析只認半形逗號 `split(',')`
+2. **後端** `GuideService::editCity` 的 `$data['longitude'] ?? null` 攔不住空字符串 → CityEdit 審核記錄存 `''`
+3. **審核** `AuditCityForm::handle()` `foreach` 把 CityEdit **所有欄位逐欄覆蓋** city 表 → 空經緯度覆蓋清掉城市原有值；同時 `recommend`/`order`/`is_finish`/`status` 等管理字段也被用戶提交內容（全 0）覆蓋
+
+**修復**（4 文件 + 構建）：
+- `publish-city-form.js`：正則 `match(/-?\d+(?:\.\d+)?/g)` 提取數字解析（兼容全形逗號/空格/負數），**解析不出就省略字段**（不發空字符串）
+- `GuideService::publishCity`：`!empty($data['longitude']) ? $data['longitude'] : null`（空→NULL 而非 `''`）
+- `GuideService::editCity` 兩個分支：空值**繼承原城市值** `$city->longitude`；CityEdit 記錄同時寫入 `location` 列（`"lat, lng"` 格式，與管理後台一致）
+- `AuditCityForm::handle()`：覆蓋循環**跳過管理字段**（`status, recommend, home_recommend, default_recommend, order, is_finish, is_read`）和**空值經緯度**（`longitude, latitude, location` 為 null/'' 時 continue）；`form()` 新增**經緯度顯示**（含修改前/後對比，管理員審核可核對）
+- `AuditCityContentForm::handle()`：同根因，加空值經緯度跳過保護
+
+**通用規則**：可選數值字段（經緯度等）前端**解析不出就不要發送**，後端用 `!empty()` 而非 `?? null` 判斷；審核覆蓋循環必須跳過管理字段和空值。測試數據已清理，PHP 修改已同步 lumo_test。
+
 ### Safari Vue 3 Reactive Getter Workaround (2026-07-27)
 
 **Problem**: `Vue.reactive()` getters (e.g., `UserStore.isGuide`, `UserStore.isLogin`) may not trigger reactivity properly in Safari's JavaScriptCore engine. Computed properties that access these getters silently return stale values, causing UI elements (buttons, menus) to not render even when the user meets all conditions.
@@ -585,9 +601,9 @@ Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 
 **驗證文件**（`/www/wwwroot/luomoguide/.well-known/`）：
 - `apple-app-site-association`：appID `FLVV24Q9HH.com.app.lumotrip`，paths `/share`,`/share/*`
-- `assetlinks.json`：package `com.app.lumotrip`，**SHA256 仍是佔位符 `<RELEASE_KEYSTORE_SHA256>`，待前端提供替換**（2026-08-02 狀態）
+- `assetlinks.json`：package `com.app.lumotrip`，**冒號分隔格式（2026-08-04 修復——無冒號格式被 Google 判定 `malformed cert fingerprint`，App Links 驗證全線失敗（掃碼不能直開 App 的根因之一）；改為 `5B:AC:AB:02:...:D5:79` 後 Google DAL API 驗證通過）**。⏳ **Play 上傳密鑰重置審核通過後需追加新指紋 `5F130901...9E9850`（同樣冒號格式）到 sha256_cert_fingerprints 數組**（2026-08-04 前端通知；新舊指紋共存，新舊 APK 都可驗證）。⚠️ 經驗教訓：Google 驗證器要求冒號格式
 
-**share.html（v3，2026-08-02）**：`<button>` 替代 `<a>`（iOS Safari 點擊干擾）、按鈕點擊直接 `location.href`（有手勢時最可靠）、自動觸發用溫和方式（iOS iframe / Android `intent://` 雙通道 + 500ms scheme fallback）、spinner「正在打開」2.5s 超時後顯示按鈕、localStorage 存 `lumoguide_deep_link`（JSON `{code,type,id,ts}`，App 安裝後可恢復）、微信內顯示瀏覽器引導。文件位置：`/www/wwwroot/luomoguide/share.html` + `lumo/frontend/share.html`（兩處須保持同步）。
+**share.html（v5，2026-08-04）**：v4 基礎（Android 打開策略按瀏覽器分派：Chrome → `intent://` + `S.browser_fallback_url`；其他 → `lumoguide://` scheme 直跳）上修正**國產瀏覽器誤判**：華為/小米/UC/QQ/百度/360/OPPO/vivo 內置瀏覽器 UA 含 `Chrome/` 但不識別 intent://，v4 的 `isChromeLike` 檢測會把他們誤判為 Chrome 走 intent:// → 報錯頁；v5 增加排除列表（`MiuiBrowser|UCBrowser|MQQBrowser|QQBrowser|BIDUBrowser|baiduboxapp|360SE|360EE|OPPOBrowser|vivoBrowser|HuaweiBrowser`）+ 排除 WebView（`wv`）。文件位置：`/www/wwwroot/luomoguide/share.html` + `lumo/frontend/share.html`（兩處須保持同步，已確認 diff 一致）。
 
 **下載分發 `/dl`**（`/www/wwwroot/luomoguide/dl/index.php`）：
 - UA + IP 自動分發：iOS→App Store（id6749853105）、Android+中國 IP→`/dl/app-release.apk`、Android+外國→Google Play、其他→`/share`

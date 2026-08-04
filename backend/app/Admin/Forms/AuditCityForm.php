@@ -39,6 +39,14 @@ class AuditCityForm extends Form implements LazyRenderable
             // 审核通过 覆盖城市表资料
             if ($input['audit_status'] == 1) {
                 foreach ($edit_info as $key => $value) {
+                    // 管理字段不覆盖：避免用户提交内容清掉管理员设置的推荐/排序等
+                    if (in_array($key, ['status', 'recommend', 'home_recommend', 'default_recommend', 'order', 'is_finish', 'is_read'])) {
+                        continue;
+                    }
+                    // 空值经纬度不覆盖：避免清掉城市原有经纬度
+                    if (in_array($key, ['longitude', 'latitude', 'location']) && ($value === null || $value === '')) {
+                        continue;
+                    }
                     $res->{$key} = $value;
                 }
 
@@ -127,6 +135,25 @@ class AuditCityForm extends Form implements LazyRenderable
                 ->value($content_edit['area']['name']);
         } else {
             $form->display('area_id')->value($res['area']['name']);
+        }
+
+        // 經緯度展示（緯度, 經度格式，與管理後台 location 欄位一致）
+        $cur_loc = ($res['latitude'] ?? '') && ($res['longitude'] ?? '')
+            ? trim($res['latitude']) . ', ' . trim($res['longitude'])
+            : ($res['location'] ?? '');
+        $edit_loc = ($content_edit['latitude'] ?? '') && ($content_edit['longitude'] ?? '')
+            ? trim($content_edit['latitude']) . ', ' . trim($content_edit['longitude'])
+            : ($content_edit['location'] ?? '');
+
+        if (!empty($content_edit) && $edit_loc !== $cur_loc) {
+            $form->display('location')
+                ->label('經緯度')
+                ->help("修改前內容【<span style='color:red;'>{$cur_loc}</span>】")
+                ->value($edit_loc ?: '（無）');
+        } else {
+            $form->display('location')
+                ->label('經緯度')
+                ->value($cur_loc ?: '（無）');
         }
 
         $capital = \App\Enums\City::Capital;

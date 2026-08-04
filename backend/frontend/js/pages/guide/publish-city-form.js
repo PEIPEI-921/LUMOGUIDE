@@ -445,19 +445,15 @@ const GuidePublishCityFormPage = {
 
         const payload = {
           ...this.form,
-          longitude: '',
-          latitude: '',
           pictures: uploadedUrls,
           id: this.isEdit ? this.editId : undefined,
         };
 
-        // Parse location "lat, lng" into separate fields for the API
-        const locParts = (this.form.location || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (locParts.length >= 2) {
-          payload.latitude = locParts[0];
-          payload.longitude = locParts[1];
-        } else if (locParts.length === 1) {
-          payload.longitude = locParts[0];
+        // Parse location "lat, lng" — 兼容全形逗號/空格分隔；解析不出時不發送（後端繼承原值/存空）
+        const locNums = (this.form.location || '').match(/-?\d+(?:\.\d+)?/g);
+        if (locNums && locNums.length >= 2) {
+          payload.latitude = locNums[0];
+          payload.longitude = locNums[1];
         }
 
         const endpoint = this.isEdit ? ApiUrl.guideEditCity : ApiUrl.guidePublishCity;

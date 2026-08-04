@@ -40,6 +40,10 @@ class AuditCityContentForm extends Form implements LazyRenderable
             // 审核通过 覆盖城市内容表资料
             if ($input['audit_status'] == 1) {
                 foreach ($edit_info as $key => $value) {
+                    // 空值经纬度不覆盖：避免清掉原有经纬度
+                    if (in_array($key, ['longitude', 'latitude', 'location']) && ($value === null || $value === '')) {
+                        continue;
+                    }
                     $res->{$key} = $value;
                 }
 
