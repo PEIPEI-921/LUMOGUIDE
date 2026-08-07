@@ -3,120 +3,223 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>LUMO Guide</title>
+<title>LUMOGUIDE - 邀請好友</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(180deg, #666FFF 0%, #666FFF 280px, #F9F9F6 100%);
+    background: linear-gradient(135deg, #666FFF 0%, #4B4FEE 100%);
     min-height: 100vh; min-height: 100dvh;
     display: flex; align-items: center; justify-content: center;
+    color: #fff;
   }
-  .card {
-    background: #fff; border-radius: 20px; padding: 48px 32px;
-    max-width: 340px; width: 90%;
-    text-align: center;
-    box-shadow: 0 2px 20px rgba(0,0,0,.08);
+  .card { text-align: center; padding: 40px 30px; max-width: 360px; width: 90%; }
+  .logo { font-size: 32px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 8px; }
+  .loading { margin: 24px 0; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%; margin: 0 auto 12px;
+    animation: spin 0.8s linear infinite;
   }
-  .logo {
-    width: 120px; height: auto; margin-bottom: 24px;
-    filter: brightness(0) saturate(100%) invert(38%) sepia(85%) saturate(4158%) hue-rotate(230deg) brightness(101%) contrast(101%);
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; opacity: 0.85; }
+  .btn {
+    display: block; width: 100%; padding: 14px 0; border-radius: 12px;
+    font-size: 16px; font-weight: 600; text-decoration: none; margin-bottom: 12px;
+    cursor: pointer; border: none; -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
   }
-  h2 { font-size: 18px; color: #1a1a1a; font-weight: 650; margin-bottom: 8px; }
-  p { font-size: 14px; color: #6B7280; margin-bottom: 24px; line-height: 1.6; }
-  .btn-open {
-    display: block; width: 100%; padding: 14px 0;
-    background: #666FFF; color: #fff; border-radius: 100px;
-    text-decoration: none; font-size: 17px; font-weight: 650;
-    border: none; cursor: pointer;
-    transition: background .2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-open:active { background: #4A52E0; }
-  .btn-download {
-    display: block; width: 100%; padding: 12px 0; margin-top: 12px;
-    background: transparent; color: #666FFF;
-    border: 1.5px solid #666FFF; border-radius: 100px;
-    text-decoration: none; font-size: 15px; font-weight: 650;
-    transition: background .2s, color .2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-download:active { background: #666FFF; color: #fff; }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: #fff; color: #666FFF; }
+  .btn-secondary { background: rgba(255,255,255,0.2); color: #fff; }
+  .hint { font-size: 12px; opacity: 0.7; margin-top: 24px; }
+  .hidden { display: none !important; }
   .wechat-guide {
     margin-top: 20px; padding: 16px;
-    background: #f5f3ff; border-radius: 12px;
-    font-size: 13px; color: #4A52E0; line-height: 1.8;
-  }
-  .wechat-guide .arrow {
-    display: inline-block; font-size: 20px; vertical-align: middle;
-    animation: bounce 1s ease infinite;
-  }
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+    background: rgba(255,255,255,0.15); border-radius: 12px;
+    font-size: 13px; color: #fff; line-height: 1.8;
   }
 </style>
 </head>
 <body>
 <div class="card">
-  <img class="logo" src="/img/logo_lumoguide.png" alt="LUMO Guide" onerror="this.style.display='none'">
-  <h2 id="title">LUMO Guide</h2>
-  <p id="subtitle">查看好友的邀請</p>
-  <a class="btn-open" id="btn-open" href="#">打開 App 查看</a>
-  <a class="btn-download" id="btn-download" href="#">下載 App</a>
-  <div class="wechat-guide" id="wechat-guide" style="display:none">
-    請點擊右上角 <span class="arrow">⋯</span> 選單<br>選擇<span id="browser-name">瀏覽器</span>開啟後再點擊上方按鈕
+  <div class="logo">LUMOGUIDE</div>
+  <div class="subtitle">路上有光，盟友相伴</div>
+
+  <!-- 正在打開 App（初始顯示，超時後隱藏） -->
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">正在打開 LUMOGUIDE…</div>
+  </div>
+
+  <!-- 打開/下載按鈕（初始隱藏，超時後顯示） -->
+  <div id="actions" class="hidden">
+    <button id="btn-open" class="btn btn-primary" type="button">在 LUMOGUIDE App 中打開</button>
+    <button id="btn-download" class="btn btn-secondary" type="button">下載 App</button>
+  </div>
+
+  <div class="hint">掃描 QR 碼查看好友邀請</div>
+
+  <!-- 微信內引導（僅微信內顯示） -->
+  <div class="wechat-guide hidden" id="wechat-guide">
+    請點擊右上角 <span style="font-size:20px;vertical-align:middle">⋯</span> 選單<br>
+    選擇<span id="browser-name">瀏覽器</span>開啟後再點擊上方按鈕
   </div>
 </div>
+
 <script>
 (function () {
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code') || '';
+
+  // 保存參數供 App 安裝後使用
+  if (code) {
+    try {
+      localStorage.setItem('lumoguide_invite_code', JSON.stringify({
+        code: code, ts: Date.now()
+      }));
+    } catch (_) {}
+  }
+
+  // 生成 token 用於冷啟動延遲深度鏈接
+  var token = '';
+  var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  for (var ti = 0; ti < 16; ti++) { token += chars[Math.floor(Math.random() * chars.length)]; }
+
+  // 寫入剪貼板（App 安裝後讀取 — 冷啟動主通道）
+  try {
+    var clipData = JSON.stringify({ code: code, token: token });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(clipData).catch(function(){});
+    }
+  } catch (_) {}
+
+  // 上報服務端（備用通道）
+  try {
+    fetch('https://api.lumoguide.com/api/common/deferredLink', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token,
+        inviter_code: code,
+        content_type: 'invite',
+        content_id: 0
+      })
+    }).catch(function(){});
+  } catch (_) {}
+
+  var schemeUrl = 'lumoguide://invite?code=' + encodeURIComponent(code);
+  var intentUrl = 'intent://invite?code=' + encodeURIComponent(code)
+                + '#Intent;scheme=lumoguide;package=com.app.lumotrip;'
+                + 'S.browser_fallback_url=' + encodeURIComponent('https://lumoguide.com/dl?token=' + token)
+                + ';end';
+
   var ua = navigator.userAgent;
   var isWeChat = /MicroMessenger/i.test(ua);
   var isIOS = /iPhone|iPad|iPod/i.test(ua);
   var isAndroid = /Android/i.test(ua);
+  // Chrome 系：支持 intent://（Google Chrome / Chromium / Samsung Internet 等）
+  // ⚠️ 排除国产浏览器：华为/小米/UC/QQ/百度/360/OPPO/vivo 内置浏览器 UA 含 "Chrome/" 但不识别 intent://，
+  //    误判会导致 intent:// 导航报错页；也排除 WebView（wv），WebView 不支持 intent://
+  var isChromeLike = /Chrome\//i.test(ua) && !/Edg\/|EdgA\//i.test(ua)
+    && !/wv|MiuiBrowser|UCBrowser|MQQBrowser|QQBrowser|BIDUBrowser|baiduboxapp|360SE|360EE|OPPOBrowser|vivoBrowser|HuaweiBrowser/i.test(ua);
+  var dlUrl = 'https://lumoguide.com/dl?token=' + token;
 
-  var params = new URLSearchParams(window.location.search);
-  var code = params.get('code') || '';
+  // 追蹤 App 是否已打開
+  var appOpened = false;
+  function markOpened() { appOpened = true; }
+  window.addEventListener('pagehide', markOpened);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) markOpened();
+  });
 
-  var iosStore = 'https://apps.apple.com/cn/app/id6749853105';
-  var androidStore = 'https://play.google.com/store/apps/details?id=com.app.lumotrip';
-  var fallbackUrl = isAndroid ? androidStore : iosStore;
+  var elLoading = document.getElementById('loading');
+  var elActions = document.getElementById('actions');
 
-  var deepLink = 'lumoguide://invite?code=' + encodeURIComponent(code);
-
-  document.getElementById('btn-download').href = fallbackUrl;
-
+  // ── 微信內無法打開 App，顯示瀏覽器引導 ──
   if (isWeChat) {
-    document.getElementById('title').textContent = '在瀏覽器中開啟';
-    document.getElementById('subtitle').textContent = '微信內無法直接打開 App';
     document.getElementById('browser-name').textContent = isIOS ? 'Safari' : '瀏覽器';
-    document.getElementById('wechat-guide').style.display = 'block';
-    document.getElementById('btn-open').style.display = 'none';
+    document.getElementById('wechat-guide').classList.remove('hidden');
+    elLoading.classList.add('hidden');
     return;
   }
 
+  // ══════════════════════════════════════════
+  // 策略分離：自動觸發 vs 按鈕點擊
+  // ══════════════════════════════════════════
+
+  // iframe 方式嘗試 scheme（頁面不導航，計時器不受影響）
+  function trySchemeViaIframe() {
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = schemeUrl;
+    document.body.appendChild(iframe);
+    setTimeout(function () {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    }, 3000);
+  }
+
+  // 【自動觸發】頁面載入時 — 無用戶手勢
+  function openAppAuto() {
+    if (isIOS) {
+      // iOS 無手勢：iframe 方式避免彈出「無效 URL」錯誤
+      trySchemeViaIframe();
+    } else if (isAndroid) {
+      if (isChromeLike) {
+        // Chrome 系：intent:// 自動帶 fallback，App 未安裝時不顯示錯誤頁
+        window.location.href = intentUrl;
+      } else {
+        // 國產/非 Chrome 瀏覽器：iframe 方式
+        // location.href 可能導航到錯誤頁/空白頁，導致 JS 計時器中斷
+        trySchemeViaIframe();
+      }
+    }
+  }
+
+  // 【按鈕點擊】有用戶手勢 — 直接 navigation，最可靠
+  function openAppClick() {
+    if (isIOS) {
+      window.location.href = schemeUrl;
+    } else if (isAndroid) {
+      if (isChromeLike) {
+        window.location.href = intentUrl;
+      } else {
+        // 有用戶手勢 → location.href 可以正常工作
+        window.location.href = schemeUrl;
+      }
+    }
+  }
+
+  function showButtons() {
+    elLoading.classList.add('hidden');
+    elActions.classList.remove('hidden');
+  }
+
+  // ── 按鈕事件 ──
   document.getElementById('btn-open').addEventListener('click', function (e) {
     e.preventDefault();
-
-    var opened = false;
-    var timer = setTimeout(function () {
-      if (!opened) { window.location.href = fallbackUrl; }
-    }, 2500);
-
-    function markOpened() {
-      opened = true;
-      clearTimeout(timer);
-    }
-
-    document.addEventListener('visibilitychange', function handler() {
-      if (document.hidden) { markOpened(); document.removeEventListener('visibilitychange', handler); }
-    });
-    window.addEventListener('pagehide', function handler() {
-      markOpened(); window.removeEventListener('pagehide', handler);
-    });
-
-    window.location.href = deepLink;
+    openAppClick();
   });
+
+  document.getElementById('btn-download').addEventListener('click', function (e) {
+    e.preventDefault();
+    window.location.href = dlUrl;
+  });
+
+  // ── 頁面載入自動嘗試 ──
+  if (isIOS || isAndroid) {
+    openAppAuto();
+
+    // 非 Chrome 瀏覽器縮短超時：scheme 要嘛瞬間打開、要嘛失敗，不用等 2.5 秒
+    var timeoutMs = isChromeLike ? 2500 : 1200;
+    setTimeout(function () {
+      if (!appOpened && !document.hidden) showButtons();
+    }, timeoutMs);
+  } else {
+    // 桌面瀏覽器直接顯示按鈕
+    showButtons();
+  }
 })();
 </script>
 </body>

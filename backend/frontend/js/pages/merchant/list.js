@@ -7,18 +7,18 @@ const HIDDEN_TYPES = new Set([5, 6, 7]); // 交通, 设施, 活动
 const MerchantListPage = {
   template: `
     <div class="page-content">
-      <div class="ds-page-wrapper" style="padding-top:16px;color:#fff">
+      <div class="ds-page-wrapper" style="padding-top:16px">
         <!-- Search Bar -->
         <div style="display:flex;justify-content:center;margin-bottom:20px">
           <div style="position:relative;width:100%;max-width:640px">
             <input :value="searchText" @input="onSearchInput" :placeholder="$t('搜索商家')"
-              style="width:100%;padding:10px 36px 10px 0;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.25);outline:none;font-size:14px;color:#fff;font-family:inherit;text-align:left"
+              style="width:100%;padding:10px 36px 10px 0;background:none;border:none;border-bottom:1px solid rgba(226,232,240,.8);outline:none;font-size:14px;color:#0F172A;font-family:inherit;text-align:left"
               class="sketch-search-input">
-            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
         </div>
 
-        <h1 style="font-family:var(--font-serif);font-size:24px;font-weight:400;margin-bottom:20px;color:#fff">{{ $t('全部商家') }}</h1>
+        <h1 style="font-family:var(--font-serif);font-size:24px;font-weight:400;margin-bottom:20px;color:#0F172A">{{ $t('全部商家') }}</h1>
 
         <!-- Loading -->
         <div v-if="loading" class="loading-container" style="padding:60px 0">
@@ -29,24 +29,24 @@ const MerchantListPage = {
           <!-- Level 1: Type Tabs -->
           <div v-if="categories.length > 0" style="display:flex;gap:24px;overflow-x:auto;margin-bottom:14px;padding-bottom:8px">
             <button @click="selectType(0)"
-              style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(255,255,255,.5)"
-              :style="{ color: activeType === 0 ? '#fff' : 'rgba(255,255,255,.5)' }">
+              style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(51,65,85,.6)"
+              :style="{ color: activeType === 0 ? '#666FFF' : 'rgba(51,65,85,.6)' }">
               {{ $t('全部') }} ({{ allMerchants.length }})
-              <span v-if="activeType === 0" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#fff;border-radius:1px"></span>
+              <span v-if="activeType === 0" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#666FFF;border-radius:1px"></span>
             </button>
             <button v-for="cat in categories" :key="cat.type_id" @click="selectType(cat.type_id)"
-              style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(255,255,255,.5)"
-              :style="{ color: activeType === cat.type_id ? '#fff' : 'rgba(255,255,255,.5)' }">
+              style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(51,65,85,.6)"
+              :style="{ color: activeType === cat.type_id ? '#666FFF' : 'rgba(51,65,85,.6)' }">
               {{ cat.type_name }} ({{ cat._count }})
-              <span v-if="activeType === cat.type_id" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#fff;border-radius:1px"></span>
+              <span v-if="activeType === cat.type_id" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#666FFF;border-radius:1px"></span>
             </button>
           </div>
 
           <!-- Level 2: Class Pills -->
           <div v-if="level2.length > 0" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:8px">
             <button v-for="cls in level2" :key="cls.class_id" @click="selectClass(cls.class_id)"
-              style="font-size:12px;padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,.25);background:none;cursor:pointer;white-space:nowrap;color:rgba(255,255,255,.6)"
-              :style="activeClass === cls.class_id ? { background:'#fff', color:'#1a1a1a', borderColor:'#fff' } : { color:'rgba(255,255,255,.6)', borderColor:'rgba(255,255,255,.25)' }">
+              style="font-size:12px;padding:4px 12px;border-radius:100px;border:1px solid rgba(226,232,240,.8);background:none;cursor:pointer;white-space:nowrap;color:#475569"
+              :style="activeClass === cls.class_id ? { background:'#666FFF', color:'#fff', borderColor:'#666FFF' } : {}">
               {{ cls.class_name }} ({{ cls.list.length }})
             </button>
           </div>

@@ -86,9 +86,9 @@ ul, ol { list-style: none; }
   background: transparent;
 }
 
-/* Home shell — indigo topbar blends into page bg */
+/* Home shell — ultra-faint cool ambient at top (glass navbar floats over it), fading to mist-white */
 .app-shell--home {
-  background: linear-gradient(180deg, var(--color-topbar-bg) 0%, var(--color-topbar-bg) 52px, var(--color-bg-page) 100%);
+  background: linear-gradient(180deg, #F0F2FA 0%, #F5F7FC 120px, var(--color-bg-page) 100%);
 }
 
 /* ── Page Content ── */

@@ -428,6 +428,8 @@ const en = {
   '請輸入英文名稱': 'Enter English name',
   '下載App': 'Get App',
   '下載LUMO Guide App': 'Download LUMO Guide App',
+  'iOS版': 'iOS',
+  'Android版': 'Android',
   '掃碼下載iOS版': 'Scan QR for iOS',
   '掃碼下載Android版': 'Scan QR for Android',
   '若無法掃碼，請點擊上方按鈕直接下載': "Can't scan? Use the direct download links above",

@@ -517,4 +517,71 @@ class CommonController extends BaseController
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
 
+    /**
+     * 儲存延遲深度鏈接（冷啟動：App 未安裝時暫存參數）
+     * POST /api/common/deferredLink
+     */
+    public function deferredLink(Request $request)
+    {
+        $token = $request->post('token', '');
+        $contentType = $request->post('content_type', '');
+        $contentId = (int) $request->post('content_id', 0);
+        $inviterCode = $request->post('inviter_code', '');
+
+        if (strlen($token) < 8 || strlen($token) > 32) {
+            throw new ApiException(__('res.param_error'));
+        }
+        if (!in_array($contentType, ['guide', 'city', 'content', 'trip', 'invite'])) {
+            throw new ApiException(__('res.param_error'));
+        }
+
+        \DB::table('deferred_deep_links')->insert([
+            'token' => $token,
+            'inviter_code' => $inviterCode,
+            'content_type' => $contentType,
+            'content_id' => $contentId,
+            'ip_address' => $request->ip() ?? '',
+            'user_agent' => substr($request->userAgent() ?? '', 0, 500),
+            'created_at' => now(),
+        ]);
+
+        return $this->success('ok');
+    }
+
+    /**
+     * 查詢延遲深度鏈接（App 首次啟動時調用）
+     * GET /api/common/checkDeferredLink?token=xxx
+     * 無 token 時按 IP + 時間窗口（24h）匹配最近一條
+     */
+    public function checkDeferredLink(Request $request)
+    {
+        $token = $request->get('token', '');
+
+        $query = \DB::table('deferred_deep_links')->where('consumed', 0);
+
+        if (!empty($token)) {
+            $query->where('token', $token);
+        } else {
+            $ip = $request->ip();
+            $query->where('ip_address', $ip)
+                  ->where('created_at', '>=', now()->subHours(24));
+        }
+
+        $link = $query->orderBy('created_at', 'desc')->first();
+
+        if (!$link) {
+            return $this->success('ok', ['found' => false]);
+        }
+
+        // 標記已消費
+        \DB::table('deferred_deep_links')->where('id', $link->id)->update(['consumed' => 1]);
+
+        return $this->success('ok', [
+            'found' => true,
+            'inviter_code' => $link->inviter_code,
+            'content_type' => $link->content_type,
+            'content_id' => (int) $link->content_id,
+        ]);
+    }
+
 }

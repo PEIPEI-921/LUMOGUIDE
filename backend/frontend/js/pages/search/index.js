@@ -5,19 +5,19 @@
 
 const SearchPage = {
   template: `
-    <div class="page-content"><div class="ds-container-960" style="padding-top:16px;padding-bottom:16px;color:#fff">
+    <div class="page-content"><div class="ds-container-960" style="padding-top:16px;padding-bottom:16px">
       <!-- Search Input — sketch style -->
-      <div style="display:flex;align-items:center;gap:12px;padding:0 4px 12px;border-bottom:2px solid rgba(255,255,255,.25);transition:border-color .2s;margin-bottom:24px;max-width:640px" ref="searchRow">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <div style="display:flex;align-items:center;gap:12px;padding:0 4px 12px;border-bottom:2px solid rgba(226,232,240,.8);transition:border-color .2s;margin-bottom:24px;max-width:640px" ref="searchRow">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" v-model="query" :placeholder="$t('搜尋城市、導遊或景點…')"
           @input="onSearchInput" @keyup.enter="doSearch"
-          @focus="$refs.searchRow.style.borderBottomColor='#fff'"
-          @blur="$refs.searchRow.style.borderBottomColor='rgba(255,255,255,.25)'"
+          @focus="$refs.searchRow.style.borderBottomColor='#666FFF'"
+          @blur="$refs.searchRow.style.borderBottomColor='rgba(226,232,240,.8)'"
           class="sketch-search-input"
-          style="flex:1;border:none;outline:none;background:transparent;padding:4px 0;font-size:15px;color:#fff;caret-color:#fff">
-        <button @click="doSearch" style="flex-shrink:0;background:none;border:1.5px solid rgba(255,255,255,.5);border-radius:20px;padding:5px 18px;font-size:13px;color:#fff;cursor:pointer;transition:all .2s"
-          @mouseenter="$event.target.style.borderColor='#fff';$event.target.style.opacity='1'"
-          @mouseleave="$event.target.style.borderColor='rgba(255,255,255,.5)';$event.target.style.opacity='.8'">{{ $t('搜尋') }}</button>
+          style="flex:1;border:none;outline:none;background:transparent;padding:4px 0;font-size:15px;color:#0F172A;caret-color:#666FFF">
+        <button @click="doSearch" style="flex-shrink:0;background:none;border:1.5px solid #666FFF;border-radius:20px;padding:5px 18px;font-size:13px;color:#666FFF;cursor:pointer;transition:all .2s"
+          @mouseenter="$event.target.style.borderColor='#4A52E0';$event.target.style.opacity='1'"
+          @mouseleave="$event.target.style.borderColor='#666FFF';$event.target.style.opacity='.8'">{{ $t('搜尋') }}</button>
       </div>
 
       <!-- Result Tabs -->
@@ -25,7 +25,7 @@ const SearchPage = {
         <button v-for="tab in resultTabs" :key="tab.key"
           @click="activeResultTab = tab.key"
           :class="['ds-tab', { active: activeResultTab === tab.key }]"
-          :style="{ color: activeResultTab === tab.key ? '#fff' : 'rgba(255,255,255,.5)' }">
+          :style="{ color: activeResultTab === tab.key ? '#666FFF' : 'rgba(51,65,85,.6)' }">
           {{ $t(tab.label) }}
           <span v-if="tab.count > 0" style="font-size:10px;opacity:.5;margin-left:4px">{{ tab.count }}</span>
         </button>
@@ -56,7 +56,7 @@ const SearchPage = {
               </div>
             </a>
           </div>
-          <div v-else class="ds-empty" style="color:rgba(255,255,255,.5)">{{ $t('暫無結果') }}</div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
         </div>
 
         <!-- Guides -->
@@ -74,7 +74,7 @@ const SearchPage = {
               </div>
             </a>
           </div>
-          <div v-else class="ds-empty" style="color:rgba(255,255,255,.5)">{{ $t('暫無結果') }}</div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
         </div>
 
         <!-- Content -->
@@ -97,14 +97,14 @@ const SearchPage = {
               </div>
             </a>
           </div>
-          <div v-else class="ds-empty" style="color:rgba(255,255,255,.5)">{{ $t('暫無結果') }}</div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
         </div>
       </div>
 
       <!-- Empty (no search yet) -->
-      <div v-else class="ds-empty" style="color:rgba(255,255,255,.5)"
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.2" stroke-linecap="round" style="margin-bottom:12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <p style="color:rgba(255,255,255,.5)">{{ $t('輸入關鍵字開始搜索') }}</p>
+      <div v-else class="ds-empty" style="color:var(--color-assistant-text)"
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round" style="margin-bottom:12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <p style="color:var(--color-assistant-text)">{{ $t('輸入關鍵字開始搜索') }}</p>
       </div>
     </div>
     </div>

@@ -49,6 +49,7 @@ class CommonService
             'ios_download_url' => systemConfig('ios_download_url') ?: 'https://apps.apple.com/cn/app/id6749853105',
             'android_download_url' => systemConfig('android_download_url') ?: 'https://play.google.com/store/apps/details?id=com.app.lumotrip',
             'app_url_scheme' => systemConfig('app_url_scheme') ?: 'lumoguide',
+            'reserve_reject_templates' => json_decode(systemConfig('reserve_reject_templates'), true),
         ];
     }
 

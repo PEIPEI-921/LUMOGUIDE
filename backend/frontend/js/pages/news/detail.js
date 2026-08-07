@@ -45,8 +45,8 @@ const NewsDetailPage = {
               <a v-if="news.user.city_name && news.user.city_id" :href="'#/city/detail?id=' + news.user.city_id"
                 style="font-size:12px;color:var(--color-primary);text-decoration:none;font-weight:500">{{ news.user.city_name }}</a>
               <span v-else-if="news.user.city_name" style="font-size:12px;color:var(--color-assistant-text)">{{ news.user.city_name }}</span>
-              <span v-if="news.created_at" style="font-size:12px;color:#fff">{{ formatDate(news.created_at) }}</span>
-              <span v-if="news.view" style="font-size:12px;color:#fff;display:inline-flex;align-items:center;gap:2px"><svg width="13" height="9" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="8" r="3"/></svg>{{ news.view }}</span>
+              <span v-if="news.created_at" style="font-size:12px;color:var(--color-assistant-text)">{{ formatDate(news.created_at) }}</span>
+              <span v-if="news.view" style="font-size:12px;color:var(--color-assistant-text);display:inline-flex;align-items:center;gap:2px"><svg width="13" height="9" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="8" r="3"/></svg>{{ news.view }}</span>
             </div>
           </div>
           <a v-if="news.user.guide_id" :href="'#/guide/' + news.user.guide_id"

@@ -84,9 +84,42 @@
     } catch (_) {}
   }
 
+  // 生成 token 用於冷啟動延遲深度鏈接
+  var token = '';
+  var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  for (var ti = 0; ti < 16; ti++) { token += chars[Math.floor(Math.random() * chars.length)]; }
+
+  // 寫入剪貼板（App 安裝後讀取 — 冷啟動主通道）
+  try {
+    var clipData = JSON.stringify({ c: c, t: t, i: i, token: token });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(clipData).catch(function(){});
+    }
+  } catch (_) {}
+
+  // 上報服務端（備用通道）
+  try {
+    fetch('https://api.lumoguide.com/api/common/deferredLink', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: token,
+        inviter_code: c,
+        content_type: t,
+        content_id: parseInt(i) || 0
+      })
+    }).catch(function(){});
+  } catch (_) {}
+
   var schemeUrl = 'lumoguide://share?c=' + encodeURIComponent(c)
                 + '&t=' + encodeURIComponent(t)
                 + '&i=' + encodeURIComponent(i);
+  var intentUrl = 'intent://share?c=' + encodeURIComponent(c)
+                + '&t=' + encodeURIComponent(t)
+                + '&i=' + encodeURIComponent(i)
+                + '#Intent;scheme=lumoguide;package=com.app.lumotrip;'
+                + 'S.browser_fallback_url=' + encodeURIComponent('https://lumoguide.com/dl?token=' + token)
+                + ';end';
 
   var ua = navigator.userAgent;
   var isWeChat = /MicroMessenger/i.test(ua);
@@ -97,7 +130,15 @@
   //    误判会导致 intent:// 导航报错页；也排除 WebView（wv），WebView 不支持 intent://
   var isChromeLike = /Chrome\//i.test(ua) && !/Edg\/|EdgA\//i.test(ua)
     && !/wv|MiuiBrowser|UCBrowser|MQQBrowser|QQBrowser|BIDUBrowser|baiduboxapp|360SE|360EE|OPPOBrowser|vivoBrowser|HuaweiBrowser/i.test(ua);
-  var dlUrl = 'https://lumoguide.com/dl';
+  var dlUrl = 'https://lumoguide.com/dl?token=' + token;
+
+  // 追蹤 App 是否已打開
+  var appOpened = false;
+  function markOpened() { appOpened = true; }
+  window.addEventListener('pagehide', markOpened);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) markOpened();
+  });
 
   var elLoading = document.getElementById('loading');
   var elActions = document.getElementById('actions');
@@ -114,46 +155,45 @@
   // 策略分離：自動觸發 vs 按鈕點擊
   // ══════════════════════════════════════════
 
-  // 【自動觸發】頁面載入時 — 無用戶手勢，用溫和方式
+  // iframe 方式嘗試 scheme（頁面不導航，計時器不受影響）
+  function trySchemeViaIframe() {
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = schemeUrl;
+    document.body.appendChild(iframe);
+    setTimeout(function () {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    }, 3000);
+  }
+
+  // 【自動觸發】頁面載入時 — 無用戶手勢
   function openAppAuto() {
     if (isIOS) {
       // iOS 無手勢：iframe 方式避免彈出「無效 URL」錯誤
-      var iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = schemeUrl;
-      document.body.appendChild(iframe);
-      setTimeout(function () {
-        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-      }, 3000);
+      trySchemeViaIframe();
     } else if (isAndroid) {
-      openAppAndroid();
+      if (isChromeLike) {
+        // Chrome 系：intent:// 自動帶 fallback，App 未安裝時不顯示錯誤頁
+        window.location.href = intentUrl;
+      } else {
+        // 國產/非 Chrome 瀏覽器：iframe 方式
+        // location.href 可能導航到錯誤頁/空白頁，導致 JS 計時器中斷
+        trySchemeViaIframe();
+      }
     }
   }
 
-  // 【按鈕點擊】有用戶手勢 — 直接 navigation，最可靠！
+  // 【按鈕點擊】有用戶手勢 — 直接 navigation，最可靠
   function openAppClick() {
     if (isIOS) {
-      // 有用戶手勢 → 直接 location.href（Safari 不會攔截）
       window.location.href = schemeUrl;
     } else if (isAndroid) {
-      openAppAndroid();
-    }
-  }
-
-  // Android 打開策略（按瀏覽器分派）：
-  //   Chrome/Edge → intent:// + S.browser_fallback_url（找不到 App 時自動跳下載頁，不顯示錯誤頁）
-  //   華為/小米/UC 等其他瀏覽器 → intent:// 不識別，直接自定義 scheme 跳轉
-  function openAppAndroid() {
-    if (isChromeLike) {
-      var intentUrl = 'intent://share?c=' + encodeURIComponent(c)
-                    + '&t=' + encodeURIComponent(t)
-                    + '&i=' + encodeURIComponent(i)
-                    + '#Intent;scheme=lumoguide;package=com.app.lumotrip;'
-                    + 'S.browser_fallback_url=' + encodeURIComponent(dlUrl)
-                    + ';end';
-      window.location.href = intentUrl;
-    } else {
-      window.location.href = schemeUrl;
+      if (isChromeLike) {
+        window.location.href = intentUrl;
+      } else {
+        // 有用戶手勢 → location.href 可以正常工作
+        window.location.href = schemeUrl;
+      }
     }
   }
 
@@ -177,10 +217,11 @@
   if (isIOS || isAndroid) {
     openAppAuto();
 
-    // 2.5 秒後仍在頁面 → App 未打開，顯示按鈕
+    // 非 Chrome 瀏覽器縮短超時：scheme 要嘛瞬間打開、要嘛失敗，不用等 2.5 秒
+    var timeoutMs = isChromeLike ? 2500 : 1200;
     setTimeout(function () {
-      if (!document.hidden) showButtons();
-    }, 2500);
+      if (!appOpened && !document.hidden) showButtons();
+    }, timeoutMs);
   } else {
     // 桌面瀏覽器直接顯示按鈕
     showButtons();

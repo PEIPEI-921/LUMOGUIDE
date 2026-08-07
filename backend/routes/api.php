@@ -62,6 +62,8 @@ Route::prefix('common')->group(function () {
     Route::get('search', [CommonController::class, 'search']);
     Route::get('systemContinents', [CommonController::class, 'systemContinents']);
     Route::get('shareQrcode', [CommonController::class, 'shareQrcode'])->middleware('auth:api');
+    Route::post('deferredLink', [CommonController::class, 'deferredLink']);
+    Route::get('checkDeferredLink', [CommonController::class, 'checkDeferredLink']);
 });
 
 Route::prefix('payment')->group(function () {

@@ -15,40 +15,40 @@ function collectLeafIds(node) {
 const GuideListPage = {
   template: `
     <div class="page-content">
-      <div class="ds-page-wrapper" style="padding-top:16px;color:#fff">
+      <div class="ds-page-wrapper" style="padding-top:16px">
         <!-- Search Bar -->
         <div style="display:flex;justify-content:center;margin-bottom:20px">
           <div style="position:relative;width:100%;max-width:640px">
             <input :value="searchText" @input="onSearchInput" :placeholder="$t('搜索導遊')"
-              style="width:100%;padding:10px 36px 10px 0;background:none;border:none;border-bottom:1px solid rgba(255,255,255,.25);outline:none;font-size:14px;color:#fff;font-family:inherit;text-align:left"
+              style="width:100%;padding:10px 36px 10px 0;background:none;border:none;border-bottom:1px solid rgba(226,232,240,.8);outline:none;font-size:14px;color:#0F172A;font-family:inherit;text-align:left"
               class="sketch-search-input">
-            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
         </div>
 
-        <h1 style="font-family:var(--font-serif);font-size:24px;font-weight:400;margin-bottom:20px;color:#fff">{{ $t('導遊列表') }}</h1>
+        <h1 style="font-family:var(--font-serif);font-size:24px;font-weight:400;margin-bottom:20px;color:#0F172A">{{ $t('導遊列表') }}</h1>
 
         <!-- Level 1: Continents -->
         <div v-if="level1.length > 0" style="display:flex;gap:24px;overflow-x:auto;margin-bottom:14px;padding-bottom:8px">
           <button @click="selectLevel(1, {id:0,name:'全部',children:level1})"
-            style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(255,255,255,.5)"
-            :style="{ color: sel1 === null ? '#fff' : 'rgba(255,255,255,.5)' }">
+            style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(51,65,85,.6)"
+            :style="{ color: sel1 === null ? '#666FFF' : 'rgba(51,65,85,.6)' }">
             {{ $t('全部') }} ({{ allGuides.length }})
-            <span v-if="sel1 === null" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#fff;border-radius:1px"></span>
+            <span v-if="sel1 === null" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#666FFF;border-radius:1px"></span>
           </button>
           <button v-for="c in level1" :key="c.id" @click="selectLevel(1, c)"
-            style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(255,255,255,.5)"
-            :style="{ color: sel1 && sel1.id === c.id ? '#fff' : 'rgba(255,255,255,.5)' }">
+            style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;position:relative;color:rgba(51,65,85,.6)"
+            :style="{ color: sel1 && sel1.id === c.id ? '#666FFF' : 'rgba(51,65,85,.6)' }">
             {{ c.name }} ({{ c._count }})
-            <span v-if="sel1 && sel1.id === c.id" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#fff;border-radius:1px"></span>
+            <span v-if="sel1 && sel1.id === c.id" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#666FFF;border-radius:1px"></span>
           </button>
         </div>
 
         <!-- Level 2: Areas -->
         <div v-if="level2.length > 0" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
           <button v-for="a in level2" :key="a.id" @click="selectLevel(2, a)"
-            style="font-size:12px;padding:4px 12px;border-radius:100px;border:1px solid rgba(255,255,255,.25);background:none;cursor:pointer;white-space:nowrap;color:rgba(255,255,255,.6)"
-            :style="sel2 && sel2.id === a.id ? { background:'#fff', color:'#1a1a1a', borderColor:'#fff' } : { color:'rgba(255,255,255,.6)', borderColor:'rgba(255,255,255,.25)' }">
+            style="font-size:12px;padding:4px 12px;border-radius:100px;border:1px solid rgba(226,232,240,.8);background:none;cursor:pointer;white-space:nowrap;color:#475569"
+            :style="sel2 && sel2.id === a.id ? { background:'#666FFF', color:'#fff', borderColor:'#666FFF' } : {}">
             {{ a.name }} ({{ a._count }})
           </button>
         </div>
@@ -56,8 +56,8 @@ const GuideListPage = {
         <!-- Level 3: Countries -->
         <div v-if="level3.length > 0" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:8px">
           <button v-for="co in level3" :key="co.id" @click="selectLevel(3, co)"
-            style="font-size:11px;padding:3px 10px;border-radius:100px;border:1px solid rgba(255,255,255,.2);background:none;cursor:pointer;white-space:nowrap;color:rgba(255,255,255,.5)"
-            :style="sel3 && sel3.id === co.id ? { background:'#fff', color:'#1a1a1a', borderColor:'#fff' } : { color:'rgba(255,255,255,.5)', borderColor:'rgba(255,255,255,.2)' }">
+            style="font-size:11px;padding:3px 10px;border-radius:100px;border:1px solid rgba(226,232,240,.8);background:none;cursor:pointer;white-space:nowrap;color:#475569"
+            :style="sel3 && sel3.id === co.id ? { background:'#666FFF', color:'#fff', borderColor:'#666FFF' } : {}">
             {{ co.name }} ({{ co._count }})
           </button>
         </div>

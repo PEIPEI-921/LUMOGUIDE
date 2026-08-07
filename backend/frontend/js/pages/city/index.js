@@ -8,18 +8,18 @@ const CityPage = {
     <div class="page-content" style="padding:0">
       <!-- Minimal Search Bar -->
       <div style="max-width:480px;margin:0 auto;padding:20px 32px 0">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.2);transition:border-color .25s"
-          :style="{ borderBottomColor: searchFocused ? 'rgba(255,255,255,.5)' : '' }">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(226,232,240,.8);transition:border-color .25s"
+          :style="{ borderBottomColor: searchFocused ? '#666FFF' : '' }">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input v-model="searchKeyword" :placeholder="$t('搜索城市...')"
             @keyup.enter="goSearch" @focus="searchFocused=true" @blur="searchFocused=false"
             class="sketch-search-input"
-            style="flex:1;background:none;font-size:15px;color:#fff;outline:none;border:none;font-family:inherit" />
+            style="flex:1;background:none;font-size:15px;color:#0F172A;outline:none;border:none;font-family:inherit" />
         </div>
       </div>
 
       <div class="ds-page-wrapper" style="padding-top:16px">
-      <h1 class="h2" style="padding:0 var(--spacing-lg);margin-bottom:16px;color:#fff">{{ $t('城市') }}</h1>
+      <h1 class="h2" style="padding:0 var(--spacing-lg);margin-bottom:16px;color:#0F172A">{{ $t('城市') }}</h1>
 
       <!-- Guide Toolbar -->
       <div v-if="isGuide" style="display:flex;justify-content:flex-end;padding:0 var(--spacing-lg);margin-bottom:6px">
@@ -56,9 +56,9 @@ const CityPage = {
           <button v-for="(c, idx) in continents" :key="'ct-'+c.id"
             @click="selectContinent(idx)"
             style="font-size:14px;font-weight:400;white-space:nowrap;padding:0 0 6px;background:none;border:none;cursor:pointer;transition:all .2s;position:relative;letter-spacing:.01em"
-            :style="{ color: continentIndex === idx ? '#fff' : 'rgba(255,255,255,.5)' }">
+            :style="{ color: continentIndex === idx ? '#666FFF' : 'rgba(51,65,85,.6)' }">
             {{ c.name }}
-            <span v-if="continentIndex === idx" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#fff;border-radius:1px"></span>
+            <span v-if="continentIndex === idx" style="position:absolute;bottom:0;left:0;right:0;height:2px;background:#666FFF;border-radius:1px"></span>
           </button>
         </div>
 
@@ -66,13 +66,13 @@ const CityPage = {
         <div v-if="currentAreas.length > 0" style="display:flex;gap:6px;padding:0 var(--spacing-lg) 16px;overflow-x:auto">
           <button @click="selectArea(-1)"
             style="font-size:11px;font-weight:400;white-space:nowrap;padding:4px 12px;border-radius:100px;cursor:pointer;transition:all .2s;letter-spacing:.02em"
-            :style="{ background: areaIndex === -1 ? '#fff' : 'transparent', color: areaIndex === -1 ? '#1a1a1a' : 'rgba(255,255,255,.6)', border: areaIndex === -1 ? '1px solid #fff' : '1px solid rgba(255,255,255,.25)' }">
+            :style="{ background: areaIndex === -1 ? '#666FFF' : 'transparent', color: areaIndex === -1 ? '#fff' : '#475569', border: areaIndex === -1 ? '1px solid #666FFF' : '1px solid rgba(226,232,240,.8)' }">
             {{ $t('全部') }}
           </button>
           <button v-for="(area, idx) in currentAreas" :key="'ar-'+area.id"
             @click="selectArea(idx)"
             style="font-size:11px;font-weight:400;white-space:nowrap;padding:4px 12px;border-radius:100px;cursor:pointer;transition:all .2s;letter-spacing:.02em"
-            :style="{ background: areaIndex === idx ? '#fff' : 'transparent', color: areaIndex === idx ? '#1a1a1a' : 'rgba(255,255,255,.6)', border: areaIndex === idx ? '1px solid #fff' : '1px solid rgba(255,255,255,.25)' }">
+            :style="{ background: areaIndex === idx ? '#666FFF' : 'transparent', color: areaIndex === idx ? '#fff' : '#475569', border: areaIndex === idx ? '1px solid #666FFF' : '1px solid rgba(226,232,240,.8)' }">
             {{ area.name }}
           </button>
         </div>
@@ -101,8 +101,8 @@ const CityPage = {
         </div>
 
         <div v-if="!currentCities.length && !tabLoading" style="text-align:center;padding:60px 0 40px">
-          <img src="/images/logo_lumoguide.png" alt="LUMO GUIDE" style="max-width:200px;opacity:.35;margin-bottom:16px" />
-          <div style="font-size:13px;color:#9CA3AF">{{ $t('此分類暫無城市') }}</div>
+          <img src="/images/logo_lumoguide_indigo.png" alt="LUMO GUIDE" style="max-width:200px;opacity:.25;margin-bottom:16px" />
+          <div style="font-size:13px;color:var(--color-assistant-text)">{{ $t('此分類暫無城市') }}</div>
         </div>
         <div v-if="tabLoading" style="text-align:center;padding:40px 0">
           <div class="spinner"></div>

@@ -7,13 +7,13 @@ const CityStrategyPage = {
     <div class="page-content"><div class="ds-container-960" style="padding-top:16px;padding-bottom:16px">
       <!-- City Info Bar -->
       <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;gap:8px">
-        <span v-if="locating" style="color:rgba(255,255,255,0.7);font-size:13px">📍 {{ $t('定位中...') }}</span>
+        <span v-if="locating" style="color:var(--color-secondary-text);font-size:13px">📍 {{ $t('定位中...') }}</span>
         <template v-else-if="currentCity">
-          <span style="color:#fff;font-weight:500;font-size:13px">📍 {{ currentCity.name }}</span>
+          <span style="color:var(--color-primary-text);font-weight:500;font-size:13px">📍 {{ currentCity.name }}</span>
           <button @click="showCityPicker = !showCityPicker"
-            style="font-size:12px;color:#fff;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:3px 14px;cursor:pointer">{{ $t('切換城市') }}</button>
+            style="font-size:12px;color:#666FFF;background:rgba(102,111,255,0.08);border:1px solid rgba(102,111,255,0.35);border-radius:20px;padding:3px 14px;cursor:pointer">{{ $t('切換城市') }}</button>
         </template>
-        <span v-else style="color:rgba(255,255,255,0.7);font-size:13px">{{ $t('未定位，顯示全部') }}</span>
+        <span v-else style="color:var(--color-secondary-text);font-size:13px">{{ $t('未定位，顯示全部') }}</span>
       </div>
 
       <!-- City Picker -->

@@ -1,28 +1,37 @@
 /* ============================================
-   Design Tokens v2 — LuMo Guide "路盟会馆"
-   Anchor: #666FFF (indigo)
-   Reference: PPCC/lumoguide/web design system
+   Design Tokens v4 — LuMo Guide "路盟会馆"
+   Anchor: #666FFF (indigo — accent only)
+   v4 (2026-08-07): 極簡高科技風 (bright light mode)
+   mist-white #F8FAFC · glass navbar blur(12px) ·
+   slate text · hairline rgba(226,232,240,.8)
+   #666FFF only for hover / indicator / CTA / tags.
    ============================================ */
 
 :root {
-  /* ── Brand ── */
+  /* ── Brand (accent only — hover, indicator, CTA, tags) ── */
   --color-primary: #666FFF;
   --color-primary-dark: #4A52E0;
   --color-primary-light: rgba(102, 111, 255, 0.08);
   --color-primary-glow: rgba(102, 111, 255, 0.20);
   --color-accent-soft: #EEEDFF;          /* primary tint bg */
-  --color-topbar-bg: #666FFF;            /* top nav bar (unified with primary) */
 
-  /* ── Text (PPCC palette) ── */
-  --color-primary-text: #1a1a1a;         /* warm near-black (was #162539) */
-  --color-secondary-text: #6B7280;       /* muted */
-  --color-assistant-text: #9CA3AF;       /* faint */
+  /* ── Navbar — glassmorphism (frosted lens over page) ── */
+  --color-topbar-bg: rgba(255, 255, 255, 0.8);
+  --color-topbar-border: rgba(226, 232, 240, 0.8);   /* 1px ultra-fine hairline */
+  --color-topbar-text: #334155;           /* 深石墨灰 (slate-700) */
+  --color-topbar-hover-bg: rgba(102, 111, 255, 0.09);
+  --topbar-blur: saturate(180%) blur(12px);
 
-  /* ── Surfaces ── */
-  --color-bg-white: #FCFCFA;             /* surface — Airy: slightly warmer white */
-  --color-bg-page: #F9F9F6;             /* warm paper-white */
-  --color-bg-card: #F5F5F2;
-  --color-bg-elevated: #FFFFFF;
+  /* ── Text (slate scale, high contrast) ── */
+  --color-primary-text: #0F172A;         /* slate-900 — headings/body */
+  --color-secondary-text: #475569;       /* slate-600 — muted */
+  --color-assistant-text: #94A3B8;       /* slate-400 — faint */
+
+  /* ── Surfaces (avoid pure white / pure black) ── */
+  --color-bg-white: #FBFCFE;             /* surface — cool near-white */
+  --color-bg-page: #F8FAFC;             /* 雲霧白 mist-white page bg */
+  --color-bg-card: #F1F5F9;             /* slate-100 wells / input bg */
+  --color-bg-elevated: #FFFFFF;          /* cards */
 
   /* ── Accent (Tailwind palette) ── */
   --color-red: #EF4444;
@@ -33,9 +42,10 @@
   --color-teal: #44D7B6;
   --color-cyan: #45CEE6;
 
-  /* ── Border ── */
-  --color-border: rgba(0, 0, 0, 0.06);
-  --color-border-light: rgba(0, 0, 0, 0.04);
+  /* ── Border (ultra-fine low-key hairlines) ── */
+  --color-border: rgba(226, 232, 240, 0.8);
+  --color-border-light: rgba(226, 232, 240, 0.6);
+  --color-card-border: #E2E8F0;          /* slate-200 card outline */
 
   /* ── Category Colors (keep recognizable from mobile) ── */
   --cat-guide: #666FFF;
@@ -101,20 +111,17 @@
   --primary-soft: rgba(102, 111, 255, 0.07);
   --primary-hover: #5A5FE8;
 
-  /* ── Shadows (PPCC: very subtle) ── */
-  --shadow-sm: 0 0 0 1px rgba(0,0,0,0.02);
+  /* ── Shadows (v4: ultra-faint slate, layered soft) ── */
+  --shadow-sm: 0 0 0 1px rgba(15,23,42,0.02);
   --shadow-card:
-    rgba(0,0,0,0.03) 0px 0px 0px 1px,
-    rgba(0,0,0,0.04) 0px 2px 8px,
-    rgba(0,0,0,0.02) 0px 4px 16px;
+    rgba(15,23,42,0.05) 0px 1px 3px,
+    rgba(15,23,42,0.04) 0px 8px 24px;
   --shadow-elevated:
-    rgba(0,0,0,0.04) 0px 0px 0px 1px,
-    rgba(0,0,0,0.06) 0px 4px 16px,
-    rgba(0,0,0,0.03) 0px 8px 32px;
+    rgba(15,23,42,0.06) 0px 2px 6px,
+    rgba(15,23,42,0.05) 0px 12px 32px;
   --shadow-popup:
-    rgba(0,0,0,0.05) 0px 0px 0px 1px,
-    rgba(0,0,0,0.08) 0px 8px 32px,
-    rgba(0,0,0,0.04) 0px 16px 64px;
+    rgba(15,23,42,0.08) 0px 2px 8px,
+    rgba(15,23,42,0.07) 0px 16px 48px;
 
   /* ── Transition ── */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

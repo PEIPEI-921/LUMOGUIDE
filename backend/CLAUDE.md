@@ -212,14 +212,14 @@ The web frontend is a **Vue.js 3 + Vue Router** single-page application served f
 
 **Tech stack**: Vue 3 + Vue Router 4 (CDN), custom CSS (no framework), Fetch API, Google Fonts (Noto Serif SC for brand, ZCOOL KuaiLe for welcome Chinese, Caveat for welcome English).
 
-**Design system**:
-- Primary: `#666FFF` (indigo), Primary Dark: `#4A52E0`
-- Page background: `#F9F9F6` (warm paper-white), Card: `#FFFFFF`, Text: `#1a1a1a` (ink) / `#6B7280` (muted) / `#9CA3AF` (faint)
+**Design system v4** (2026-08-07, 極簡高科技風 bright light mode):
+- Primary: `#666FFF` (indigo — **accent only**: navbar hover / active indicator / CTA buttons / tags), Primary Dark: `#4A52E0`
+- Page background: `#F8FAFC` (雲霧白 mist-white), Card: `#FFFFFF` + 1px border `#E2E8F0` (slate-200), Text: slate scale — `#0F172A` (slate-900) / `#475569` (slate-600) / `#94A3B8` (slate-400)
 - Accent colors: `#EF4444` (red), `#F97316` (orange), `#F59E0B` (amber), `#10B981` (green), `#8B5CF6` (purple)
-- Border: `rgba(0,0,0,.06)`, shadows: `rgba(0,0,0,.03)`, Radius: 20px (large) / 12px (small)
+- Border: `rgba(226,232,240,.8)` (ultra-fine low-key hairline), shadows: ultra-faint slate `rgba(15,23,42,…)`, Radius: 20px (large) / 12px (small)
 - Display typeface: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`; Body: system font stack
-- Header: `#666FFF` (CSS var `--color-topbar-bg`), 52px, no box-shadow. Logo: `logo_lumoguide.png` (36px, white via CSS filter)
-- Body gradient: `linear-gradient(180deg, #666FFF 0%, #666FFF 52px, #F9F9F6 100%)` — solid topbar → gradual fade to paper-white across full page height
+- Header (navbar): **glassmorphism** — `rgba(255,255,255,.8)` + `backdrop-filter: saturate(180%) blur(12px)`, 1px hairline `rgba(226,232,240,.8)` (replaces heavy shadow), 52px. Nav text `#334155` (slate-700). Logo: `logo_lumoguide_indigo.png` (white logo recolored to `#666FFF` via GD, since light navbar can't show the white version)
+- Body gradient (home shell): `linear-gradient(180deg, #F0F2FA 0%, #F5F7FC 120px, #F8FAFC 100%)` — ultra-faint cool ambient → mist-white
 - Body font-weight: `650` (global bold)
 
 **Responsive**: 3 breakpoints — ≥861px (32px padding) / ≤860px tablet (16px) / ≤480px mobile (12px). Container classes: `.ds-container-600` (forms/lists), `.ds-container-640` (messages/addresses), `.ds-container-760` (detail/articles), `.ds-container-960` (galleries), `.ds-container-1280` (wide dashboards). `.ds-page-wrapper` (max-width 1280px, auto margin) for tab pages.
@@ -250,7 +250,7 @@ Key frontend directories (69 routes, 53 JS + 3 CSS files):
 - **Component resolution**: Shared components (`AppHeader`, `LoadingSpinner`, `EmptyState`) are registered on the root Vue instance's `components` option. Vue 3 resolves them through the parent chain via `<router-view>`, so they're available in all route components without `app.component()` global registration.
 - ⚠️ **Vue 3 CDN component registration pitfall**: Components registered locally on the root component via `components: {}` may NOT be resolved in child components' templates (e.g., a component registered on root but used inside `AppShell`'s template). This differs from Vue 3 SFC/build-tool behavior. If a component renders blank with no errors, the ONLY reliable fix is to **inline the template HTML directly in the parent component.** Do NOT create separate component files — even `app.component()` global registration is unreliable in the CDN build. If a component renders blank: **inline the template HTML directly — do NOT create separate component files.** The `app-topbar.js` file is kept only as reference (marked `[REFERENCE]` / `⚠️ NOT USED at runtime`), with the actual template inlined in `app.js` AppShell. **Never repeat this mistake.** See [[vue3-cdn-component-pitfall]] and [[web-standard-layout-patterns]] in memory.
 - **Routing**: Hash-based (`#/home`, `#/city/detail?id=1`). Tab bar shown only on 5 main routes; hidden on sub-pages (matches Flutter push navigation). Scroll position resets on navigation. Route params via `this.$route.params.id` and query via `this.$route.query.id`. Route changes watched via `watch: { '$route.params.id': handler }` for same-component navigation. `document.title` updated in `router.afterEach` via `I18n.t(to.meta.title)` — every route's `meta.title` doubles as the i18n key for the page title.
-- **Top navigation bar**: Built inline in `AppShell` template (`app.js`). Shows full logo image (`logo_lumoguide.png`, 36px), 5 tabs (首頁/城市/資訊/🔔/👤) left-aligned, 🔍 search button on right, 🚪 login/logout toggle on far right. Indigo gradient background. Always in 'tabs' mode on every page (back mode removed). Hidden only on `/welcome`, `/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`. Deprecates both `AppNav` and `AppHeader` components.
+- **Top navigation bar**: Built inline in `AppShell` template (`app.js`). Shows full logo image (`logo_lumoguide_indigo.png`, 36px), 5 tabs (首頁/城市/資訊/🔔/👤) left-aligned, 🔍 search button on right, 🚪 login/logout toggle on far right. **v4 極簡高科技風 glassmorphism**: `rgba(255,255,255,.8)` + blur(12px), `#666FFF` on hover / active pill / 2px active indicator bar at navbar bottom edge. Always in 'tabs' mode on every page (back mode removed). Hidden only on `/welcome`, `/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`. Deprecates both `AppNav` and `AppHeader` components.
 - **Design system v2** (2025-07-05, ref PPCC): Warm paper-white bg `#F9F9F6`, ink text `#1a1a1a`, primary `#666FFF`, accent soft `#EEEDFF`. Radius: 20px/12px. Serif: `Georgia, Noto Serif TC, Noto Serif SC`.
 - **Page templates** (4 patterns): (1) **列表页** — filter pills + card grid/list + empty/loading/error; (2) **详情页** — banner + info card + tab content + actions; (3) **表单页** — `.ds-input`/`.ds-textarea` + submit button + loading; (4) **仪表盘** — stats row + `.ds-menu-group` sections.
 
@@ -589,7 +589,25 @@ Global functions loaded via composer autoload:
 
 Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 
-### Share / Deep Link System (2026-08-02)
+### 預約拒絕模板（2026-08-07）
+
+導遊/商家拒絕預約時可快速選擇專業多語言模板，而非手動輸入原因。
+
+**資料存儲**：`system_config` mark=`reserve_reject_templates`，JSON 格式，三語（zh_TW/zh_CN/en），每語 4 個模板：
+- `fully_booked` — 當日已滿
+- `time_unavailable` — 時段無法配合
+- `on_break` — 暫時休息中
+- `out_of_scope` — 服務範圍不符
+
+**API**：`GET /api/common/config` 新增 `reserve_reject_templates` 欄位回傳。`CommonService::config()` 已加入。
+
+**前端**：從 config API 取模板 → 根據當前語言選對應列表 → 拒絕對話框顯示模板選擇器 + 可編輯文字區 → 選中模板自動填入 → 送出 `POST /guide/rejectReserve` 或 `POST /company/rejectReserve`
+
+**現有 API 無需改動**：`rejectReserve` 的 `reason` 欄位即為模板文字。`reserveUserMessage()` 顯示 `"您的预约被拒绝:[reason]"`。
+
+Flutter/Web 實施文檔：`docs/reserve-reject-templates.md`
+
+### Share / Deep Link System (v6, 2026-08-07)
 
 **QR 碼 URL 格式**：`https://lumoguide.com/share?c={inviteCode}&t={type}&i={id}`（2026-08-02 起。舊格式 `https://www.lumoguide.com/share.html?...` 僅向後兼容）。手機相機/掃碼器只識別 http(s) 鏈接，不識別自定義 scheme。
 
@@ -603,12 +621,22 @@ Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 - `apple-app-site-association`：appID `FLVV24Q9HH.com.app.lumotrip`，paths `/share`,`/share/*`
 - `assetlinks.json`：package `com.app.lumotrip`，**冒號分隔格式（2026-08-04 修復——無冒號格式被 Google 判定 `malformed cert fingerprint`，App Links 驗證全線失敗（掃碼不能直開 App 的根因之一）；改為 `5B:AC:AB:02:...:D5:79` 後 Google DAL API 驗證通過）**。⏳ **Play 上傳密鑰重置審核通過後需追加新指紋 `5F130901...9E9850`（同樣冒號格式）到 sha256_cert_fingerprints 數組**（2026-08-04 前端通知；新舊指紋共存，新舊 APK 都可驗證）。⚠️ 經驗教訓：Google 驗證器要求冒號格式
 
-**share.html（v5，2026-08-04）**：v4 基礎（Android 打開策略按瀏覽器分派：Chrome → `intent://` + `S.browser_fallback_url`；其他 → `lumoguide://` scheme 直跳）上修正**國產瀏覽器誤判**：華為/小米/UC/QQ/百度/360/OPPO/vivo 內置瀏覽器 UA 含 `Chrome/` 但不識別 intent://，v4 的 `isChromeLike` 檢測會把他們誤判為 Chrome 走 intent:// → 報錯頁；v5 增加排除列表（`MiuiBrowser|UCBrowser|MQQBrowser|QQBrowser|BIDUBrowser|baiduboxapp|360SE|360EE|OPPOBrowser|vivoBrowser|HuaweiBrowser`）+ 排除 WebView（`wv`）。文件位置：`/www/wwwroot/luomoguide/share.html` + `lumo/frontend/share.html`（兩處須保持同步，已確認 diff 一致）。
+**share.html / invite.html（v6，2026-08-07）**：
+- **國產瀏覽器修復**：非 Chrome 系 Android 瀏覽器（華為/小米/UC/QQ/百度/360/OPPO/vivo）的**自動觸發**改用 **iframe** 方式調用 scheme URL（取代 `window.location.href`），避免 scheme 失敗時導航到錯誤頁/空白頁導致 JS 計時器中斷。**按鈕點擊**保留 `location.href`（有用戶手勢時可靠）
+- 增加 `pagehide` + `visibilitychange` 雙重監聽追蹤 App 是否已打開（`appOpened` 標記）
+- 非 Chrome 瀏覽器超時從 2500ms 縮短到 1200ms（scheme 要嘛瞬間成功要嘛失敗）
+- **冷啟動支持**：頁面載入時生成 16 位隨機 token → 寫入剪貼板（JSON: `{c, t, i, token}`）→ POST `/api/common/deferredLink` 上報服務端 → 下載 URL 帶 `?token=` 參數
+- `invite.html` 已重寫，與 `share.html` 功能完全對齊（之前缺失自動打開、intent://、loading UI、/dl 下載分流）
+- 文件位置：`/www/wwwroot/luomoguide/share.html` + `lumo/frontend/share.html`（兩處須保持同步）
+- 同樣 `invite.html` 兩處副本已同步
+
+**⚠️ App Links 衝突**：AASA/assetlinks 已配置 `/share` 路徑，iOS/Android 會攔截 `https://lumoguide.com/share?...` 直接打開 App。Flutter `DeepLinkService` 目前只處理 `lumoguide://share?...`（host=`share`），不處理 `https://lumoguide.com/share?...`（host=`lumoguide.com`）。**在 Flutter 修復 handler 之前，App Links 會導致暖啟動打開 App 但停留在首頁**（不導航到具體內容）。Flutter 修復見 `docs/flutter-cold-start-deeplink.md`。
 
 **下載分發 `/dl`**（`/www/wwwroot/luomoguide/dl/index.php`）：
 - UA + IP 自動分發：iOS→App Store（id6749853105）、Android+中國 IP→`/dl/app-release.apk`、Android+外國→Google Play、其他→`/share`
-- 中國 IP 判斷：APNIC delegated 離線段表 `dl/cn_ipv4.txt`（8788 條合併為 4110 段）+ 二分查找；RFC1918 私有段按中國處理。註：ip2region 的 gitee/github/jsdelivr 下載在中國全部失敗，APNIC ftp 可達
-- `dl/version.txt` 存版本號（現 1.0.6）；**`dl/app-release.apk` 待前端上傳（當前 404）**
+- 中國 IP 判斷：APNIC delegated 離線段表 `dl/cn_ipv4.txt`（8788 條合併為 4110 段）+ 二分查找；RFC1918 私有段按中國處理
+- `dl/version.txt` 存版本號（現 1.0.6）；**`dl/app-release.apk`** 已上傳（153MB，2026-08-06）
+- Google Play 鏈接附加 `&referrer=token%3D{token}` 用於冷啟動 InstallReferrerClient 匹配
 - APK 響應頭（已配）：`Content-Type: application/vnd.android.package-archive` + `Content-Disposition: attachment`
 
 **API `POST /user/bindInviter`**（auth:api，2026-08-02）：掃碼深鏈後補綁邀請關係
@@ -617,6 +645,49 @@ Queue driver: **Redis** (`QUEUE_CONNECTION=redis`).
 - 實現：`BindInviterRequest` + `UserService::bindInviter` + `UserController::bindInviter` + `routes/api.php`
 
 **配置**：`.env` `WEB_URL=https://lumoguide.com`（原 www.lumoguide.com）；`config/app.php` 新增 `'web_url'`；`shareQrcode`/`UserService` 的 `env('WEB_URL')` 已全部替換為 `config('app.web_url')`（2026-08-02）。
+
+### Deferred Deep Link — 冷啟動延遲深度鏈接（2026-08-07）
+
+使用者掃碼時 App 未安裝 → 下載安裝 → 打開 App 後自動恢復到分享的具體內容。
+
+**數據流**：
+```
+share.html 載入 → 生成 16 位 token
+  ├─ 寫入剪貼板：{"c":"CODE","t":"guide","i":"123","token":"abc123"}  ← 主通道
+  ├─ POST /api/common/deferredLink（記錄 token+IP 到 DB）           ← 備用通道
+  └─ 下載 URL：/dl?token=abc123
+       ├─ Google Play → &referrer=token%3Dabc123                    ← Android 原生
+       ├─ APK 直下 → IP+token 已在 DB
+       └─ iOS → 靠剪貼板 + DB IP 備用
+```
+
+**Flutter App 啟動時三通道檢查**（按優先級）：
+1. **InstallReferrerClient**（Android Play Store 原生） → token → `GET /api/common/checkDeferredLink?token=xxx`
+2. **剪貼板** → 解析 JSON 取 token → 同上 API
+3. **服務端 IP 匹配**（24h 窗口） → `GET /api/common/checkDeferredLink`（無參數）
+
+**新增 API**（均在 `routes/api.php`，無需認證）：
+- `POST /api/common/deferredLink` — 儲存 token + content_type + content_id + IP
+- `GET /api/common/checkDeferredLink?token=xxx` — 查詢並消費（token 匹配優先，否則 IP 匹配）
+
+**DB**：`deferred_deep_links` 表 — token(unique)、content_type、content_id、ip_address、inviter_code、consumed。Migration：`2026_08_07_000001_create_deferred_deep_links_table.php`
+
+**覆蓋率**：Android Play Store ~99%、APK 直下 ~90%、iOS ~85%。綜合 ~95%。
+
+Flutter 實施文檔：`docs/flutter-cold-start-deeplink.md`
+
+### QR 碼資產管理（2026-08-07 清理）
+
+**邀請 QR 碼快取**（`storage/app/public/user_invite/{id}.png`）：
+- `UserService::index()` 生成時僅檢查檔案是否存在，舊 URL 格式的 QR 碼永久快取
+- **2026-08-07 清理**：刪除全部 10 個快取檔案（9 個使用舊 `www.` 格式或相對路徑），下次請求時以正確 URL (`https://lumoguide.com/invite.html?code=X`) 自動重新生成
+
+**下載頁 QR 碼**（`/www/wwwroot/luomoguide/QR-code.jpg`）：
+- **2026-08-07 重新生成**：從 `https://www.lumoguide.com/invite.html?code=LSZ326Z`（舊域名+寫死個人碼）改為 `https://lumoguide.com/dl`
+- `app-data.json` `qrImage` 從 base64 內嵌改為 `"QR-code.jpg"` 檔名引用
+- `script.js` DEFAULT_DATA `qrImage` 同步更新
+
+**SPA 下載頁 QR**（`public/images/download_ios_qr.png` / `download_android_qr.png`）：已驗證正確（iOS→App Store、Android→`/dl`）
 
 **歷史（2026-07-24）**：`lumoguide://share` 自定義 scheme、App Store fallback、邀請碼 `c` 參數追蹤。API：`GET /api/common/shareQrcode?type=guide|city|content|trip&id=N`（auth required，返回 PNG）。Flutter 集成文檔：`docs/flutter-share-deeplink.md`；前端配合需求：`docs/deep-link-frontend-todo.md`。
 
@@ -701,6 +772,7 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 - **`Company::AuditStatusArr`**: `Company` enum had `AuditStatus` but other enums (City, Guide) use `AuditStatusArr`. Added `const AuditStatusArr = self::AuditStatus` alias. Without this, admin page `/manage/users?tab=company` crashes with "Undefined constant".
 
 ### Frontend — Hard Pitfalls (will silently break with no errors)
+- **白字在淺色背景上消失（v4 設計切換後）**: 舊版設計（2026-08-07 前）多個頁面頂部用白色文字，靠舊的 indigo 頂部漸層 `#666FFF` 提供深底。v4 改淺色背景後這些白字全部不可見（標題、搜尋列、tab、pill）。**2026-08-07 已修復 7 個檔案**：`city/index.js`、`guide/list.js`、`merchant/list.js`、`search/index.js`、`misc/download.js`、`city/extra.js`（攻略頁頭部）、`news/detail.js`（日期/瀏覽數）+ CSS `.sketch-search-input::placeholder`。修改後主題色時，必須全站掃描白字元素（可參考 Playwright 腳本：對每個路由找 computed color 為白色、且背景鏈（含祖先 background-image 漸層）為淺色的文字元素）。city 詳情頁標題雖是白字但下方有 `linear-gradient(to top, rgba(0,0,0,.6), transparent)` 暗色 overlay（sibling，非祖先），屬正常。見 [[v4-design-palette]] 記憶。
 - **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component.
 - **File upload silent failure in frontend**: `uploadFile()` in `entry.js` and `certify.js` catches errors and returns `existingUrl` (which is empty string for new uploads). If the file upload API fails, the user sees "證件圖片不能為空" with no indication that the upload itself failed. When debugging "upload failure" reports, check Nginx access logs for `fileUpload` 200 responses first — the upload API usually works, and the real issue is field name mismatch in the subsequent POST.
 - **Draft save for multi-step forms**: Follow the pattern in `publish/form.js`: `watch` form+pics (deep) → `created()` debounced `saveDraft()` → `checkDraft()` after `loadData()` → prompt UI with restore/clear → clear on success → save in `beforeUnmount()`. Only save serializable data (skip File objects and blob URLs). Applied to `guide/certify.js` and `merchant/entry.js`. See [[draft-save-multi-step-forms]] in memory.
@@ -714,7 +786,7 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 ### Frontend — Design/Architecture Rules
 - **Web-Flutter feature parity**: Web MUST strictly match Flutter. No features that don't exist in Flutter. Reference: Flutter app at `lumotrip/lib/pages/`.
 - **Flutter constraints**: No delete in publish content lists (`canDelete: false`). No inline confirm/reject in booking lists. No booking status filter tabs. VIP gate on add (not edit).
-- **Design system**: Primary `#666FFF`, page bg `#F9F9F6`, card `#FFFFFF`. Topbar solid `#666FFF` 52px no box-shadow. Body gradient: `linear-gradient(180deg, #666FFF 0%, #666FFF 52px, #F9F9F6 100%)`. Serif: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`.
+- **Design system v4**: Primary `#666FFF` (accent only), page bg `#F8FAFC`, card `#FFFFFF` + `#E2E8F0` border. Navbar glassmorphism `rgba(255,255,255,.8)` + blur(12px) + hairline `rgba(226,232,240,.8)`. Home shell gradient: `linear-gradient(180deg, #F0F2FA 0%, #F5F7FC 120px, #F8FAFC 100%)`. Serif: `Georgia, 'Noto Serif TC', 'Noto Serif SC', serif`.
 - **Topbar visibility**: Hidden only on `/welcome`, `/login`, `/register`, `/forget-password`, `/verify-code`, `/password-input`. Must list ALL auth routes.
 - **Reuse existing styles**: Check `.filter-pills`, `.card-grid-*`, `.h-scroll`, `.ds-*` before creating new CSS.
 - **SPA architecture**: Correct choice. No multi-HTML. All content behind login wall (SEO irrelevant).
@@ -748,11 +820,24 @@ System messages stored in `system_message` table with structured fields:
 
 ### City Detail Tab Bar (`#/city/detail`)
 
-Sticky tab bar uses `#666FFF` indigo background with white text:
-- Active tab: pure white `#fff`, bold, 2px white bottom border
-- Inactive tab: `rgba(255,255,255,.55)`
-- Sub-category bar: `#5A5FE8` background, same white text pattern, left-aligned
+Sticky tab bar (v4, 2026-08-07) matches navbar glassmorphism — inline styles in `frontend/js/pages/city/detail.js`:
+- Bar: `rgba(255,255,255,.8)` + `backdrop-filter: saturate(180%) blur(12px)`, 1px hairline `rgba(226,232,240,.8)`
+- Active tab: `#666FFF`, bold, 2px indigo bottom border
+- Inactive tab: `rgba(51,65,85,.6)` (slate-700 60%)
+- Sub-category bar: `rgba(255,255,255,.6)` glass, same indigo-active pattern
 - Sticky position: `top:52px` (below topbar)
+
+### UI 效果圖 / 全站白字掃描（Playwright，2026-08-07）
+
+伺服器已裝 Playwright Chromium，工具在 `/tmp/mockup/`：
+- **設計效果圖**：`mockup.html`（示意圖，含導航欄三態 + 配色表）→ `node shot.js` 輸出 `mockup-desktop.png` / `mockup-mobile.png`（1440 / 390，2x）
+- **線上截圖**：`shot2.js` / `final.js` / `final2.js` → `live-*.png`、`效果圖-*.png`
+- **白字掃描**（改主題色後必跑）：`scan.js` — 逐路由檢查「文字 computed color 白（alpha>0.3）+ 背景鏈（含祖先 background-image，解析漸層色階明暗）為淺色」，輸出問題清單
+- **像素驗證**：`verify*.php` — 截圖取樣/計數（指示條、logo、背景色）
+- **DOM 樣式驗證**：`diag3.js` — 讀線上 topbar 的 `backgroundColor` / `backdropFilter` / `borderBottomColor` / `::after` 等計算樣式
+- **預覽發布**：效果圖放 `public/design-preview/` → `https://api.lumoguide.com/design-preview/`（確認後刪除）
+- 換機安裝：`npm i playwright && npx playwright install chromium && npx playwright install-deps chromium`
+
 
 ### Frontend — Key Patterns
 - **VIP gate**: `v-else-if="!isEdit && !UserStore.isVip"`. `isVip` = `vip_type > 0 && vip_expiration_time > 0` OR `vip_free === 1 && vip_free_day > 0`.

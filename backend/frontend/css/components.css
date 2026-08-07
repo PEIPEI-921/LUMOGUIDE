@@ -4,28 +4,36 @@
    ============================================ */
 
 /* ============================================
-   TOP NAVIGATION BAR (#7C5CFF — seamless with body gradient)
+   TOP NAVIGATION BAR — v4 極簡高科技風
+   Frosted lens: rgba(255,255,255,.8) + blur(12px) +
+   1px ultra-fine hairline rgba(226,232,240,.8)
+   (hairline replaces heavy shadow)
+   #666FFF reserved for hover / active indicator
    ============================================ */
 
 .app-topbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-topbar);
   display: flex;
   align-items: center;
   height: 52px;
   padding: 0 var(--spacing-lg);
   background: var(--color-topbar-bg);
+  -webkit-backdrop-filter: var(--topbar-blur);
+  backdrop-filter: var(--topbar-blur);
+  border-bottom: 1px solid var(--color-topbar-border);
   gap: var(--spacing-sm);
 }
 
-/* Full logo — white version via filter for dark bg */
+/* Full logo — indigo variant (white logo recolored to #666FFF) */
+
 .topbar-logo-full {
   height: 40px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.10));
 }
 
 /* Nav group — tabs + search, right-aligned */
@@ -51,7 +59,7 @@
   padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-topbar-text);
   border-radius: 10px;
   transition: all 0.2s var(--ease-out);
   white-space: nowrap;
@@ -62,14 +70,26 @@
 }
 
 .topbar-tab:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-primary);
+  background: var(--color-topbar-hover-bg);
 }
 
 .topbar-tab.active {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.22);
+  color: var(--color-primary);
+  background: var(--color-topbar-hover-bg);
   font-weight: 600;
+}
+
+/* Current-page indicator — 2px indigo bar at navbar bottom edge */
+.topbar-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc((var(--topbar-height) - 100%) / -2);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-primary);
 }
 
 /* Icon tabs — SVG icon sizing */
@@ -107,7 +127,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: rgba(255,255,255,.7);
+  color: var(--color-topbar-text);
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -122,8 +142,8 @@
 }
 
 .topbar-lang-btn:hover {
-  color: #fff;
-  background: rgba(255,255,255,.1);
+  color: var(--color-primary);
+  background: var(--color-topbar-hover-bg);
 }
 
 /* SVG icons inside tabs */
@@ -153,7 +173,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-topbar-text);
   cursor: pointer;
   padding: 7px 10px;
   border-radius: 8px;
@@ -164,8 +184,8 @@
 
 .topbar-search-btn:hover,
 .topbar-auth-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-primary);
+  background: var(--color-topbar-hover-bg);
 }
 
 .topbar-search-btn .topbar-svg,
@@ -203,7 +223,7 @@
   width: 18px;
   height: 3px;
   border-radius: 2px;
-  background: var(--color-topbar-bg);
+  background: var(--color-primary);
   margin-left: 6px;
   align-self: flex-end;
   margin-bottom: 3px;
@@ -3419,7 +3439,7 @@ textarea.form-input {
 .search-bar-v2 input::placeholder { color: var(--color-assistant-text); }
 
 /* search page sketch-style: placeholder white */
-.sketch-search-input::placeholder { color: rgba(255,255,255,.5); }
+.sketch-search-input::placeholder { color: rgba(51, 65, 85, 0.4); }
 
 /* ── Welcome Page v2 ── */
 .welcome-page-v2 {
