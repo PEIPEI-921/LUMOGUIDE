@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:lumotrip/pages/home/widgets/search_bar.dart';
 import '../../common/index.dart';
 import 'index.dart';
-import 'widgets/Information.dart';
+import 'widgets/information.dart';
 import 'widgets/city_strategy.dart';
 import 'widgets/guide.dart';
 import 'widgets/hot_city.dart';
