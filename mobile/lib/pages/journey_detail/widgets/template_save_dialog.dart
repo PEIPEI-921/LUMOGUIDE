@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lumotrip/common/index.dart';
 
 class TemplateSaveDialog extends StatefulWidget {
@@ -81,7 +80,7 @@ class _TemplateSaveDialogState extends State<TemplateSaveDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.w),
-                  borderSide: BorderSide(color: AppColors.primary, width: 1),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.w),

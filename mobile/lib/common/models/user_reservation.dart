@@ -120,7 +120,7 @@ class UserReservationMerchant {
   String? updatedAt;
   String? reason;
 
-  bool get isGrey => [4, 5, 6].contains(status);
+  bool get isGrey => [3, 4, 5, 6].contains(status);
 
   UserReservationMerchant({
     this.id,
@@ -149,30 +149,28 @@ class UserReservationMerchant {
 
   factory UserReservationMerchant.fromJson(Map<String, dynamic> json) {
     return UserReservationMerchant(
-      id: json['id'] as int?,
-      status: json['status'] as int?,
-      createdAt: json['created_at'] as String?,
-      content: json['content'] != null
-          ? MerchantInfo.fromJson(json['content'])
-          : null,
-      userId: json['user_id'] as int?,
-      companyId: json['company_id'] as int?,
-      cityId: json['city_id'] as int?,
-      contentType: json['content_type'] as int?,
-      contentId: json['content_id'] as int?,
-      ticketsType: json['tickets_type'] as String?,
-      arrivalTime: json['arrival_time'] as String?,
-      leaveTime: json['leave_time'] as String?,
-      remark: json['remark'] as String?,
-      number: json['number'] as String?,
-      roomNumber: json['room_number'] as String?,
-      file: json['file'] as String?,
-      contact: json['contact'] as String?,
-      email: json['email'] as String?,
-      phone: json['phone'] as String?,
-      other: json['other'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      reason: json['reason'] as String?,
+      id: json.safeInt('id'),
+      status: json.safeInt('status'),
+      createdAt: json.safeString('created_at'),
+      content: json.safeObject('content', MerchantInfo.fromJson),
+      userId: json.safeInt('user_id'),
+      companyId: json.safeInt('company_id'),
+      cityId: json.safeInt('city_id'),
+      contentType: json.safeInt('content_type'),
+      contentId: json.safeInt('content_id'),
+      ticketsType: json.safeString('tickets_type'),
+      arrivalTime: json.safeString('arrival_time'),
+      leaveTime: json.safeString('leave_time'),
+      remark: json.safeString('remark'),
+      number: json.safeString('number'),
+      roomNumber: json.safeString('room_number'),
+      file: json.safeString('file'),
+      contact: json.safeString('contact'),
+      email: json.safeString('email'),
+      phone: json.safeString('phone'),
+      other: json.safeString('other'),
+      updatedAt: json.safeString('updated_at'),
+      reason: json.safeString('reason'),
     );
   }
 

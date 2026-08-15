@@ -5,8 +5,6 @@ import 'package:lumotrip/common/index.dart';
 import 'package:lumotrip/pages/select_members/purpose.dart';
 import 'package:provider/provider.dart';
 import 'package:tencent_chat_i18n_tool/tencent_chat_i18n_tool.dart';
-import 'package:tencent_cloud_chat_sdk/enum/group_member_role.dart';
-import 'package:tencent_cloud_chat_sdk/enum/group_type.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_group_member_full_info.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_group_member_full_info.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/separate_models/tui_group_profile_model.dart';
@@ -58,24 +56,14 @@ class CustomMemberTile extends StatelessWidget {
     final memberAmount = groupInfo?.memberCount ?? memberList.length;
     final option1 = memberAmount.toString();
 
-    final groupType = groupInfo?.groupType ?? "";
-    // role 为原生整型：200=成员，300=管理员，400=群主（非 Dart 枚举 index）
-    final role = groupInfo?.role;
-    final isOwner =
-        role == GroupMemberRoleType.V2TIM_GROUP_MEMBER_ROLE_OWNER; // 400
-    final isAdmin =
-        role == GroupMemberRoleType.V2TIM_GROUP_MEMBER_ROLE_ADMIN; // 300
-    final isPublicOrMeeting =
-        groupType == GroupType.Public || groupType == GroupType.Meeting;
-
     const showAdd = true;
     final showDelete = model.canKickOffMember();
 
     // 第一行总格子数约 8：头像数 + 加号(若有) + 减号(若有)
-    final int showRange = 8 - (showAdd ? 1 : 0) - (showDelete ? 1 : 0);
+    final int showRange = 8 - 1 - (showDelete ? 1 : 0);
 
     final theme = Theme.of(context);
-    final weakColor = theme.colorScheme.onSurface.withOpacity(0.5);
+    final weakColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final darkColor = theme.colorScheme.onSurface;
 
     return Container(

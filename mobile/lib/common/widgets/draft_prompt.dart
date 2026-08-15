@@ -21,10 +21,10 @@ class DraftPromptCard extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.w),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.w),
       decoration: BoxDecoration(
-        color: const Color(0xFF666FFF).withOpacity(0.08),
+        color: const Color(0xFF666FFF).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10.w),
         border: Border.all(
-          color: const Color(0xFF666FFF).withOpacity(0.2),
+          color: const Color(0xFF666FFF).withValues(alpha: 0.2),
           width: 1,
         ),
       ),

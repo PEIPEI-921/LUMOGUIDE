@@ -45,9 +45,7 @@ class CityController extends GetxController
     );
   }
 
-  onSearchTap() {
-    print('onSearchTap');
-  }
+  onSearchTap() {}
 
   onCityTap(CityList city) {
     Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': city.id});
@@ -137,7 +135,7 @@ class CityController extends GetxController
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: hideSearchOverlay,
-              child: Container(color: Colors.black.withOpacity(0.1)),
+              child: Container(color: Colors.black.withValues(alpha: 0.1)),
             ),
           ),
           // 搜索结果悬浮框

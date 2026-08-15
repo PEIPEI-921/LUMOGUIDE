@@ -70,7 +70,7 @@ class _Category extends StatelessWidget {
                               controller.informationCategoryIndex.value ==
                                   categories.indexOf(e)
                               ? Colors.white
-                              : AppColors.primaryText.withOpacity(0.8),
+                              : AppColors.primaryText.withValues(alpha: 0.8),
                           fontSize: 12.sp,
                         ),
                       )
@@ -80,7 +80,7 @@ class _Category extends StatelessWidget {
                             controller.informationCategoryIndex.value ==
                                 categories.indexOf(e)
                             ? AppColors.primary
-                            : AppColors.primaryText.withOpacity(0.05),
+                            : AppColors.primaryText.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(100),
                       )
                       .gestures(
@@ -134,7 +134,7 @@ class _Item extends StatelessWidget {
                     .padding(horizontal: 7.w, vertical: 4.w)
                     .decorated(
                       borderRadius: BorderRadius.circular(100),
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                     ),
               ],
             ),
@@ -155,7 +155,7 @@ class _Item extends StatelessWidget {
                 Text(
                   information.desc ?? '',
                   style: TextStyle(
-                    color: AppColors.primaryText.withOpacity(0.8),
+                    color: AppColors.primaryText.withValues(alpha: 0.8),
                     fontSize: 12.sp,
                   ),
                   maxLines: 2,
@@ -198,7 +198,7 @@ class _Item extends StatelessWidget {
                     Text(
                       information.createdAt ?? '',
                       style: TextStyle(
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                         fontSize: 12.sp,
                       ),
                       maxLines: 1,
@@ -213,7 +213,7 @@ class _Item extends StatelessWidget {
                     Text(
                       '${information.evaluateCount ?? 0}',
                       style: TextStyle(
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                         fontSize: 12.sp,
                       ),
                       maxLines: 1,

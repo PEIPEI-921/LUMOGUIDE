@@ -35,17 +35,6 @@ class BookingDetailsWidget extends StatelessWidget {
         return _buildTicketFields(controller);
       case MerchantShopType.scenic:
         return _buildScenicFields(controller);
-      default:
-        return [
-          _DetailItem(
-            label: '人數'.tr,
-            value: controller.merchantInfo!.number ?? '',
-          ),
-          _DetailItem(
-            label: '備注說明'.tr,
-            value: controller.merchantInfo!.remark ?? '',
-          ),
-        ];
     }
   }
 

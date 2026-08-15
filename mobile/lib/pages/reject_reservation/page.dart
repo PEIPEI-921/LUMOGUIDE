@@ -8,8 +8,8 @@ class RejectReservationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(RejectReservationController());
-    return IScaffold(
+    Get.put(RejectReservationController());
+    return const IScaffold(
       title: '',
       body: Column(
         children: [],

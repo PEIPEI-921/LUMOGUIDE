@@ -62,24 +62,22 @@ extension StringRegExp on String {
   }
 
   bool get isIdCard {
-    return RegExp(r'^(\\d{14}|\\d{17})(\\d|[xX])$').hasMatch(this);
+    return RegExp(r'^(\d{14}|\d{17})(\d|[xX])$').hasMatch(this);
   }
 
-  // bool get isEmail {
-  //   return RegExp(r'[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}')
-  //       .hasMatch(this);
-  // }
+  // 注意：本扩展不定义 isEmail —— 邮箱校验由 Get 包的 String.isEmail 扩展提供
+  // （GetUtils.isEmail）。login/register/forget_password/modify_password 均依赖它。
 
   bool get isChinese {
     return RegExp(r'^[\u4e00-\u9fa5]*$').hasMatch(this);
   }
 
   bool get isLetter {
-    return RegExp(r'^[a-zA-z]*$').hasMatch(this);
+    return RegExp(r'^[a-zA-Z]*$').hasMatch(this);
   }
 
   bool get isMoney {
-    return RegExp(r'^\\d+(\\.\\d{1,2})?$').hasMatch(this);
+    return RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(this);
   }
 
   bool get isNumber {

@@ -17,7 +17,7 @@ class MessageSystemItemWidget extends StatelessWidget {
         Text(
           model.formatDate ?? '',
           style: TextStyle(
-            color: AppColors.primaryText.withOpacity(0.6),
+            color: AppColors.primaryText.withValues(alpha: 0.6),
             fontSize: 12.sp,
           ),
         ).padding(bottom: 10.w),
@@ -38,28 +38,28 @@ class MessageSystemItemWidget extends StatelessWidget {
               model.desc ?? '',
               style: TextStyle(
                 fontSize: 12.sp,
-                color: AppColors.primaryText.withOpacity(0.8),
+                color: AppColors.primaryText.withValues(alpha: 0.8),
               ),
             ),
             10.w.verticalSpace,
             Divider(
               height: 1,
               thickness: 0.5,
-              color: AppColors.primaryText.withOpacity(0.01),
+              color: AppColors.primaryText.withValues(alpha: 0.01),
             ),
             // Row(
             //   children: [
             //     Text(
             //       '查看詳情'.tr,
             //       style: TextStyle(
-            //         color: AppColors.primaryText.withOpacity(0.8),
+            //         color: AppColors.primaryText.withValues(alpha: 0.8),
             //         fontSize: 12.sp,
             //       ),
             //     ),
             //     const Spacer(),
             //     Icon(
             //       Icons.arrow_forward_ios,
-            //       color: AppColors.primaryText.withOpacity(0.6),
+            //       color: AppColors.primaryText.withValues(alpha: 0.6),
             //       size: 14,
             //     ),
             //   ],

@@ -68,7 +68,7 @@ class MerchantBookItemWidget extends StatelessWidget {
                             .padding(vertical: 2, horizontal: 5)
                             .decorated(
                               borderRadius: BorderRadius.circular(20),
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                             )
                             .padding(left: 5.w),
                       ],
@@ -76,7 +76,7 @@ class MerchantBookItemWidget extends StatelessWidget {
                     Divider(
                       height: 20,
                       thickness: 1,
-                      color: AppColors.primaryText.withOpacity(0.05),
+                      color: AppColors.primaryText.withValues(alpha: 0.05),
                     ),
                     _BookingDetailsGrid(item: item),
                   ],

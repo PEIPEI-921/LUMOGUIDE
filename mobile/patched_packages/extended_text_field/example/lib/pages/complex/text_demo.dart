@@ -198,7 +198,7 @@ class _TextDemoState extends State<TextDemo> {
                         },
                         //textDirection: TextDirection.rtl,
                       ),
-                      Container(height: 1, color: Colors.grey.withOpacity(0.3)),
+                      Container(height: 1, color: Colors.grey.withValues(alpha: 0.3)),
                       KeyboardTypeBuilder(
                         builder: (
                           BuildContext context,

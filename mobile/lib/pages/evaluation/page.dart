@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../common/index.dart';
 import 'controller.dart';
 import 'widgets/input.dart';
-import 'widgets/rating.dart';
 
 class EvaluationPage extends StatelessWidget {
   const EvaluationPage({super.key});

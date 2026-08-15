@@ -29,7 +29,7 @@ class NextStepButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16.w),
             color: enabled
                 ? AppColors.primary
-                : AppColors.assistantText.withOpacity(0.2),
+                : AppColors.assistantText.withValues(alpha: 0.2),
           )
           .gestures(
             onTap: enabled ? () => controller.onNextStep() : null,

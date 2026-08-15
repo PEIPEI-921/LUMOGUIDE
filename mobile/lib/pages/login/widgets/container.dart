@@ -31,7 +31,7 @@ class LoginContainerWidget extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.w),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 10,
           offset: const Offset(0, 5),
         ),
@@ -100,13 +100,13 @@ class _EmailView extends StatelessWidget {
             hintText: '請輸入郵箱'.tr,
             hintStyle: TextStyle(
               fontSize: 16.sp,
-              color: AppColors.primaryText.withOpacity(0.3),
+              color: AppColors.primaryText.withValues(alpha: 0.3),
             ),
           ),
         ).expanded(),
       ],
     ).padding(horizontal: 19.w).decorated(
-          color: AppColors.primaryText.withOpacity(0.03),
+          color: AppColors.primaryText.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(100),
         );
   }
@@ -148,7 +148,7 @@ class _PasswordView extends StatelessWidget {
                 hintText: '請輸入密碼'.tr,
                 hintStyle: TextStyle(
                   fontSize: 16.sp,
-                  color: AppColors.primaryText.withOpacity(0.3),
+                  color: AppColors.primaryText.withValues(alpha: 0.3),
                 ),
                 suffixIcon: IconButton(
                   onPressed: () {
@@ -158,14 +158,14 @@ class _PasswordView extends StatelessWidget {
                     controller.isObscure.value
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
-                    color: AppColors.primaryText.withOpacity(0.3),
+                    color: AppColors.primaryText.withValues(alpha: 0.3),
                   ),
                 ),
               ),
             )).expanded(),
       ],
     ).padding(horizontal: 19.w).decorated(
-          color: AppColors.primaryText.withOpacity(0.03),
+          color: AppColors.primaryText.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(100),
         );
   }
@@ -257,7 +257,7 @@ class _FooterView extends StatelessWidget {
           '還沒有帳號? 去註冊'.tr,
           style: TextStyle(
             fontSize: 14.sp,
-            color: AppColors.primaryText.withOpacity(0.8),
+            color: AppColors.primaryText.withValues(alpha: 0.8),
           ),
         ).padding(vertical: 5.w).gestures(
               onTap: controller.goToRegister,

@@ -72,7 +72,7 @@ class GoodsInfoWidget extends StatelessWidget {
               Divider(
                 height: 30.w,
                 thickness: 1,
-                color: AppColors.primaryText.withOpacity(0.1),
+                color: AppColors.primaryText.withValues(alpha: 0.1),
               ),
               Row(
                 children: [

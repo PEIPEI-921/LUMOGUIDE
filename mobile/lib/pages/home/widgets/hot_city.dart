@@ -113,7 +113,7 @@ class _CityItem extends StatelessWidget {
                     Text(
                       city.nameEn ?? '',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w600,
                       ),
@@ -125,7 +125,7 @@ class _CityItem extends StatelessWidget {
                 .padding(horizontal: 4.w, vertical: 2.w)
                 .constrained(maxWidth: 80.w)
                 .decorated(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(5.w),
                 )
                 .positioned(left: 5, top: 5),

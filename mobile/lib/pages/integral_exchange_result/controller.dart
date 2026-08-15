@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../common/index.dart';
 
 class IntegralExchangeResultController extends GetxController {
-  /**
+  /*
    * {
           "order_sn": "I2025082720272167938",
           "pay_time": "2025-08-27 20:27:21",

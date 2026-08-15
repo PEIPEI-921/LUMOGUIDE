@@ -131,10 +131,6 @@ class AppRoutes {
 
   static const MEMBER_CENTER = '/member_center';
 
-  static const MERCHANT_LIST = '/merchant_list';
-
-  static const GUIDE_LIST = '/guide_list';
-
   static const CITY_STRATEGY = '/city_strategy';
 
   static const COMPANY_INFO = '/company_info';

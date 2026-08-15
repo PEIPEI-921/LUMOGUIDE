@@ -657,7 +657,9 @@ class CityDetailController extends GetxController
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (_) {}
+    } catch (e) {
+      log('[分享] 清理臨時文件失敗: $e');
+    }
   }
 }
 

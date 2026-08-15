@@ -11,13 +11,13 @@ class CallMessageItem extends StatelessWidget {
   final bool isShowIcon;
 
   const CallMessageItem({
-    Key? key,
+    super.key,
     required this.callingMessageDataProvider,
     this.backgroundColor,
     this.borderRadius,
     this.padding,
     this.isShowIcon = true,
-  }) : super(key: key);
+  });
 
   Widget _callElemBuilder(BuildContext context) {
     return GestureDetector(

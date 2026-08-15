@@ -48,7 +48,7 @@ class CityDetailBannerWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: controller.bannerIndex == index
                           ? AppColors.primary
-                          : AppColors.primaryText.withOpacity(0.5),
+                          : AppColors.primaryText.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -81,7 +81,7 @@ class CityDetailBannerWidget extends StatelessWidget {
                             .padding(all: 3.w)
                             .decorated(
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 width: 1,
                               ),
                               borderRadius: BorderRadius.circular(4.w),
@@ -92,7 +92,7 @@ class CityDetailBannerWidget extends StatelessWidget {
                   Text(
                     controller.cityInfo.nameEn ?? '',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 14.sp,
                     ),
                     maxLines: 1,

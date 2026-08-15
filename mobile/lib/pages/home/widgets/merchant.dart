@@ -90,7 +90,7 @@ class _Category extends StatelessWidget {
                               controller.merchantCategoryIndex.value ==
                                   categories.indexOf(e)
                               ? Colors.white
-                              : AppColors.primaryText.withOpacity(0.8),
+                              : AppColors.primaryText.withValues(alpha: 0.8),
                           fontSize: 12.sp,
                         ),
                       )
@@ -100,7 +100,7 @@ class _Category extends StatelessWidget {
                             controller.merchantCategoryIndex.value ==
                                 categories.indexOf(e)
                             ? AppColors.primary
-                            : AppColors.primaryText.withOpacity(0.05),
+                            : AppColors.primaryText.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(100),
                       )
                       .gestures(
@@ -161,7 +161,7 @@ class _Carousel extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: controller.merchantCarouselIndex.value == e.key
                           ? AppColors.primary
-                          : AppColors.primaryText.withOpacity(0.1),
+                          : AppColors.primaryText.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -213,7 +213,7 @@ class _CarouselItem extends StatelessWidget {
                       Text(
                         '${'電話'.tr}: ${banner.phone ?? ''}',
                         style: TextStyle(
-                          color: AppColors.primaryText.withOpacity(0.8),
+                          color: AppColors.primaryText.withValues(alpha: 0.8),
                           fontSize: 11.sp,
                         ),
                         maxLines: 1,
@@ -230,7 +230,7 @@ class _CarouselItem extends StatelessWidget {
                     Text(
                       '${'城市'.tr}: ${banner.cityName ?? ''}',
                       style: TextStyle(
-                        color: AppColors.primaryText.withOpacity(0.8),
+                        color: AppColors.primaryText.withValues(alpha: 0.8),
                         fontSize: 11.sp,
                       ),
                       maxLines: 1,
@@ -322,7 +322,7 @@ class _GirdItem extends StatelessWidget {
                   Text(
                     '${'電話'.tr}: ${shop.phone ?? ''}',
                     style: TextStyle(
-                      color: AppColors.primaryText.withOpacity(0.8),
+                      color: AppColors.primaryText.withValues(alpha: 0.8),
                       fontSize: 11.sp,
                     ),
                     maxLines: 1,
@@ -338,7 +338,7 @@ class _GirdItem extends StatelessWidget {
                 Text(
                   '${'城市'.tr}: ${shop.cityName ?? ''}',
                   style: TextStyle(
-                    color: AppColors.primaryText.withOpacity(0.8),
+                    color: AppColors.primaryText.withValues(alpha: 0.8),
                     fontSize: 11.sp,
                   ),
                   maxLines: 1,

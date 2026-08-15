@@ -35,7 +35,7 @@ class SearchBarWidget extends StatelessWidget {
                   vertical: 13,
                 ),
                 hintStyle: TextStyle(
-                  color: AppColors.primaryText.withOpacity(0.3),
+                  color: AppColors.primaryText.withValues(alpha: 0.3),
                   fontSize: 14.sp,
                 ),
               ),
@@ -82,7 +82,7 @@ class SearchResultsOverlay extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.w),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -108,7 +108,7 @@ class SearchResultsOverlay extends StatelessWidget {
               },
               separatorBuilder: (context, index) => Divider(
                 height: 1,
-                color: AppColors.primaryText.withOpacity(0.1),
+                color: AppColors.primaryText.withValues(alpha: 0.1),
               ),
             ).constrained(maxHeight: 300.w),
           ],
@@ -139,12 +139,12 @@ class _SearchResultItem extends StatelessWidget {
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: AppColors.primaryText.withOpacity(0.1),
+                color: AppColors.primaryText.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4.w),
               ),
               child: Icon(
                 Icons.location_city,
-                color: AppColors.primaryText.withOpacity(0.3),
+                color: AppColors.primaryText.withValues(alpha: 0.3),
                 size: 20.w,
               ),
             ),
@@ -166,7 +166,7 @@ class _SearchResultItem extends StatelessWidget {
                   )
                   .padding(horizontal: 4.w, vertical: 1.w)
                   .decorated(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6.w),
                   )
                   .padding(left: 6.w),
@@ -178,7 +178,7 @@ class _SearchResultItem extends StatelessWidget {
                   )
                   .padding(horizontal: 4.w, vertical: 1.w)
                   .decorated(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6.w),
                   )
                   .padding(left: 6.w),
@@ -190,7 +190,7 @@ class _SearchResultItem extends StatelessWidget {
                 )
                 .padding(horizontal: 4.w, vertical: 1.w)
                 .decorated(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.w),
                 )
                 .padding(left: 6.w),
@@ -219,7 +219,7 @@ class _SearchResultItem extends StatelessWidget {
                     )
                     .padding(horizontal: 6.w, vertical: 3.w)
                     .decorated(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(100),
                     ),
           ),
@@ -229,7 +229,7 @@ class _SearchResultItem extends StatelessWidget {
       return Text(
         item.cityName ?? '',
         style: TextStyle(
-          color: AppColors.primaryText.withOpacity(0.6),
+          color: AppColors.primaryText.withValues(alpha: 0.6),
           fontSize: 12.sp,
         ),
       );
@@ -237,7 +237,7 @@ class _SearchResultItem extends StatelessWidget {
       return Text(
         item.nameEn!,
         style: TextStyle(
-          color: AppColors.primaryText.withOpacity(0.6),
+          color: AppColors.primaryText.withValues(alpha: 0.6),
           fontSize: 12.sp,
         ),
       );
@@ -256,14 +256,14 @@ class _EmptySearchResult extends StatelessWidget {
         children: [
           Icon(
             Icons.search_off,
-            color: AppColors.primaryText.withOpacity(0.3),
+            color: AppColors.primaryText.withValues(alpha: 0.3),
             size: 32.w,
           ),
           8.w.verticalSpace,
           Text(
             '未找到相關內容'.tr,
             style: TextStyle(
-              color: AppColors.primaryText.withOpacity(0.6),
+              color: AppColors.primaryText.withValues(alpha: 0.6),
               fontSize: 14.sp,
             ),
           ),

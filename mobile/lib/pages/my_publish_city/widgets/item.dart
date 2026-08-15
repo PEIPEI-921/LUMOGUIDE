@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 
-import '../../my_publish/widgets/operate.dart';
 import '../../my_publish/widgets/status.dart';
 import '../index.dart';
 
@@ -78,7 +77,7 @@ class MyPublishCityItemWidget extends StatelessWidget {
                                   .padding(all: 3.w)
                                   .decorated(
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.6),
+                                      color: Colors.white.withValues(alpha: 0.6),
                                       width: 1,
                                     ),
                                     borderRadius: BorderRadius.circular(4.w),
@@ -89,7 +88,7 @@ class MyPublishCityItemWidget extends StatelessWidget {
                         Text(
                           item.nameEn ?? '',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12.sp,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -148,7 +147,7 @@ class MyPublishCityItemWidget extends StatelessWidget {
               Container(
                 width: 1,
                 height: 20.w,
-                color: AppColors.assistantText.withOpacity(0.3),
+                color: AppColors.assistantText.withValues(alpha: 0.3),
               ),
               Row(
                     mainAxisAlignment: MainAxisAlignment.center,

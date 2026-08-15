@@ -29,7 +29,7 @@ class PublishFacilityPage extends StatelessWidget {
               ),
               12.w.verticalSpace,
               LabelSelectField(
-                label: '分類'.tr,
+                label: '設施類型'.tr,
                 value: controller.publish.typeClassName ?? '',
                 hintText: '請選擇分類'.tr,
                 isRequired: true,

@@ -48,7 +48,7 @@ class GuideInfoWidget extends StatelessWidget {
                     ),
                   ).padding(horizontal: 8.w, vertical: 2.w).decorated(
                         borderRadius: BorderRadius.circular(12.w),
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                       ),
                 ],
               ),

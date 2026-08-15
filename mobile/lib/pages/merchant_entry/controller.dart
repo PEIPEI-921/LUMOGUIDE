@@ -418,30 +418,13 @@ extension MerchantEntrySelection on MerchantEntryController {
       Loading.toast('請先選擇經營類型'.tr);
       return;
     }
-    var data = ConfigService.to
-        .getCategories(typeId)
-        .map((e) => e.name ?? '')
-        .toList();
-    // 本地緩存為空時，從 API 即時載入
-    if (data.isEmpty) {
-      Loading.show();
-      final apiRes = await get(
-        ApiUrl.typeClass,
-        parameters: {'type_id': typeId},
-      );
-      Loading.dismiss();
-      if (!apiRes.isSuccess) {
-        Loading.toast('載入分類失敗'.tr);
-        return;
-      }
-      data = apiRes.dataList
-          .map((e) => Category.fromJson(e).name ?? '')
-          .toList();
-    }
-    if (data.isEmpty) {
+    // 緩存為空時即時從 API 拉取並寫回緩存，保證下方 id 匹配有數據
+    final list = await ConfigService.to.ensureTypeCategories(typeId);
+    if (list.isEmpty) {
       Loading.toast('暫無可用分類'.tr);
       return;
     }
+    final data = list.map((e) => e.name ?? '').toList();
     final res = await ValuePicker.show(
       title: '請選擇具體經營分類'.tr,
       datas: data,
@@ -451,8 +434,7 @@ extension MerchantEntrySelection on MerchantEntryController {
       ],
     );
     if (res != null && res.isNotEmpty) {
-      final categories = ConfigService.to.getCategories(typeId);
-      final selected = categories.firstWhereOrNull(
+      final selected = list.firstWhereOrNull(
         (e) => e.name == res.first,
       );
       _merchantEntry.update((val) {

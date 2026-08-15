@@ -33,8 +33,6 @@ class BookingDetailsWidget extends StatelessWidget {
         return _buildTicketFields(controller);
       case MerchantShopType.scenic:
         return _buildScenicFields(controller);
-      default:
-        return [];
     }
   }
 

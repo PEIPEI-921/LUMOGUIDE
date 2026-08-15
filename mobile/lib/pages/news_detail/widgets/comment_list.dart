@@ -26,7 +26,7 @@ class NewsDetailCommentWidget extends StatelessWidget {
                     )
                     .alignment(Alignment.centerLeft)
                     .padding(top: 10.w, bottom: 8.w, horizontal: 10.w)
-                    .decorated(color: AppColors.primaryText.withOpacity(0.03)),
+                    .decorated(color: AppColors.primaryText.withValues(alpha: 0.03)),
                 ListView.separated(
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
@@ -41,7 +41,7 @@ class NewsDetailCommentWidget extends StatelessWidget {
                     return Divider(
                       height: 20,
                       thickness: 1,
-                      color: AppColors.primaryText.withOpacity(0.05),
+                      color: AppColors.primaryText.withValues(alpha: 0.05),
                     ).padding(left: 50.w);
                   },
                   itemCount: controller.evaluateList.length,
@@ -55,13 +55,13 @@ class NewsDetailCommentWidget extends StatelessWidget {
                         '查看更多'.tr,
                         style: TextStyle(
                           fontSize: 14.sp,
-                          color: AppColors.primaryText.withOpacity(0.6),
+                          color: AppColors.primaryText.withValues(alpha: 0.6),
                         ),
                       ),
                       Icon(
                         Icons.arrow_forward_ios,
                         size: 16.w,
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                       ),
                     ],
                   ),

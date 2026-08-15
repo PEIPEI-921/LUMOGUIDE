@@ -18,11 +18,11 @@ class IntegralOrderList {
 
   factory IntegralOrderList.fromJson(Map<String, dynamic> json) {
     return IntegralOrderList(
-      id: json['id'] as int?,
-      createdAt: json['created_at'] as String?,
-      goodsPicture: json['goods_picture'] as String?,
-      goodsName: json['goods_name'] as String?,
-      price: json['price'] as int?,
+      id: json.safeInt('id'),
+      createdAt: json.safeString('created_at'),
+      goodsPicture: json.safeString('goods_picture'),
+      goodsName: json.safeString('goods_name'),
+      price: json.safeInt('price'),
     );
   }
 

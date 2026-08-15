@@ -82,10 +82,10 @@ class _Item extends StatelessWidget {
         )
         .constrained(width: 76.w, height: 70.w)
         .decorated(
-          color: type.homeColor.withOpacity(0.1),
+          color: type.homeColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6.w),
         )
-        .ripple(splashColor: type.homeColor.withOpacity(0.1))
+        .ripple(splashColor: type.homeColor.withValues(alpha: 0.1))
         .clipRRect(all: 6.w)
         .gestures(
           onTap: () => controller.onCityGuideTap(type),

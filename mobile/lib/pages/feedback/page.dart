@@ -76,20 +76,20 @@ class _EmptyItem extends StatelessWidget {
             Icon(
               Icons.add,
               size: 25.w,
-              color: AppColors.primaryText.withOpacity(0.8),
+              color: AppColors.primaryText.withValues(alpha: 0.8),
             ),
             Text(
               '上傳圖片'.tr,
               style: TextStyle(
                 fontSize: 11.sp,
-                color: AppColors.primaryText.withOpacity(0.8),
+                color: AppColors.primaryText.withValues(alpha: 0.8),
               ),
             ),
           ],
         )
         .constrained(width: 80.w, height: 80.w)
         .decorated(
-          color: AppColors.primaryText.withOpacity(0.03),
+          color: AppColors.primaryText.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(6.w),
         )
         .gestures(

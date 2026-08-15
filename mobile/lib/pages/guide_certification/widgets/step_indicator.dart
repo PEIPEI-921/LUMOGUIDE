@@ -98,7 +98,7 @@ class _StepLine extends StatelessWidget {
       width: 85.w,
       height: 1,
       color:
-          isActive ? AppColors.primary : AppColors.primaryText.withOpacity(0.1),
+          isActive ? AppColors.primary : AppColors.primaryText.withValues(alpha: 0.1),
     );
   }
 }

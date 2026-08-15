@@ -30,7 +30,7 @@ class CommentBar extends StatelessWidget {
             .alignment(Alignment.centerLeft)
             .padding(left: 20.w)
             .decorated(
-                color: AppColors.primaryText.withOpacity(0.03),
+                color: AppColors.primaryText.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(100))
             .height(40.w)
             .expanded(),
@@ -70,7 +70,7 @@ class CommentBar extends StatelessWidget {
           boxShadow: showShadow
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, -1),
                   ),

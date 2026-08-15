@@ -60,7 +60,7 @@ class MyPublishCityPage extends StatelessWidget {
                     )
                     .padding(all: 10.w)
                     .decorated(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10.w),
                     ),
           ),

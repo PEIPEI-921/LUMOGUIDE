@@ -24,7 +24,7 @@ class EvaluationInputWidget extends StatelessWidget {
         Divider(
           height: 20,
           thickness: 1,
-          color: AppColors.primaryText.withOpacity(0.05),
+          color: AppColors.primaryText.withValues(alpha: 0.05),
         ),
         Obx(
           () => GridView.builder(
@@ -74,7 +74,7 @@ class _Item extends StatelessWidget {
         Icon(Icons.close, size: 12.w, color: Colors.white)
             .padding(all: 3)
             .decorated(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               borderRadius: BorderRadius.only(
                 topRight: Radius.circular(6.w),
                 bottomLeft: Radius.circular(6.w),
@@ -104,20 +104,20 @@ class _EmptyItem extends StatelessWidget {
             Icon(
               Icons.add,
               size: 25.w,
-              color: AppColors.primaryText.withOpacity(0.8),
+              color: AppColors.primaryText.withValues(alpha: 0.8),
             ),
             Text(
               '上傳圖片'.tr,
               style: TextStyle(
                 fontSize: 11.sp,
-                color: AppColors.primaryText.withOpacity(0.8),
+                color: AppColors.primaryText.withValues(alpha: 0.8),
               ),
             ),
           ],
         )
         .center()
         .decorated(
-          color: AppColors.primaryText.withOpacity(0.03),
+          color: AppColors.primaryText.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(6),
         )
         .gestures(

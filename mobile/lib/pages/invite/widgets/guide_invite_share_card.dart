@@ -23,7 +23,7 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8.w),
             border: Border.all(
-              color: AppColors.assistantText.withOpacity(0.2),
+              color: AppColors.assistantText.withValues(alpha: 0.2),
               width: 1.w,
             ),
           ),
@@ -69,7 +69,7 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
                               )
                               .padding(horizontal: 8.w, vertical: 2.w)
                               .decorated(
-                                color: AppColors.primary.withOpacity(0.08),
+                                color: AppColors.primary.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(12.w),
                               ),
                         if ((guideInfo?.language?.isNotEmpty ?? false)) ...[
@@ -174,7 +174,7 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
                                   )
                                   .padding(horizontal: 8.w, vertical: 2.w)
                                   .decorated(
-                                    color: AppColors.primary.withOpacity(0.08),
+                                    color: AppColors.primary.withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(12.w),
                                   );
                             })
@@ -187,7 +187,7 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
               16.w.verticalSpace,
               Container(
                 height: 1.w,
-                color: AppColors.assistantText.withOpacity(0.1),
+                color: AppColors.assistantText.withValues(alpha: 0.1),
               ),
               16.w.verticalSpace,
               Text(
@@ -201,7 +201,7 @@ class GuideInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
               24.w.verticalSpace,
               Container(
                 height: 1.w,
-                color: AppColors.assistantText.withOpacity(0.1),
+                color: AppColors.assistantText.withValues(alpha: 0.1),
               ),
               16.w.verticalSpace,
               Row(

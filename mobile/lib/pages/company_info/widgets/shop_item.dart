@@ -19,7 +19,7 @@ class ShopItemWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.w),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -71,7 +71,7 @@ class _ShopImage extends StatelessWidget {
               child: Icon(
                 Icons.store,
                 size: 40.w,
-                color: AppColors.assistantText.withOpacity(0.5),
+                color: AppColors.assistantText.withValues(alpha: 0.5),
               ),
             ),
     );

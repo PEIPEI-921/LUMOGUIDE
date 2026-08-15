@@ -35,7 +35,7 @@ class MineExpiredWidget extends StatelessWidget with UserStoreMixin {
                               ? '繼續使⽤LuMo Guide的全部功能， \n請您使⽤積分兌換或付費延長會籍'.tr
                               : '想繼續成為 LuMo 的合作商家嗎？\n⾺上延長會籍'.tr,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 12.sp,
                           ),
                         ),

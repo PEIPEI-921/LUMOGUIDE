@@ -181,7 +181,7 @@ class _CategoryTabsWidget extends StatelessWidget {
                             style: TextStyle(
                               color: controller.categoryTabIndex == e.key
                                   ? Colors.white
-                                  : AppColors.primaryText.withOpacity(0.8),
+                                  : AppColors.primaryText.withValues(alpha: 0.8),
                               fontSize: 12.sp,
                             ),
                             textAlign: TextAlign.center,
@@ -191,7 +191,7 @@ class _CategoryTabsWidget extends StatelessWidget {
                           .decorated(
                             color: controller.categoryTabIndex == e.key
                                 ? AppColors.primary
-                                : AppColors.primaryText.withOpacity(0.05),
+                                : AppColors.primaryText.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(100),
                           )
                           .gestures(
@@ -208,43 +208,5 @@ class _CategoryTabsWidget extends StatelessWidget {
           .padding(horizontal: 14.w)
           .height(controller.categoryTabHeight);
     });
-  }
-}
-
-class _CategoryTabItem extends StatelessWidget {
-  const _CategoryTabItem({
-    required this.title,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String title;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: isSelected ? AppColors.primary : AppColors.primaryText,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-        if (isSelected)
-          Container(
-            width: 20.w,
-            height: 2.w,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(1.w),
-            ),
-          ).translate(offset: Offset(0, 2.w)),
-      ],
-    ).gestures(onTap: onTap).padding(right: 24.w);
   }
 }

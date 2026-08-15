@@ -32,7 +32,7 @@ class GuideReservation {
   /// 行程id
   int? tripId;
 
-  bool get isGrey => [4, 5, 6].contains(status);
+  bool get isGrey => [3, 4, 5, 6].contains(status);
 
   GuideReservation({
     this.user,

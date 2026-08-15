@@ -13,7 +13,7 @@ class MemberCenterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(MemberCenterController());
+    Get.put(MemberCenterController());
     return IScaffold(
       extendBodyBehindAppBar: true,
       appBar: IAppBar(

@@ -1,10 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-
-import '../index.dart';
 
 class FollowListController extends GetxController
     with ApiMixin, RefreshableMixin, UserStoreMixin {
@@ -258,7 +254,7 @@ class _Item extends StatelessWidget {
                           .padding(horizontal: 8.w, vertical: 2.w)
                           .decorated(
                             borderRadius: BorderRadius.circular(100),
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                           ),
                     ],
                   ],
@@ -288,7 +284,7 @@ class _Item extends StatelessWidget {
                     item.isFollow == 1 ? '已關注'.tr : '關注'.tr,
                     style: TextStyle(
                       color: item.isFollow == 1
-                          ? AppColors.primaryText.withOpacity(0.4)
+                          ? AppColors.primaryText.withValues(alpha: 0.4)
                           : AppColors.primary,
                       fontSize: 12.sp,
                     ),
@@ -299,7 +295,7 @@ class _Item extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: item.isFollow == 1
-                          ? AppColors.primaryText.withOpacity(0.2)
+                          ? AppColors.primaryText.withValues(alpha: 0.2)
                           : AppColors.primary,
                     ),
                   )

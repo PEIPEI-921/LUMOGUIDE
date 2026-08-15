@@ -22,8 +22,6 @@ extension HomeSectionExt on HomeSection {
         return '推薦商家'.tr;
       case HomeSection.information:
         return '資訊'.tr;
-      default:
-        return '';
     }
   }
 
@@ -37,8 +35,6 @@ extension HomeSectionExt on HomeSection {
         return '輕鬆找到合作商家'.tr;
       case HomeSection.information:
         return '及時瞭解當地咨詢'.tr;
-      default:
-        return '';
     }
   }
 }
@@ -85,15 +81,15 @@ extension HomeCityGuideTypeExt on HomeCityGuideType {
   Color get bgColor {
     switch (this) {
       case HomeCityGuideType.guide:
-        return const Color(0xFF666FFF).withOpacity(0.05);
+        return const Color(0xFF666FFF).withValues(alpha: 0.05);
       case HomeCityGuideType.restaurant:
-        return const Color(0xFFF4B413).withOpacity(0.05);
+        return const Color(0xFFF4B413).withValues(alpha: 0.05);
       case HomeCityGuideType.hotel:
-        return const Color(0xFFA837FF).withOpacity(0.05);
+        return const Color(0xFFA837FF).withValues(alpha: 0.05);
       case HomeCityGuideType.ticket:
-        return const Color(0xFF00B4FF).withOpacity(0.05);
+        return const Color(0xFF00B4FF).withValues(alpha: 0.05);
       case HomeCityGuideType.shopping:
-        return const Color(0xFFFF6C00).withOpacity(0.05);
+        return const Color(0xFFFF6C00).withValues(alpha: 0.05);
     }
   }
 }

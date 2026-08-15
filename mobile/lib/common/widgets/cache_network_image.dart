@@ -21,7 +21,7 @@ class CircleNetworkImage extends StatelessWidget {
             width: radius * 2,
             height: radius * 2,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(radius),
             ),
           );
@@ -93,7 +93,7 @@ Widget NetImageCached(
     //   width: width,
     //   height: height,
     //   decoration: BoxDecoration(
-    //     color: Colors.black.withOpacity(0.2),
+    //     color: Colors.black.withValues(alpha: 0.2),
     //     borderRadius: borderRadius,
     //   ),
     // );

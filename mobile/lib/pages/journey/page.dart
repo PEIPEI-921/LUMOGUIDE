@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 import 'controller.dart';
 import 'widgets/template_picker_sheet.dart';
+import 'widgets/import_sheet.dart';
 
 class JourneyPage extends StatelessWidget {
   const JourneyPage({super.key});
@@ -121,16 +122,14 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
         _OptionRow(
           icon: Icons.camera_alt_outlined,
           title: '拍照导入',
-          subtitle: '扫描纸质行程单',
-          trailing: _ComingSoonTag(),
-          onTap: () => Loading.toast('即将上线'),
+          subtitle: '拍摄或选择行程照片',
+          onTap: () => _onPhotoImport(context, controller),
         ),
         _OptionRow(
           icon: Icons.upload_file_outlined,
           title: '文件导入',
-          subtitle: '导入 PDF/Word 行程文件',
-          trailing: _ComingSoonTag(),
-          onTap: () => Loading.toast('即将上线'),
+          subtitle: '导入 txt/Word 行程文件',
+          onTap: () => _onFileImport(controller),
         ),
         SizedBox(height: 8.w),
         // 取消按钮
@@ -158,19 +157,41 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
   );
 }
 
+/// 拍照导入：选择照片 → 手动输入行程文字 → 解析预览 → 填入编辑器
+Future<void> _onPhotoImport(BuildContext context, JourneyController controller) async {
+  Get.back();
+  final path = await ImagePickerUtil.selectImage(context, canEdit: false);
+  if (path.isEmpty) return;
+  final work = await ImportSheets.photoImport(path);
+  if (work != null) {
+    Get.toNamed(AppRoutes.JOURNEY_EDITOR, arguments: {'import': work})
+        ?.then((_) => controller.onRefresh());
+  }
+}
+
+/// 文件导入：选择文件 → 读取文本 → 解析预览 → 填入编辑器
+Future<void> _onFileImport(JourneyController controller) async {
+  Get.back();
+  final text = await ImportSheets.pickFileText();
+  if (text == null || text.isEmpty) return;
+  final work = await ImportSheets.fileImport(text);
+  if (work != null) {
+    Get.toNamed(AppRoutes.JOURNEY_EDITOR, arguments: {'import': work})
+        ?.then((_) => controller.onRefresh());
+  }
+}
+
 class _OptionRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final Widget? trailing;
 
   const _OptionRow({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.trailing,
   });
 
   @override
@@ -194,17 +215,11 @@ class _OptionRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primaryText)),
-                  if (trailing != null) ...[
-                    SizedBox(width: 8.w),
-                    trailing!,
-                  ],
-                ]),
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primaryText)),
                 SizedBox(height: 2.w),
                 Text(subtitle,
                     style: TextStyle(
@@ -216,21 +231,6 @@ class _OptionRow extends StatelessWidget {
               size: 18.sp, color: AppColors.assistantText),
         ]),
       ),
-    );
-  }
-}
-
-class _ComingSoonTag extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.w),
-      decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(3.w),
-      ),
-      child: Text('即将上线',
-          style: TextStyle(fontSize: 9.sp, color: Colors.amber.shade700)),
     );
   }
 }
@@ -338,7 +338,7 @@ class _JourneyCalendar extends StatelessWidget {
   const _JourneyCalendar({required this.controller});
 
   DateTime get _today => DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-  DateTime get _start => _today.subtract(Duration(days: _kCalBefore));
+  DateTime get _start => _today.subtract(const Duration(days: _kCalBefore));
 
   List<DateTime> get _allDays => List.generate(_kCalTotal, (i) => _start.add(Duration(days: i)));
 
@@ -584,8 +584,8 @@ class _StatusLegend extends StatelessWidget {
   Widget build(BuildContext context) => Obx(() {
     final hideEnded = !controller.showEnded.value;
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      _Leg(color: AppColors.jadeGreen, label: '进行中'), SizedBox(width: 20.w),
-      _Leg(color: AppColors.primary, label: '即将开始'), SizedBox(width: 20.w),
+      const _Leg(color: AppColors.jadeGreen, label: '进行中'), SizedBox(width: 20.w),
+      const _Leg(color: AppColors.primary, label: '即将开始'), SizedBox(width: 20.w),
       GestureDetector(
         onTap: () => controller.toggleShowEnded(),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -629,7 +629,7 @@ class _WorkCard extends StatelessWidget {
       child: Opacity(opacity: work.effectiveStatus == JourneyWorkStatus.ended ? 0.45 : 1.0,
         child: Container(padding: EdgeInsets.all(14.w),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14.w),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2))]),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               if (work.region?.isNotEmpty == true) Container(margin: EdgeInsets.only(right: 8.w),
@@ -662,5 +662,5 @@ class _Dr extends StatelessWidget {
 class _JourneyEmptyWidget extends StatelessWidget {
   @override Widget build(BuildContext context) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
     Image.asset(Assets.iconEmpty, height: 110.w), SizedBox(height: 18.w),
-    Text('暂无工作行程', style: const TextStyle(color: AppColors.assistantText, fontSize: 14, fontWeight: FontWeight.w500))]));
+    const Text('暂无工作行程', style: TextStyle(color: AppColors.assistantText, fontSize: 14, fontWeight: FontWeight.w500))]));
 }

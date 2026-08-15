@@ -1,7 +1,8 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../index.dart';
@@ -182,13 +183,13 @@ class ConfigService extends GetxService with ApiMixin {
       final originalMime = _mimeType(originalFilename);
       final originalFile = File(path);
       final originalSize = await originalFile.length();
-      debugPrint('[uploadFile] START path=$path ext=$originalExt mime=$originalMime size=${(originalSize / 1024).toStringAsFixed(1)}KB');
+      if (kDebugMode) debugPrint('[uploadFile] START path=$path ext=$originalExt mime=$originalMime size=${(originalSize / 1024).toStringAsFixed(1)}KB');
 
       late final dio.MultipartFile upload;
 
       // GIF 跳过压缩，保留动画
       if (originalExt == 'gif') {
-        debugPrint('[uploadFile] GIF detected — skip compression, upload raw');
+        if (kDebugMode) debugPrint('[uploadFile] GIF detected — skip compression, upload raw');
         final bytes = await originalFile.readAsBytes();
         upload = dio.MultipartFile.fromBytes(
           bytes,
@@ -200,7 +201,7 @@ class ConfigService extends GetxService with ApiMixin {
         final compressed = await compressImageToSize(originalFile);
         if (compressed != null) {
           final compressedSizeKB = (compressed.length / 1024).toStringAsFixed(1);
-          debugPrint('[uploadFile] Compressed OK: $compressedSizeKB KB (from ${(originalSize / 1024).toStringAsFixed(1)} KB)');
+          if (kDebugMode) debugPrint('[uploadFile] Compressed OK: $compressedSizeKB KB (from ${(originalSize / 1024).toStringAsFixed(1)} KB)');
           upload = dio.MultipartFile.fromBytes(
             compressed,
             filename: '${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -208,7 +209,7 @@ class ConfigService extends GetxService with ApiMixin {
           );
         } else {
           // 压缩失败（HEIC 在部分平台不支持）→ 上传原文件
-          debugPrint('[uploadFile] Compression failed — fallback to raw upload');
+          if (kDebugMode) debugPrint('[uploadFile] Compression failed — fallback to raw upload');
           final bytes = await originalFile.readAsBytes();
           upload = dio.MultipartFile.fromBytes(
             bytes,
@@ -218,28 +219,28 @@ class ConfigService extends GetxService with ApiMixin {
         }
       }
 
-      debugPrint('[uploadFile] Uploading: filename=${upload.filename} mime=${upload.contentType}');
+      if (kDebugMode) debugPrint('[uploadFile] Uploading: filename=${upload.filename} mime=${upload.contentType}');
       final res = await post(
         ApiUrl.fileUpload,
         data: dio.FormData.fromMap({'image': upload}),
       );
-      debugPrint('[uploadFile] Response: isSuccess=${res.isSuccess} code=${res.code} message=${res.message}');
+      if (kDebugMode) debugPrint('[uploadFile] Response: isSuccess=${res.isSuccess} code=${res.code} message=${res.message}');
       if (!res.isSuccess) {
-        debugPrint('[uploadFile] FAILED: code=${res.code} message=${res.message} rawValue=${res.rawValue}');
+        log('[uploadFile] FAILED: code=${res.code} message=${res.message} rawValue=${res.rawValue}', name: 'uploadFile');
         lastUploadError = res.message ?? '未知錯誤';
         return '';
       }
       final url = _extractUrl(res);
       if (url.isEmpty) {
-        debugPrint('[uploadFile] URL EXTRACTION FAILED: rawValue=${res.rawValue} data=${res.data} dataJson=${res.dataJson}');
+        log('[uploadFile] URL EXTRACTION FAILED: rawValue=${res.rawValue} data=${res.data} dataJson=${res.dataJson}', name: 'uploadFile');
         lastUploadError = '伺服器回應格式異常，無法提取文件鏈接';
       } else {
         lastUploadError = '';
       }
-      debugPrint('[uploadFile] SUCCESS url=$url');
+      if (kDebugMode) debugPrint('[uploadFile] SUCCESS url=$url');
       return url;
     } catch (e) {
-      debugPrint('[uploadFile] EXCEPTION: $e');
+      log('[uploadFile] EXCEPTION: $e', name: 'uploadFile');
       lastUploadError = e.toString();
       return '';
     }
@@ -415,5 +416,18 @@ extension TypeCategory on ConfigService {
   /// 獲取類型分類
   List<Category> getCategories(int id) {
     return typeCategories[id] ?? [];
+  }
+
+  /// 確保指定類型的分類已載入；緩存為空時即時從 API 拉取並寫回緩存。
+  /// loadTypeCategories() 在 enterApp() 中 fire-and-forget，導遊打開發佈頁時
+  /// 緩存可能尚未就緒，點擊分類會得到空列表——此方法保證點擊時一定有數據。
+  Future<List<Category>> ensureTypeCategories(int typeId) async {
+    var list = getCategories(typeId);
+    if (list.isNotEmpty) return list;
+    final res = await get(ApiUrl.typeClass, parameters: {'type_id': typeId});
+    if (!res.isSuccess) return [];
+    list = res.dataList.map((e) => Category.fromJson(e)).toList();
+    typeCategories[typeId] = list;
+    return list;
   }
 }

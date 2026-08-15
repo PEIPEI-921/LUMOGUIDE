@@ -9,7 +9,7 @@ class RegisterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(RegisterController());
+    Get.put(RegisterController());
     return IScaffold(
       title: '註冊'.tr,
       body: const RegisterContentWidget(),

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -72,12 +74,9 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
   void _extractRegions() {
     final set = <String>{'全部'};
     for (final w in allWorks) {
-      final allCities = _allCityNames(w);
       final continent = _continentForWork(w);
-      debugPrint('📌 work "${w.title}" cities=$allCities region=${w.region} → continent=$continent');
       if (continent?.isNotEmpty == true) set.add(continent!);
     }
-    debugPrint('📌 regions: $set (maps: cities=${_cityNameToContinent.length}, countries=${_countryContinentMap.length})');
     regions.value = set.toList();
   }
 
@@ -131,11 +130,9 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
     if (_continentsLoaded) return;
     try {
       final res = await get(ApiUrl.systemContinents);
-      debugPrint('🌍 systemContinents API: isSuccess=${res.isSuccess}');
       if (!res.isSuccess) return;
       final data = res.dataJson;
       final list = data['data'] as List<dynamic>?;
-      debugPrint('🌍 systemContinents data count: ${list?.length ?? 0}');
       if (list == null) return;
       for (final item in list) {
         _walkTree(item, []);
@@ -144,13 +141,11 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
       // 用 CityListStore 的繁体城市名覆盖 _cityNameToContinent
       // （systemContinents 返回简体中文，工作数据是繁体中文，需通过 city ID 桥接）
       await _mergeCityNamesFromStore();
-      debugPrint('🌍 _cityNameToContinent (after merge): ${_cityNameToContinent.length} entries');
-      debugPrint('🌍 _countryContinentMap: ${_countryContinentMap.length} entries');
       // 重新提取区域
       _extractRegions();
       _applyFilters();
     } catch (e) {
-      debugPrint('🌍 systemContinents error: $e');
+      log('🌍 systemContinents error: $e', name: 'Journey');
     }
   }
 
@@ -162,7 +157,6 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
     if (store.cityList.isEmpty) {
       await store.fetchCityList();
     }
-    int added = 0;
     for (final city in store.cityList) {
       if (city.id == null || city.name == null || city.name!.isEmpty) continue;
       final country = _cityCountryMap[city.id!];
@@ -174,11 +168,9 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
       if (continent != null && continent.isNotEmpty) {
         if (!_cityNameToContinent.containsKey(city.name)) {
           _cityNameToContinent[city.name!] = continent;
-          added++;
         }
       }
     }
-    debugPrint('🌍 merged $added city names from CityListStore (total cityList: ${store.cityList.length})');
   }
 
   /// 递归遍历层级树，建立：

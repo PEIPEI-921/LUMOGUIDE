@@ -27,7 +27,7 @@ class MyIntegralTopWidget extends StatelessWidget with UserStoreMixin {
                     Text(
                       '當前積分'.tr,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 12.sp,
                       ),
                     ),

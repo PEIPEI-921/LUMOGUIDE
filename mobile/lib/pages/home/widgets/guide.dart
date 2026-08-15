@@ -72,7 +72,7 @@ class _Category extends StatelessWidget {
                               controller.guideCategoryIndex.value ==
                                   categories.indexOf(e)
                               ? Colors.white
-                              : AppColors.primaryText.withOpacity(0.8),
+                              : AppColors.primaryText.withValues(alpha: 0.8),
                           fontSize: 12.sp,
                         ),
                       )
@@ -82,7 +82,7 @@ class _Category extends StatelessWidget {
                             controller.guideCategoryIndex.value ==
                                 categories.indexOf(e)
                             ? AppColors.primary
-                            : AppColors.primaryText.withOpacity(0.05),
+                            : AppColors.primaryText.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(100),
                       )
                       .gestures(
@@ -132,7 +132,7 @@ class _Item extends StatelessWidget {
                 )
                 .padding(horizontal: 10.w, vertical: 5.w)
                 .decorated(
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(100),
                 )
                 .padding(top: 3.w),

@@ -94,8 +94,6 @@ class MerchantEditorPage extends StatelessWidget {
         return _buildShoppingFields(controller);
       case MerchantShopType.hotel:
         return _buildHotelFields(controller);
-      default:
-        return [];
     }
   }
 

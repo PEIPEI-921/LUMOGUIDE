@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -64,11 +65,12 @@ class UserStore extends GetxController with ApiMixin {
       _isLogin.value = true;
       await getProfile();
 
-      ClipboardService.checkShareParams();
+      // 登錄後恢復未處理的深鏈（綁定邀請 + 跳轉內容頁）
+      DeepLinkService.checkPendingDeepLink();
       _uploadUserRecord();
     } catch (e) {
       Loading.dismiss();
-      print(e);
+      log(e.toString(), name: 'UserStore');
     }
   }
 
@@ -116,7 +118,7 @@ class UserStore extends GetxController with ApiMixin {
       }
     } catch (e) {
       // 静默处理错误，不影响用户体验
-      print('每日登录上报失败: $e');
+      log('每日登录上报失败: $e', name: 'UserStore');
     }
   }
 }

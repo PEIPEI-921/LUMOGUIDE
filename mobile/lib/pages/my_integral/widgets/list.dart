@@ -34,7 +34,7 @@ class MyIntegralListWidget extends StatelessWidget {
                   ),
                   separatorBuilder: (context, index) => Divider(
                     height: 0.5,
-                    color: AppColors.primaryText.withOpacity(0.05),
+                    color: AppColors.primaryText.withValues(alpha: 0.05),
                   ),
                   itemCount: controller.items.length,
                 )),

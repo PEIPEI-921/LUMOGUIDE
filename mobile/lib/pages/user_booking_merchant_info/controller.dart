@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -120,7 +122,9 @@ class UserBookingMerchantInfoController extends GetxController
     if (merchantInfo?.content?.phone?.isNotEmpty == true) {
       try {
         launchUrl(Uri.parse('tel:${merchantInfo?.content?.phone}'));
-      } catch (e) {}
+      } catch (e) {
+        log('makePhoneCall error: $e', name: 'UserBookingMerchantInfo');
+      }
     }
   }
 }

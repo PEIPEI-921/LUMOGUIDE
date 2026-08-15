@@ -50,19 +50,24 @@ class WelcomeController extends GetxController {
     log('end dateTime: ${DateTime.now()}');
 
     if (UserStore.to.isLogin) {
-      Get.offAll(
+      await Get.offAll(
         () => GetRouterOutlet(initialRoute: AppRoutes.ROOT),
         transition: Transition.noTransition,
         duration: Duration.zero,
       );
     } else {
-      Get.offAll(
+      await Get.offAll(
         () => GetRouterOutlet(initialRoute: AppRoutes.LOGIN),
         transition: Transition.noTransition,
         duration: Duration.zero,
       );
     }
     ConfigService.to.enterApp();
+
+    // 處理冷啟動深鏈：getInitialLink() 可能早於 runApp() 到達，
+    // 此時導航器未就緒、跳轉靜默失敗。welcome 完成主導航後補一次處理，
+    // 讓已登錄用戶掃碼也能直接進入對應內容詳情頁。
+    DeepLinkService.checkPendingDeepLink();
   }
 
   _loadConfig() async {

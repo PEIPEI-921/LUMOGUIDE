@@ -139,7 +139,7 @@ mixin CustomKeyboardShowStateMixin<T extends StatefulWidget> on State<T> {
 
             return Material(
               //shadowColor: Colors.grey,
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withValues(alpha: 0.3),
               //elevation: 8,
               child: Padding(
                 padding: EdgeInsets.only(

@@ -70,7 +70,7 @@ class _Avatar extends StatelessWidget {
             Text(
               item.formatDate ?? '',
               style: TextStyle(
-                color: AppColors.primaryText.withOpacity(0.6),
+                color: AppColors.primaryText.withValues(alpha: 0.6),
                 fontSize: 12.sp,
               ),
             ),
@@ -123,7 +123,7 @@ class _Quote extends StatelessWidget {
         ).expanded(),
       ],
     ).constrained(height: 52.w).decorated(
-          color: AppColors.primaryText.withOpacity(0.03),
+          color: AppColors.primaryText.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(4.w),
         );
   }

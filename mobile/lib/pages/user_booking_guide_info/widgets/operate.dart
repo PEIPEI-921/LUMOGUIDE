@@ -34,7 +34,7 @@ class UserBookingGuideInfoOperateWidget extends StatelessWidget {
     return Container(
       width: 1,
       height: 20.w,
-      color: AppColors.assistantText.withOpacity(0.3),
+      color: AppColors.assistantText.withValues(alpha: 0.3),
     );
   }
 
@@ -93,7 +93,7 @@ class UserBookingGuideInfoOperateWidget extends StatelessWidget {
 
       return Row(children: buttons)
           .height(40.w)
-          .backgroundColor(Colors.white.withOpacity(0.6))
+          .backgroundColor(Colors.white.withValues(alpha: 0.6))
           .padding(horizontal: 14.w);
     });
   }

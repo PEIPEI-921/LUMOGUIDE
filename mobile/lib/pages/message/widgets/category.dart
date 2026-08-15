@@ -24,7 +24,7 @@ class MessageCategoryWidget extends StatelessWidget {
           )
           .padding(top: 20.w, bottom: 12.w)
           .decorated(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(10.w),
           )
           .padding(horizontal: 13.w);

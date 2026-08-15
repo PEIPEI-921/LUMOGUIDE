@@ -52,14 +52,6 @@ class CustomTextField extends StatefulWidget {
 class CustomTextFieldState extends State<CustomTextField> {
   late FocusNode _focusNode;
 
-  bool get _hasError {
-    if (_focusNode.hasFocus) {
-      return false;
-    }
-    return widget.validator?.call(widget.controller.text) != null &&
-        widget.controller.text.isNotEmpty;
-  }
-
   bool _isObscure = true;
 
   @override

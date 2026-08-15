@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -91,6 +92,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
   bool _hasDraft = false; // 存储中是否有待恢复的草稿
   bool _draftRestored = false; // 是否已从草稿恢复
   bool _restoring = false; // 正在恢复草稿中，阻止 autoGenerateTitle 覆盖已保存标题
+  bool _importing = false; // 正在导入中，阻止 autoGenerateTitle 覆盖已导入标题
   bool _submitted = false; // 已成功提交，阻止 onClose 再次保存草稿
 
   @override
@@ -108,14 +110,18 @@ class JourneyEditorController extends GetxController with ApiMixin {
       if (template != null) {
         loadFromTemplate(template);
       }
+      final imported = Get.arguments['import'] as JourneyWork?;
+      if (imported != null) {
+        loadFromImport(imported);
+      }
     }
     startDateCtrl.addListener(_syncDays);
     endDateCtrl.addListener(_syncDays);
     adultCountCtrl.addListener(_updateTotalPeople);
     childCountCtrl.addListener(_updateTotalPeople);
 
-    // 新建模式下检查是否有未完成的草稿
-    if (!isEdit.value && Get.arguments?['template'] == null) {
+    // 新建模式下检查是否有未完成的草稿（模板/导入模式跳过草稿提示）
+    if (!isEdit.value && Get.arguments?['template'] == null && Get.arguments?['import'] == null) {
       _checkExistingDraft();
       _startDraftAutoSave();
     }
@@ -134,7 +140,9 @@ class JourneyEditorController extends GetxController with ApiMixin {
         final data = res.dataJson['list'] as List<dynamic>? ?? [];
         cityList.value = data.map((e) => CityList.fromJson(e)).toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      log('load city list error: $e', name: 'JourneyEditor');
+    }
     // 并行加载城市→国家归属映射
     _loadSystemContinents();
   }
@@ -143,24 +151,15 @@ class JourneyEditorController extends GetxController with ApiMixin {
   Future<void> _loadSystemContinents() async {
     try {
       final res = await get(ApiUrl.systemContinents);
-      debugPrint('[systemContinents] isSuccess=${res.isSuccess}');
       if (!res.isSuccess) {
-        debugPrint('[systemContinents] message=${res.message}');
+        log('[systemContinents] message=${res.message}', name: 'JourneyEditor');
         return;
       }
       final data = res.dataJson;
-      debugPrint('[systemContinents] data keys=${data.keys}');
       final list = data['data'] as List<dynamic>?;
-      debugPrint('[systemContinents] list length=${list?.length}');
       if (list == null) return;
       for (final item in list) {
         _walkTree(item, []);
-      }
-      debugPrint('[systemContinents] cityMap=${_cityCountryMap.length} regionMap=${_countryRegionMap.length} continentMap=${_countryContinentMap.length}');
-      // 打印前5条映射用于验证
-      final entries = _cityCountryMap.entries.take(5).toList();
-      for (final e in entries) {
-        debugPrint('[systemContinents] cityId=${e.key} → ${e.value}');
       }
       // 映射表加载完成后，如果是新建模式且有城市数据，重新生成标题
       // （解决首次创建时 continent map 未加载导致标题缺少国家名的问题）
@@ -168,7 +167,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
         _autoGenerateTitle();
       }
     } catch (e) {
-      debugPrint('[systemContinents] error=$e');
+      log('[systemContinents] error=$e', name: 'JourneyEditor');
     }
   }
 
@@ -252,7 +251,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (city.id != null && !exists) {
       day.cityBlocks = [...day.cityBlocks, DayCityBlock(cityId: city.id, cityName: city.name)];
       itineraryDays.refresh();
-      _loadDayRecommendations(dayIndex, day.cityBlocks.map((b) => b.cityId!).where((id) => id != null).toList());
+      _loadDayRecommendations(dayIndex, day.cityBlocks.map((b) => b.cityId).whereType<int>().toList());
       _autoGenerateTitle();
     }
   }
@@ -382,14 +381,18 @@ class JourneyEditorController extends GetxController with ApiMixin {
   // ====== 日行程管理 ======
   void _syncDays() {
     if (_restoring) return; // 恢复草稿期间不自动生成
+    if (_importing) return; // 导入期间不自动生成
     final start = DateTime.tryParse(startDateCtrl.text.trim());
     final end = DateTime.tryParse(endDateCtrl.text.trim());
     if (start == null || end == null) return;
     final days = end.difference(start).inDays + 1;
     if (days <= 0 || days > 90) return;
     // 已有内容则不覆盖
-    if (itineraryDays.isNotEmpty && itineraryDays.length == days &&
-        itineraryDays.any((d) => d.cityBlocks.any((b) => b.items.isNotEmpty))) return;
+    if (itineraryDays.isNotEmpty &&
+        itineraryDays.length == days &&
+        itineraryDays.any((d) => d.cityBlocks.any((b) => b.items.isNotEmpty))) {
+      return;
+    }
 
     itineraryDays.value = List.generate(days, (i) {
       final d = start.add(Duration(days: i));
@@ -443,6 +446,8 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (isEdit.value) return;
     // 恢复草稿期间保留已保存的标题
     if (_restoring) return;
+    // 导入期间保留已导入的标题
+    if (_importing) return;
 
     final start = DateTime.tryParse(startDateCtrl.text.trim());
     final end = DateTime.tryParse(endDateCtrl.text.trim());
@@ -522,7 +527,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
         }
       }
       final regionAbbr = regionNames.map((r) => r.characters.first).join();
-      title = '$regionAbbr${n}国$days日游';
+      title = '$regionAbbr$n国$days日游';
     } else {
       // 6国及以上：取洲名
       final seenContinents = <String>{};
@@ -1040,7 +1045,9 @@ class JourneyEditorController extends GetxController with ApiMixin {
     try {
       final json = jsonDecode(draftJson) as Map<String, dynamic>;
       _restoreFromDraft(json);
-    } catch (_) {}
+    } catch (e) {
+      log('load draft error: $e', name: 'JourneyEditor');
+    }
   }
 
   void _restoreFromDraft(Map<String, dynamic> json) {
@@ -1154,17 +1161,14 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (titleCtrl.text.trim().isEmpty) { Loading.error('请输入团名'); return; }
     if (startDateCtrl.text.trim().isEmpty) { Loading.error('请选择出发日期'); return; }
 
-    debugPrint('[JourneyEditor] onSubmit: isEdit=$isEdit, _workId=${_workId.value}');
     Loading.show();
     try {
       final payload = _buildSubmitPayload();
       ApiResult res;
       if (isEdit.value && _workId.value != null) {
         payload['id'] = _workId.value;
-        debugPrint('[JourneyEditor] → PUT userJourneyUpdate id=${_workId.value}');
         res = await put(ApiUrl.userJourneyUpdate, data: payload);
       } else {
-        debugPrint('[JourneyEditor] → POST userJourneyCreate (isEdit=$isEdit, id=${_workId.value})');
         res = await post(ApiUrl.userJourneyCreate, data: payload);
       }
       Loading.dismiss();
@@ -1175,22 +1179,15 @@ class JourneyEditorController extends GetxController with ApiMixin {
         Loading.success(isEdit.value ? '修改成功' : '创建成功');
         Get.back(result: true);
       } else {
-        debugPrint('[JourneyEditor] API error: code=${res.code}, message=${res.message}');
-        debugPrint('[JourneyEditor] error: ${res.error}');
+        log('[JourneyEditor] API error: code=${res.code}, message=${res.message}, error=${res.error}', name: 'JourneyEditor');
         Loading.error(res.message.isNotEmpty ? res.message : '保存失败，请重试');
       }
     } catch (e) {
       Loading.dismiss();
       if (e is DioException) {
-        debugPrint('[JourneyEditor] DioException:');
-        debugPrint('  type: ${e.type}');
-        debugPrint('  statusCode: ${e.response?.statusCode}');
-        debugPrint('  statusMessage: ${e.response?.statusMessage}');
-        debugPrint('  data: ${e.response?.data}');
-        debugPrint('  message: ${e.message}');
-        debugPrint('  error: ${e.error}');
+        log('[JourneyEditor] DioException: type=${e.type} statusCode=${e.response?.statusCode} statusMessage=${e.response?.statusMessage} data=${e.response?.data} message=${e.message} error=${e.error}', name: 'JourneyEditor');
       } else {
-        debugPrint('[JourneyEditor] exception: $e');
+        log('[JourneyEditor] exception: $e', name: 'JourneyEditor');
       }
       Loading.error('保存失败: $e');
     }
@@ -1293,7 +1290,11 @@ class JourneyEditorController extends GetxController with ApiMixin {
       'agency_contact': agencyContactCtrl.text.trim().isEmpty ? null : agencyContactCtrl.text.trim(),
       'agency_contact_phone': agencyPhoneCtrl.text.trim().isEmpty ? null : agencyPhoneCtrl.text.trim(),
       'emergency_phone': emergencyPhoneCtrl.text.trim().isEmpty ? null : emergencyPhoneCtrl.text.trim(),
-      'source_type': isEdit.value ? 'manual' : (Get.arguments?['template'] != null ? 'template' : 'manual'),
+      'source_type': isEdit.value
+          ? 'manual'
+          : (Get.arguments?['template'] != null
+              ? 'template'
+              : (Get.arguments?['import'] != null ? 'scan' : 'manual')),
     };
   }
 
@@ -1370,7 +1371,6 @@ class JourneyEditorController extends GetxController with ApiMixin {
   }
 
   void _loadWork(JourneyWork work) {
-    debugPrint('[JourneyEditor] _loadWork: id=${work.id}, title=${work.title}');
     titleCtrl.text = work.title ?? '';
     adultCountCtrl.text = '${work.adultCount ?? work.peopleCount ?? 0}';
     childCountCtrl.text = '${work.childCount ?? 0}';
@@ -1438,6 +1438,60 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (template.region?.isNotEmpty == true) {
       // region 信息存入备注作为参考
     }
+  }
+
+  /// 从导入数据加载到编辑器（拍照/文件导入解析结果）
+  void loadFromImport(JourneyWork work) {
+    _importing = true;
+
+    titleCtrl.text = work.title ?? '';
+    adultCountCtrl.text = work.adultCount != null
+        ? '${work.adultCount}'
+        : (work.peopleCount != null ? '${work.peopleCount}' : '');
+    childCountCtrl.text = work.childCount != null ? '${work.childCount}' : '';
+    _updateTotalPeople();
+
+    // 游览起始/结束城市
+    if (work.departureCity?.isNotEmpty == true) {
+      startCity.value = _findCity(work.departureCity!) ??
+          CityList(name: work.departureCity, country: work.departureCityCountry);
+    }
+    if (work.endCity?.isNotEmpty == true) {
+      endCity.value = _findCity(work.endCity!) ??
+          CityList(name: work.endCity, country: work.endCityCountry);
+    }
+
+    leaderNameCtrl.text = work.leaderName ?? '';
+    leaderPhoneCtrl.text = work.leaderPhone ?? '';
+    driverNameCtrl.text = work.driverName ?? '';
+    driverPhoneCtrl.text = work.driverPhone ?? '';
+    vehicleCtrl.text = work.vehicleInfo ?? '';
+    agencyContactCtrl.text = work.agencyContact ?? '';
+    agencyPhoneCtrl.text = work.agencyContactPhone ?? '';
+    emergencyPhoneCtrl.text = work.emergencyPhone ?? '';
+    descriptionCtrl.text = work.description ?? '';
+
+    // 每日行程
+    if (work.itineraryDays.isNotEmpty) {
+      itineraryDays.value = List.from(work.itineraryDays);
+      showItinerary.value = true;
+    }
+
+    // 日期（行程之后设置，与草稿恢复一致）
+    startDateCtrl.text = work.startDate ?? '';
+    endDateCtrl.text = work.endDate ?? '';
+
+    _importing = false;
+
+    // 同步天数
+    final start = DateTime.tryParse(startDateCtrl.text.trim());
+    final end = DateTime.tryParse(endDateCtrl.text.trim());
+    if (start != null && end != null) {
+      daysCount.value = end.difference(start).inDays + 1;
+    }
+
+    // 为有城市块的每一天加载推荐资源 + 重建已使用资源集合
+    _restoreDayRecommendations();
   }
 
   @override

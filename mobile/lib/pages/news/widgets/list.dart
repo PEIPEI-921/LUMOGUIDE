@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import '../controller.dart';
-
-import 'package:get/get.dart';
 
 class NewsListController extends GetxController
     with ApiMixin, RefreshableMixin<News> {
@@ -104,7 +101,7 @@ class _Item extends StatelessWidget {
                     .padding(horizontal: 7.w, vertical: 4.w)
                     .decorated(
                       borderRadius: BorderRadius.circular(100),
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                     ),
               ],
             ),
@@ -125,7 +122,7 @@ class _Item extends StatelessWidget {
                 Text(
                   news.desc ?? '',
                   style: TextStyle(
-                    color: AppColors.primaryText.withOpacity(0.8),
+                    color: AppColors.primaryText.withValues(alpha: 0.8),
                     fontSize: 12.sp,
                   ),
                   maxLines: 2,
@@ -169,7 +166,7 @@ class _Item extends StatelessWidget {
                     Text(
                       news.createdAt ?? '',
                       style: TextStyle(
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                         fontSize: 12.sp,
                       ),
                       maxLines: 1,
@@ -184,7 +181,7 @@ class _Item extends StatelessWidget {
                     Text(
                       news.evaluateCount?.toString() ?? '',
                       style: TextStyle(
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                         fontSize: 12.sp,
                       ),
                       maxLines: 1,

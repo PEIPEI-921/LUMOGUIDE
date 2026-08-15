@@ -23,7 +23,7 @@ class CompanyInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8.w),
             border: Border.all(
-              color: AppColors.assistantText.withOpacity(0.2),
+              color: AppColors.assistantText.withValues(alpha: 0.2),
               width: 1.w,
             ),
           ),
@@ -78,7 +78,7 @@ class CompanyInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
                 ),
               ],
               16.w.verticalSpace,
-              Container(height: 1.w, color: AppColors.assistantText.withOpacity(0.1)),
+              Container(height: 1.w, color: AppColors.assistantText.withValues(alpha: 0.1)),
               16.w.verticalSpace,
               Text(
                 '${'邀請碼：'.tr}${userInfo.inviterCode ?? ''}',
@@ -89,7 +89,7 @@ class CompanyInviteShareCardWidget extends StatelessWidget with UserStoreMixin {
                 ),
               ).center(),
               24.w.verticalSpace,
-              Container(height: 1.w, color: AppColors.assistantText.withOpacity(0.1)),
+              Container(height: 1.w, color: AppColors.assistantText.withValues(alpha: 0.1)),
               16.w.verticalSpace,
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -188,7 +188,7 @@ class _Header extends StatelessWidget {
                     )
                     .padding(horizontal: 8.w, vertical: 2.w)
                     .decorated(
-                      color: const Color(0xFF9C27B0).withOpacity(0.08),
+                      color: const Color(0xFF9C27B0).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12.w),
                     ),
               ],

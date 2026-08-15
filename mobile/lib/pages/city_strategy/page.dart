@@ -44,7 +44,7 @@ class CityStrategyPage extends StatelessWidget {
                         child: GestureDetector(
                           onTap: controller.hideCitySelection,
                           child: Container(
-                            color: Colors.white10.withOpacity(0.01),
+                            color: Colors.white10.withValues(alpha: 0.01),
                             child: Stack(
                               children: [
                                 Positioned(
@@ -113,7 +113,7 @@ class _CustomTabBarItem extends StatelessWidget {
             ),
           ],
         ).padding(horizontal: 15.w, vertical: 6.w).decorated(
-              color: e.homeColor.withOpacity(0.1),
+              color: e.homeColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10.w),
               border: e == controller.selectedType
                   ? Border.all(color: e.homeColor)

@@ -55,6 +55,12 @@ abstract class ApiUrl {
   /// 系统大洲/国家/城市层级树（含城市→国家归属）
   static const systemContinents = '/common/systemContinents';
 
+  /// 存儲延遲深鏈（Web 端掃碼落地頁調用；App 備用）
+  static const commonDeferredLink = '/common/deferredLink';
+
+  /// 查詢延遲深鏈（token 或 IP 匹配）
+  static const commonCheckDeferredLink = '/common/checkDeferredLink';
+
   static const cityOptions = '/city/options';
 
   /// 获取城市详情子分类

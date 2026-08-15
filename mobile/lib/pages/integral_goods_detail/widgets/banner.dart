@@ -45,7 +45,7 @@ class IntegralGoodsBannerWidget extends StatelessWidget {
                   .center()
                   .constrained(width: 38.w, height: 21.w)
                   .decorated(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(11.w),
                   )
                   .positioned(bottom: 10.w, right: 10.w),

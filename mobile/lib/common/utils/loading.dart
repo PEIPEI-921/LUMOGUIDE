@@ -11,10 +11,10 @@ class Loading {
       ..lineWidth = 2
       ..radius = 13.5
       ..progressColor = Colors.white
-      ..backgroundColor = Colors.black.withOpacity(0.7)
+      ..backgroundColor = Colors.black.withValues(alpha: 0.7)
       ..indicatorColor = Colors.white
       ..textColor = Colors.white
-      ..maskColor = Colors.black.withOpacity(0.6)
+      ..maskColor = Colors.black.withValues(alpha: 0.6)
       ..dismissOnTap = false
       ..maskType = EasyLoadingMaskType.custom;
   }
@@ -22,7 +22,7 @@ class Loading {
   static void reset() {
     EasyLoading.instance
       ..textColor = Colors.white
-      ..backgroundColor = Colors.black.withOpacity(0.7)
+      ..backgroundColor = Colors.black.withValues(alpha: 0.7)
       ..contentPadding = const EdgeInsets.symmetric(
         vertical: 15.0,
         horizontal: 20.0,
@@ -90,7 +90,7 @@ class Loading {
 
     EasyLoading.instance
       ..textColor = textColor ?? Colors.white
-      ..backgroundColor = backgroundColor ?? Colors.black.withOpacity(0.7)
+      ..backgroundColor = backgroundColor ?? Colors.black.withValues(alpha: 0.7)
       ..contentPadding = const EdgeInsets.symmetric(
         vertical: 15.0,
         horizontal: 30.0,

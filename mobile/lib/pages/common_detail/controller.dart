@@ -10,7 +10,6 @@ import 'package:lumotrip/common/index.dart';
 import 'package:lumotrip/pages/index.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'widgets/share_preview_dialog.dart';
 
 class CommonDetailController extends GetxController with ApiMixin {
   final scrollController = ScrollController();

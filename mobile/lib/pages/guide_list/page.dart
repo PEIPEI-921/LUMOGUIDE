@@ -54,7 +54,7 @@ class _CustomTabBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: controller.currentIndex == index
                     ? AppColors.primary
-                    : AppColors.primaryText.withOpacity(0.08),
+                    : AppColors.primaryText.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text(

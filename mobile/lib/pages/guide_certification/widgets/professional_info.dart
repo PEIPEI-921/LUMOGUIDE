@@ -204,29 +204,25 @@ class _VehicleWidget extends StatelessWidget {
           ],
         ),
         10.w.verticalSpace,
-        Row(
-          children: [
-            Obx(() => Radio<int>(
-                  value: 1,
-                  groupValue: controller.certification.haveVehicle,
-                  onChanged: (value) {
-                    controller.onChangeHaveVehicle(value!);
-                  },
-                  activeColor: AppColors.primary,
-                )),
-            Text('是'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
-            20.w.horizontalSpace,
-            Obx(() => Radio<int>(
-                  value: 0,
-                  groupValue: controller.certification.haveVehicle,
-                  onChanged: (value) {
-                    controller.onChangeHaveVehicle(value!);
-                  },
-                  activeColor: AppColors.primary,
-                )),
-            Text('否'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
-          ],
-        ),
+        Obx(() => RadioGroup<int>(
+              groupValue: controller.certification.haveVehicle,
+              onChanged: (value) {
+                controller.onChangeHaveVehicle(value!);
+              },
+              child: Row(
+                children: [
+                  const Radio<int>(value: 1, activeColor: AppColors.primary),
+                  Text('是'.tr)
+                      .fontSize(14.sp)
+                      .textColor(AppColors.primaryText),
+                  20.w.horizontalSpace,
+                  const Radio<int>(value: 0, activeColor: AppColors.primary),
+                  Text('否'.tr)
+                      .fontSize(14.sp)
+                      .textColor(AppColors.primaryText),
+                ],
+              ),
+            )),
         Obx(() => controller.certification.haveVehicle == 1
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,33 +246,31 @@ class _VehicleWidget extends StatelessWidget {
                     ],
                   ),
                   10.w.verticalSpace,
-                  Row(
-                    children: [
-                      Radio<int>(
-                        value: 1,
+                  Obx(() => RadioGroup<int>(
                         groupValue: controller.certification.vehicleRent,
                         onChanged: (value) {
                           controller.onChangeVehicleRent(value!);
                         },
-                        activeColor: AppColors.primary,
-                      ),
-                      Text('是'.tr)
-                          .fontSize(14.sp)
-                          .textColor(AppColors.primaryText),
-                      20.w.horizontalSpace,
-                      Radio<int>(
-                        value: 0,
-                        groupValue: controller.certification.vehicleRent,
-                        onChanged: (value) {
-                          controller.onChangeVehicleRent(value!);
-                        },
-                        activeColor: AppColors.primary,
-                      ),
-                      Text('否'.tr)
-                          .fontSize(14.sp)
-                          .textColor(AppColors.primaryText),
-                    ],
-                  ),
+                        child: Row(
+                          children: [
+                            const Radio<int>(
+                              value: 1,
+                              activeColor: AppColors.primary,
+                            ),
+                            Text('是'.tr)
+                                .fontSize(14.sp)
+                                .textColor(AppColors.primaryText),
+                            20.w.horizontalSpace,
+                            const Radio<int>(
+                              value: 0,
+                              activeColor: AppColors.primary,
+                            ),
+                            Text('否'.tr)
+                                .fontSize(14.sp)
+                                .textColor(AppColors.primaryText),
+                          ],
+                        ),
+                      )),
                 ],
               )
             : const SizedBox.shrink()),

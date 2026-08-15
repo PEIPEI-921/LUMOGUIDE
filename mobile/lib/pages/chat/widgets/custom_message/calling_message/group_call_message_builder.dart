@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:tencent_cloud_chat_uikit/tencent_cloud_chat_uikit.dart';
 import 'package:tencent_cloud_chat_uikit/ui/widgets/link_preview/common/utils.dart';
 
 import 'calling_message_data_provider.dart';
@@ -8,9 +7,9 @@ class GroupCallMessageItem extends StatefulWidget {
   final CallingMessageDataProvider callingMessageDataProvider;
 
   const GroupCallMessageItem({
-    Key? key,
+    super.key,
     required this.callingMessageDataProvider,
-  }) : super(key: key);
+  });
 
   @override
   State<StatefulWidget> createState() => _GroupCallMessageItemState();

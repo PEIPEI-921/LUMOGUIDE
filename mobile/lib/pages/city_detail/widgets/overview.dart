@@ -78,7 +78,7 @@ class _TopViewItem extends StatelessWidget {
         Text(
           type.title,
           style: TextStyle(
-            color: AppColors.primaryText.withOpacity(0.5),
+            color: AppColors.primaryText.withValues(alpha: 0.5),
             fontSize: 12.sp,
           ),
           textAlign: TextAlign.center,

@@ -25,7 +25,7 @@ class MemberCenterAbilityWidget extends StatelessWidget with UserStoreMixin {
                 10.w.horizontalSpace,
                 Container(
                   height: 1,
-                  color: AppColors.primaryText.withOpacity(0.1),
+                  color: AppColors.primaryText.withValues(alpha: 0.1),
                 ).expanded(),
               ],
             ),

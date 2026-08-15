@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -166,7 +164,7 @@ class _Item extends StatelessWidget {
                           .padding(horizontal: 4.w, vertical: 2.w)
                           .decorated(
                             borderRadius: BorderRadius.circular(20),
-                            color: AppColors.primary.withOpacity(0.8),
+                            color: AppColors.primary.withValues(alpha: 0.8),
                           )
                           .padding(left: 2.w),
                   ],
@@ -175,7 +173,7 @@ class _Item extends StatelessWidget {
                   city.nameEn ?? '',
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,

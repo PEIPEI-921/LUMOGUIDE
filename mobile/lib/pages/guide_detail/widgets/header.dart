@@ -59,7 +59,7 @@ class GuideDetailHeaderWidget extends StatelessWidget with UserStoreMixin {
                         )
                         .padding(horizontal: 8.w, vertical: 2.w)
                         .decorated(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12.w),
                         ),
                     12.w.verticalSpace,

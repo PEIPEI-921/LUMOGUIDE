@@ -1,7 +1,7 @@
 import 'package:lumotrip/common/index.dart';
 
 class FollowUser {
-  /**
+  /*
    * {
                 "id": 1,
                 "user_id": 35,

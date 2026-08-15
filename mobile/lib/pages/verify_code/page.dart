@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pinput/pinput.dart';
 import '../../common/index.dart';
 import 'controller.dart';
 import 'widgets/container.dart';

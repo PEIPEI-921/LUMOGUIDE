@@ -29,7 +29,7 @@ class PublishTransportationPage extends StatelessWidget {
               ),
               12.w.verticalSpace,
               LabelSelectField(
-                label: '分類'.tr,
+                label: '交通類型'.tr,
                 value: controller.publish.typeClassName ?? '',
                 hintText: '請選擇分類'.tr,
                 isRequired: true,

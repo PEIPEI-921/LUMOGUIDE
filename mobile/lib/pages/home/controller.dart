@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
@@ -142,7 +143,7 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: hideSearchOverlay,
-              child: Container(color: Colors.black.withOpacity(0.1)),
+              child: Container(color: Colors.black.withValues(alpha: 0.1)),
             ),
           ),
           Positioned(
@@ -356,7 +357,9 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
         _startInfoAutoScroll();
         endLoad([]);
       }
-    } catch (e) {}
+    } catch (e) {
+      log('home data cache parse error: $e', name: 'Home');
+    }
 
     final res = await get(ApiUrl.homeData);
     if (!res.isSuccess) {
@@ -410,22 +413,22 @@ extension HomeControllerExt on HomeController {
   }
 
   onSectionTap(HomeSection section) {
-    print('onSectionTap: $section');
     switch (section) {
       case HomeSection.information:
         RootController.to.handlePageChanged(2);
+        break;
       case HomeSection.city:
         RootController.to.handlePageChanged(1);
+        break;
       case HomeSection.guide:
         Get.toNamed(AppRoutes.SEARCH, arguments: {'type': CityDetailTab.guide});
+        break;
       case HomeSection.merchant:
         final shop = home?.shop[merchantCategoryIndex.value];
         if (shop != null) {
           final tab = CityDetailTabExt.fromId(shop.typeId ?? 0);
           Get.toNamed(AppRoutes.SEARCH, arguments: {'type': tab});
         }
-        break;
-      default:
         break;
     }
   }

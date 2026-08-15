@@ -131,12 +131,12 @@ class _Item extends StatelessWidget {
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: AppColors.primaryText.withOpacity(0.1),
+                color: AppColors.primaryText.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4.w),
               ),
               child: Icon(
                 Icons.location_city,
-                color: AppColors.primaryText.withOpacity(0.3),
+                color: AppColors.primaryText.withValues(alpha: 0.3),
                 size: 20.w,
               ),
             ),
@@ -160,7 +160,7 @@ class _Item extends StatelessWidget {
                   )
                   .padding(horizontal: 4.w, vertical: 1.w)
                   .decorated(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6.w),
                   )
                   .padding(left: 6.w),
@@ -172,7 +172,7 @@ class _Item extends StatelessWidget {
                   )
                   .padding(horizontal: 4.w, vertical: 1.w)
                   .decorated(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6.w),
                   )
                   .padding(left: 6.w),
@@ -184,7 +184,7 @@ class _Item extends StatelessWidget {
                 )
                 .padding(horizontal: 4.w, vertical: 1.w)
                 .decorated(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6.w),
                 )
                 .padding(left: 6.w),
@@ -213,7 +213,7 @@ class _Item extends StatelessWidget {
                         )
                         .padding(horizontal: 6.w, vertical: 3.w)
                         .decorated(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(100),
                         ),
               ) ??
@@ -224,7 +224,7 @@ class _Item extends StatelessWidget {
       return Text(
         item.nameEn!,
         style: TextStyle(
-          color: AppColors.primaryText.withOpacity(0.6),
+          color: AppColors.primaryText.withValues(alpha: 0.6),
           fontSize: 12.sp,
         ),
       );

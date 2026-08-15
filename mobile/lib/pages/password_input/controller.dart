@@ -103,7 +103,9 @@ class PasswordInputController extends GetxController with ApiMixin {
       await UserStore.to.login(res.data);
       Loading.success('註冊成功'.tr);
       await Future.delayed(const Duration(seconds: 1));
-      Get.offAllNamed(AppRoutes.ROOT);
+      await Get.offAllNamed(AppRoutes.ROOT);
+      // 主導航完成後再處理深鏈：註冊/登錄前掃碼的待處理參數在此恢復
+      DeepLinkService.checkPendingDeepLink();
       // Get.back();
       return;
     }

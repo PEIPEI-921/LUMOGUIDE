@@ -59,25 +59,20 @@ class LoginController extends GetxController with ApiMixin {
   // 切换同意状态
   void toggleAgree() => isAgree.value = !isAgree.value;
 
+  // 登录表单校验（纯函数，返回错误提示 key，通过返回 null）
+  static String? validateForm(String email, String password, bool isAgree) {
+    if (email.isEmpty) return '請輸入郵箱';
+    if (!email.isEmail) return '請輸入正確的郵箱';
+    if (password.isEmpty) return '請輸入密碼';
+    if (!isAgree) return '請先閱讀並同意用戶協議和隱私政策';
+    return null;
+  }
+
   // 登录方法
   void login() async {
-    if (email.value.isEmpty) {
-      Loading.toast('請輸入郵箱'.tr);
-      return;
-    }
-
-    if (!email.value.isEmail) {
-      Loading.toast('請輸入正確的郵箱'.tr);
-      return;
-    }
-
-    if (password.value.isEmpty) {
-      Loading.toast('請輸入密碼'.tr);
-      return;
-    }
-
-    if (!isAgree.value) {
-      Loading.toast('請先閱讀並同意用戶協議和隱私政策'.tr);
+    final error = validateForm(email.value, password.value, isAgree.value);
+    if (error != null) {
+      Loading.toast(error.tr);
       return;
     }
 
@@ -104,7 +99,9 @@ class LoginController extends GetxController with ApiMixin {
     await UserStore.to.login(res.data);
     Loading.success('登錄成功'.tr);
     await Future.delayed(const Duration(seconds: 1));
-    Get.offAllNamed(AppRoutes.ROOT);
+    await Get.offAllNamed(AppRoutes.ROOT);
+    // 主導航完成後再處理深鏈：登錄前掃碼的待處理參數在此恢復（綁定邀請 + 跳轉內容頁）
+    DeepLinkService.checkPendingDeepLink();
     // Get.back();
   }
 

@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names, file_names
+
 const Map<String, String> en_US = {
   '是': 'Yes',
   '否': 'No',
@@ -495,6 +497,7 @@ const Map<String, String> en_US = {
   /// 發佈資訊
   '發佈資訊': 'Post News',
   '分類': 'Category',
+  '暫無可用分類': 'No categories available',
   '請選擇資訊分類': 'Select news category',
   '資訊標題': 'News Title',
   '請輸入資訊標題': 'Enter news title',
@@ -535,6 +538,7 @@ const Map<String, String> en_US = {
   /// 發佈設施
   '所屬城市': 'City',
   '請選擇所屬城市': 'Select city',
+  '設施類型': 'Facility Type',
   '設施名稱': 'Facility Name',
   '請輸入設施名稱': 'Enter facility name',
   '設施介紹': 'Facility Introduction',
@@ -557,6 +561,7 @@ const Map<String, String> en_US = {
   '開始時間或結束時間格式錯誤': 'Invalid start or end time format',
 
   /// 發佈交通
+  '交通類型': 'Transportation Type',
   '交通名稱': 'Transportation Name',
   '請輸入交通名稱': 'Enter transportation name',
   '請輸入介紹內容': 'Enter introduction',

@@ -22,14 +22,14 @@ class MineHeaderWidget extends StatelessWidget {
             )
             .padding(all: 14.w)
             .decorated(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(8.w),
               border: const Border(
                 top: BorderSide(color: AppColors.primary, width: 4),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF666FFF).withOpacity(0.05),
+                  color: const Color(0xFF666FFF).withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 10),
                 ),
@@ -248,7 +248,7 @@ class _StatItem extends StatelessWidget {
             margin: EdgeInsets.only(right: 15.w),
             width: 1,
             height: 30,
-            color: AppColors.primaryText.withOpacity(0.05),
+            color: AppColors.primaryText.withValues(alpha: 0.05),
           ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

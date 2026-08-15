@@ -110,7 +110,7 @@ class _Item extends StatelessWidget {
         )
             .padding(horizontal: 10.w, vertical: 5.w)
             .decorated(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(100),
             )
             .padding(top: 3.w),

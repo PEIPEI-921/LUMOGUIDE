@@ -43,6 +43,7 @@ class CustomMessageElem extends StatefulWidget {
         mode: LaunchMode.externalApplication,
       );
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(TIM_t("无法打开URL"))), // Cannot launch the url
       );

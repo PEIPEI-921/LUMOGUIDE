@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -54,6 +55,14 @@ class PublishInformationController extends GetxController with ApiMixin {
   }
 
   onSelectCategory() async {
+    // 緩存為空時即時從 API 拉取，避免進入頁面時尚未載入導致空列表無法選擇
+    if (categories.isEmpty) {
+      await _fetchNewsCategory();
+    }
+    if (categories.isEmpty) {
+      Loading.toast('暫無可用分類'.tr);
+      return;
+    }
     final data = categories.map((e) => e.name ?? '').toList();
     final res = await ValuePicker.show(
       title: '請選擇資訊分類'.tr,
@@ -63,8 +72,9 @@ class PublishInformationController extends GetxController with ApiMixin {
     if (res == null) {
       return;
     }
+    final category = categories.firstWhere((e) => e.name == res.first);
     _guidePublish.update((val) {
-      val?.classId = categories.firstWhere((e) => e.name == res.first).id;
+      val?.classId = category.id;
       val?.className = res.first;
     });
   }
@@ -125,11 +135,10 @@ class PublishInformationController extends GetxController with ApiMixin {
         ? ApiUrl.guideInformationAdd
         : ApiUrl.guideInformationEdit;
     final payload = guidePublish.toJson();
-    debugPrint('[PublishInfo] POST $url payload keys: ${payload.keys}, title: ${payload['title']}');
     final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
-      debugPrint('[PublishInfo] Submit failed: code=${res.code}, message=${res.message}');
+      log('[PublishInfo] Submit failed: code=${res.code}, message=${res.message}', name: 'PublishInfo');
       AlertUtils.error(res.message);
       return;
     }
@@ -248,8 +257,10 @@ extension on PublishInformationController {
   fillData() {
     if (guidePublish.id == null) return;
     _guidePublish.update((val) {
-      val?.className =
-          categories.firstWhereOrNull((e) => e.id == val.classId)?.name;
+      if (val == null) return;
+      // 僅在能找到匹配時覆寫；否則保留伺服器返回的值（分類緩存未載入時不應清空）
+      final category = categories.firstWhereOrNull((e) => e.id == val.classId);
+      if (category != null) val.className = category.name;
     });
     titleController.text = guidePublish.title ?? '';
     contentController.text = guidePublish.content ?? '';

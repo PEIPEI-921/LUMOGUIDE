@@ -66,12 +66,12 @@ class _Item extends StatelessWidget {
               if (isIntegral) _buildIntegralBalance(),
             ],
           ).decorated(
-            color: isSelected ? selectedColor.withOpacity(0.03) : Colors.white,
+            color: isSelected ? selectedColor.withValues(alpha: 0.03) : Colors.white,
             borderRadius: BorderRadius.circular(8.w),
             border: Border.all(
               color: isSelected
                   ? selectedColor
-                  : AppColors.primaryText.withOpacity(0.1),
+                  : AppColors.primaryText.withValues(alpha: 0.1),
               width: isSelected ? 3 : 2,
             ),
           ),

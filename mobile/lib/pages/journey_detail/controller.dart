@@ -49,8 +49,8 @@ class JourneyDetailController extends GetxController with ApiMixin {
 
   Future<void> _fetchFromApi(int id) async {
     final res = await get(ApiUrl.userJourneyDetail, parameters: {'id': id});
-    if (res.isSuccess && res.dataJson != null) {
-      work.value = JourneyWork.fromJson(res.dataJson!);
+    if (res.isSuccess && res.dataJson.isNotEmpty) {
+      work.value = JourneyWork.fromJson(res.dataJson);
     }
   }
 
@@ -197,7 +197,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
 
       await Get.dialog(
         guide_detail.SharePreviewDialog(
-          imageFile: tempFile!, shareText: shareText,
+          imageFile: tempFile, shareText: shareText,
           onShareComplete: () => shouldDelete = true,
         ),
         barrierDismissible: true,
@@ -236,7 +236,9 @@ class JourneyDetailController extends GetxController with ApiMixin {
     try {
       await Future.delayed(Duration(seconds: shouldDelete ? 5 : 3));
       if (await file.exists()) await file.delete();
-    } catch (_) {}
+    } catch (e) {
+      log('cleanup temp file error: $e');
+    }
   }
 
   // ================================================================
@@ -419,9 +421,9 @@ class JourneyDetailController extends GetxController with ApiMixin {
                       pw.Padding(
                         padding: const pw.EdgeInsets.only(top: 3),
                         child: pw.Text(day.theme!,
-                            style: pw.TextStyle(
+                            style: const pw.TextStyle(
                                 fontSize: 11,
-                                color: const PdfColor(0.4, 0.4, 0.4))),
+                                color: PdfColor(0.4, 0.4, 0.4))),
                       ),
                     pw.SizedBox(height: 6),
                     // 每个城市块
@@ -474,7 +476,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
                                         pw.Text(item.description!,
                                             style: const pw.TextStyle(
                                                 fontSize: 9,
-                                                color: const PdfColor(
+                                                color: PdfColor(
                                                     0.4, 0.4, 0.4))),
                                     ],
                                   ),
@@ -493,7 +495,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
                           pw.Text(day.hotelName!,
                               style: const pw.TextStyle(
                                   fontSize: 9,
-                                  color: const PdfColor(0.6, 0.6, 0.6))),
+                                  color: PdfColor(0.6, 0.6, 0.6))),
                         ]),
                       ),
                     pw.SizedBox(height: 8),
@@ -505,7 +507,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
                 child: pw.Text(
                   '生成日期: ${_todayStr()}',
                   style: const pw.TextStyle(
-                      fontSize: 9, color: const PdfColor(0.6, 0.6, 0.6)),
+                      fontSize: 9, color: PdfColor(0.6, 0.6, 0.6)),
                 ),
               ),
             ],

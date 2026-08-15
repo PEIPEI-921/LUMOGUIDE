@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.6+25
+version: 1.0.6+26
 
 environment:
   sdk: ">=3.8.1 <4.0.0"
@@ -26,6 +26,7 @@ dependencies:
   provider: ^6.1.2
   url_launcher: ^6.3.1
   app_links: ^6.4.0
+  play_install_referrer: ^0.5.0
   device_info_plus: ^10.1.2
   package_info_plus: ^8.0.2
   connectivity_plus: ^6.0.5
@@ -58,6 +59,13 @@ dependencies:
   flutter_slidable: ^4.0.3
   mobile_scanner: ^7.1.4
   tencent_cloud_chat_push: ^8.8.7375
+  tencent_cloud_chat_sdk: 8.8.7373+4
+  tencent_chat_i18n_tool: ^2.3.8
+  flutter_markdown: ^0.6.23
+  dotted_border: ^2.1.0
+  flutter_cache_manager: ^3.3.1
+  image_picker_android: 0.8.12+21
+  image_picker_platform_interface: ^2.11.1
   pinyin: ^3.3.0
 
 dependency_overrides:

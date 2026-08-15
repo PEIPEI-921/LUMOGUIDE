@@ -155,7 +155,7 @@ class MessageItemWidget extends StatelessWidget {
                               model.time ?? '',
                               style: TextStyle(
                                 fontSize: 12.sp,
-                                color: AppColors.primaryText.withOpacity(0.4),
+                                color: AppColors.primaryText.withValues(alpha: 0.4),
                               ),
                             ),
                           ],
@@ -174,7 +174,7 @@ class MessageItemWidget extends StatelessWidget {
                     .decorated(
                       border: Border(
                         bottom: BorderSide(
-                          color: AppColors.primaryText.withOpacity(0.05),
+                          color: AppColors.primaryText.withValues(alpha: 0.05),
                           width: 1,
                         ),
                       ),

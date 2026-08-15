@@ -29,7 +29,7 @@ class SelectMemberItem extends StatelessWidget {
                     border: Border.all(
                       color: selected
                           ? AppColors.primary
-                          : AppColors.assistantText.withOpacity(0.5),
+                          : AppColors.assistantText.withValues(alpha: 0.5),
                       width: 1.5,
                     ),
                   ),

@@ -29,7 +29,7 @@ class UserBookingGuideInfoPage extends StatelessWidget {
                                 Divider(
                                   height: 20.w,
                                   thickness: 0.7.w,
-                                  color: AppColors.primaryText.withOpacity(
+                                  color: AppColors.primaryText.withValues(alpha: 
                                     0.05,
                                   ),
                                 ),

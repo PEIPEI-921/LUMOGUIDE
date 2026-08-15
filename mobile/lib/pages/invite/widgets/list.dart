@@ -73,7 +73,7 @@ class _ItemWidget extends StatelessWidget {
         ),
       ],
     ).height(45.w).padding(horizontal: 10.w).decorated(
-          color: AppColors.primaryText.withOpacity(0.05),
+          color: AppColors.primaryText.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(8.w),
         );
   }

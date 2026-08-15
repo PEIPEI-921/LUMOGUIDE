@@ -87,7 +87,7 @@ class _CustomTabBarItem extends StatelessWidget {
                 )
                 .padding(horizontal: 15.w, vertical: 6.w)
                 .decorated(
-                  color: e.homeColor.withOpacity(0.1),
+                  color: e.homeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10.w),
                   border: e == controller.selectedType
                       ? Border.all(color: e.homeColor)

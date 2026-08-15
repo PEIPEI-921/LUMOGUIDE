@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -75,14 +76,20 @@ class PublishFacilityController extends GetxController with ApiMixin {
   }
 
   onSelectCategory() async {
-    final data = categories.map((e) => e.name ?? '').toList();
+    final list = await ConfigService.to
+        .ensureTypeCategories(CommonDetailType.facility.id);
+    if (list.isEmpty) {
+      Loading.toast('暫無可用分類'.tr);
+      return;
+    }
+    final data = list.map((e) => e.name ?? '').toList();
     final res = await ValuePicker.show(
-      title: '分類'.tr,
+      title: '設施類型'.tr,
       datas: data,
       selectedDatas: [publish.typeClassName ?? ''],
     );
     if (res == null) return;
-    final category = categories.firstWhere((e) => e.name == res.first);
+    final category = list.firstWhere((e) => e.name == res.first);
     _publish.update((val) {
       val?.typeClassId = category.id ?? 0;
       val?.typeClassName = category.name ?? '';
@@ -141,11 +148,10 @@ class PublishFacilityController extends GetxController with ApiMixin {
         ? ApiUrl.guideFacilityAdd
         : ApiUrl.guideFacilityEdit;
     final payload = publish.toJson();
-    debugPrint('[PublishFacility] POST $url payload keys: ${payload.keys}, name: ${payload['name']}');
     final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
-      debugPrint('[PublishFacility] Submit failed: code=${res.code}, message=${res.message}');
+      log('[PublishFacility] Submit failed: code=${res.code}, message=${res.message}', name: 'PublishFacility');
       AlertUtils.error(res.message);
       return;
     }
@@ -278,9 +284,13 @@ extension on PublishFacilityController {
   fillData() {
     if (publish.id == null) return;
     _publish.update((val) {
-      val?.cityName = cities.firstWhereOrNull((e) => e.id == val.cityId)?.name;
-      val?.typeClassName =
-          categories.firstWhereOrNull((e) => e.id == val.typeClassId)?.name;
+      if (val == null) return;
+      // 僅在能找到匹配時覆寫；否則保留伺服器返回的值（分類緩存未載入時不應清空）
+      final city = cities.firstWhereOrNull((e) => e.id == val.cityId);
+      if (city != null) val.cityName = city.name;
+      final category =
+          categories.firstWhereOrNull((e) => e.id == val.typeClassId);
+      if (category != null) val.typeClassName = category.name;
     });
     nameController.text = publish.name ?? '';
     phoneController.text = publish.phone ?? '';

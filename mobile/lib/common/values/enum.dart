@@ -293,8 +293,6 @@ extension CommonDetailTypeExt on CommonDetailType {
         return '設施詳情'.tr;
       case CommonDetailType.activity:
         return '活動詳情'.tr;
-      default:
-        return '';
     }
   }
 
@@ -361,8 +359,6 @@ extension GuidePublishTypeExt on GuidePublishType {
         return '設施'.tr;
       case GuidePublishType.activity:
         return '活動'.tr;
-      default:
-        return '';
     }
   }
 }
@@ -385,8 +381,6 @@ extension MerchantShopTypeExt on MerchantShopType {
         return '票務'.tr;
       case MerchantShopType.scenic:
         return '景點'.tr;
-      default:
-        return '';
     }
   }
 
@@ -417,8 +411,6 @@ extension MerchantShopTypeExt on MerchantShopType {
         return '酒店預約'.tr;
       case MerchantShopType.ticket:
         return '票務預約'.tr;
-      default:
-        return '';
     }
   }
 
@@ -434,8 +426,6 @@ extension MerchantShopTypeExt on MerchantShopType {
         return '預約酒店信息'.tr;
       case MerchantShopType.ticket:
         return '預約票務信息'.tr;
-      default:
-        return '';
     }
   }
 

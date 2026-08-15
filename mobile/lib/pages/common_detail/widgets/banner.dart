@@ -49,7 +49,7 @@ class CommonDetailBannerWidget extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: controller.bannerIndex == index
                                 ? AppColors.primary
-                                : AppColors.primaryText.withOpacity(0.5),
+                                : AppColors.primaryText.withValues(alpha: 0.5),
                             shape: BoxShape.circle,
                           ),
                         ),

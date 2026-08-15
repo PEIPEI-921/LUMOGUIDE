@@ -42,7 +42,7 @@ class GuideBookItemWidget extends StatelessWidget {
                     Divider(
                       height: 20,
                       thickness: 1,
-                      color: AppColors.primaryText.withOpacity(0.05),
+                      color: AppColors.primaryText.withValues(alpha: 0.05),
                     ),
                     _BookingDetailsGrid(item: item),
                   ],

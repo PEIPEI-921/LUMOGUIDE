@@ -305,7 +305,7 @@ class CallingMessageDataProvider {
         _content = isCaller ? TIM_t('已取消') : TIM_t('对方已取消');
       } else if (_protocolType == CallProtocolType.hangup) {
         final time = _getShowTime(_jsonData!['call_end']);
-        _content = TIM_t('通话时长') + '：$time';
+        _content = '${TIM_t('通话时长')}：$time';
       } else if (_protocolType == CallProtocolType.timeout) {
         _content = isCaller ? TIM_t('对方无应答') : TIM_t('对方已取消');
       } else if (_protocolType == CallProtocolType.lineBusy) {
@@ -332,7 +332,7 @@ class CallingMessageDataProvider {
           _protocolType == CallProtocolType.lineBusy) {
         String inviteeNames = '';
         for (String invitee in _signalingInfo!.inviteeList) {
-          inviteeNames = inviteeNames + invitee + '、';
+          inviteeNames += '$invitee、';
         }
         _content =
             inviteeNames.substring(0, inviteeNames.length - 1) + TIM_t('未接听');

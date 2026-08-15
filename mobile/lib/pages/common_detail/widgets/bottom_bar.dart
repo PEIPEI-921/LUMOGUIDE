@@ -81,7 +81,7 @@ class CommonDetailBottomBarWidget extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF000000).withOpacity(0.05),
+                      color: const Color(0xFF000000).withValues(alpha: 0.05),
                       blurRadius: 20.w,
                     ),
                   ],

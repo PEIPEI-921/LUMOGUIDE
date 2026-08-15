@@ -1,7 +1,5 @@
 import 'package:lumotrip/common/index.dart';
 
-import '../extensions/map.dart';
-
 class CityInfo {
   int? id;
   String? name;

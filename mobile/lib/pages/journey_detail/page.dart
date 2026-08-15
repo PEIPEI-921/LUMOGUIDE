@@ -260,19 +260,19 @@ class _MergedDetailTab extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // --- 概览部分 ---
         if (work.cities.isNotEmpty) ...[
-          _SectionHeader('涉及城市'),
+          const _SectionHeader('涉及城市'),
           SizedBox(height: 6.w),
           _InfoCard('涉及城市', work.cities.join('、'), Icons.location_on_outlined),
           SizedBox(height: 10.w),
         ],
         if (work.description?.isNotEmpty == true) ...[
-          _SectionHeader('备注'),
+          const _SectionHeader('备注'),
           SizedBox(height: 6.w),
           _InfoCard('备注', work.description!, Icons.notes),
           SizedBox(height: 10.w),
         ],
         if (work.leaderName?.isNotEmpty == true || work.driverName?.isNotEmpty == true) ...[
-          _SectionHeader('人员信息'),
+          const _SectionHeader('人员信息'),
           SizedBox(height: 6.w),
           if (work.leaderName?.isNotEmpty == true)
             _InfoCard('领队', '${work.leaderName}  ${work.leaderPhone ?? ''}', Icons.person_outline),
@@ -287,7 +287,7 @@ class _MergedDetailTab extends StatelessWidget {
 
         // --- 详情部分 ---
         if (work.arrivalFlight != null || work.departureFlight != null) ...[
-          _SectionHeader('航班信息'),
+          const _SectionHeader('航班信息'),
           SizedBox(height: 6.w),
           if (work.arrivalFlight != null) ...[
             _InfoCard('抵达航班', work.arrivalFlight!.flightNumber ?? '--', Icons.flight),
@@ -307,7 +307,7 @@ class _MergedDetailTab extends StatelessWidget {
           ],
         ],
         if (work.totalPrice?.isNotEmpty == true || work.cashAdvance?.isNotEmpty == true) ...[
-          _SectionHeader('费用信息'),
+          const _SectionHeader('费用信息'),
           SizedBox(height: 6.w),
           if (work.totalPrice?.isNotEmpty == true)
             _InfoCard('团款总额', work.totalPrice!, Icons.euro),
@@ -320,7 +320,7 @@ class _MergedDetailTab extends StatelessWidget {
           SizedBox(height: 10.w),
         ],
         if (work.agencyContact?.isNotEmpty == true || work.emergencyPhone?.isNotEmpty == true) ...[
-          _SectionHeader('应急联系'),
+          const _SectionHeader('应急联系'),
           SizedBox(height: 6.w),
           if (work.agencyContact?.isNotEmpty == true)
             _InfoCard('组团社', '${work.agencyContact}  ${work.agencyContactPhone ?? ''}', Icons.business_outlined),

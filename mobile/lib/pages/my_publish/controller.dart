@@ -63,7 +63,7 @@ class MyPublishController extends GetxController
     if (!VIPCheckUtils.check()) {
       return;
     }
-    var result;
+    dynamic result;
     switch (currentType) {
       case GuidePublishType.attraction:
         result = await Get.toNamed(AppRoutes.PUBLISH_ATTRACTION);

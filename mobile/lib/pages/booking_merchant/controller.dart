@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -162,7 +160,6 @@ class BookingMerchantController extends GetxController
       return;
     }
     _file.value = res.files.single;
-    print(file);
   }
 
   onSubmit() async {

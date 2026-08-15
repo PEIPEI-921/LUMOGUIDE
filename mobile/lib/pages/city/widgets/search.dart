@@ -55,7 +55,7 @@ class CitySearchWidget extends StatelessWidget {
                           vertical: 13,
                         ),
                         hintStyle: TextStyle(
-                          color: AppColors.primaryText.withOpacity(0.3),
+                          color: AppColors.primaryText.withValues(alpha: 0.3),
                           fontSize: 14.sp,
                         ),
                       ),
@@ -93,7 +93,7 @@ class _HistoryWidget extends StatelessWidget {
                 Text(
                   '最近瀏覽的城市：'.tr,
                   style: TextStyle(
-                    color: AppColors.primaryText.withOpacity(0.6),
+                    color: AppColors.primaryText.withValues(alpha: 0.6),
                     fontSize: 12.sp,
                   ),
                 ),
@@ -139,7 +139,7 @@ class _CitySearchResultsOverlay extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.w),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -163,7 +163,7 @@ class _CitySearchResultsOverlay extends StatelessWidget {
             );
           },
           separatorBuilder: (context, index) =>
-              Divider(height: 1, color: AppColors.primaryText.withOpacity(0.1)),
+              Divider(height: 1, color: AppColors.primaryText.withValues(alpha: 0.1)),
         ).constrained(maxHeight: 200.w);
       }),
     );
@@ -191,12 +191,12 @@ class _CitySearchResultItem extends StatelessWidget {
               width: 40.w,
               height: 40.w,
               decoration: BoxDecoration(
-                color: AppColors.primaryText.withOpacity(0.1),
+                color: AppColors.primaryText.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4.w),
               ),
               child: Icon(
                 Icons.location_city,
-                color: AppColors.primaryText.withOpacity(0.3),
+                color: AppColors.primaryText.withValues(alpha: 0.3),
                 size: 20.w,
               ),
             ),
@@ -212,7 +212,7 @@ class _CitySearchResultItem extends StatelessWidget {
           ? Text(
               city.nameEn!,
               style: TextStyle(
-                color: AppColors.primaryText.withOpacity(0.6),
+                color: AppColors.primaryText.withValues(alpha: 0.6),
                 fontSize: 12.sp,
               ),
             )
@@ -232,14 +232,14 @@ class _EmptySearchResult extends StatelessWidget {
         children: [
           Icon(
             Icons.search_off,
-            color: AppColors.primaryText.withOpacity(0.3),
+            color: AppColors.primaryText.withValues(alpha: 0.3),
             size: 32.w,
           ),
           8.w.verticalSpace,
           Text(
             '未找到相關城市'.tr,
             style: TextStyle(
-              color: AppColors.primaryText.withOpacity(0.6),
+              color: AppColors.primaryText.withValues(alpha: 0.6),
               fontSize: 14.sp,
             ),
           ),

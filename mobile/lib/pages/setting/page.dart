@@ -21,7 +21,7 @@ class SettingPage extends StatelessWidget {
                 SettingItemWidget(item: controller.items[index]),
             separatorBuilder: (context, index) => Divider(
               height: 1,
-              color: AppColors.primaryText.withOpacity(0.05),
+              color: AppColors.primaryText.withValues(alpha: 0.05),
               thickness: 0.5,
             ),
             itemCount: controller.items.length,

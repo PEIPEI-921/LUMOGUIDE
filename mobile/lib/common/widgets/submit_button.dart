@@ -23,11 +23,11 @@ class SubmitButton extends StatelessWidget {
       onPressed: enabled ? onPressed : null,
       style: TextButton.styleFrom(
         backgroundColor: (backgroundColor ?? AppColors.primary)
-            .withOpacity(enabled ? 1 : 0.6),
+            .withValues(alpha: enabled ? 1 : 0.6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(100),
         ),
-        shadowColor: const Color(0xFF666FFF).withOpacity(0.15),
+        shadowColor: const Color(0xFF666FFF).withValues(alpha: 0.15),
         elevation: 20,
       ),
       child: Text(

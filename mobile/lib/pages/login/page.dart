@@ -11,7 +11,7 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(LoginController());
+    Get.put(LoginController());
     return IScaffold(
       backgroundImage: const AssetImage(Assets.bgLogin),
       resizeToAvoidBottomInset: false,

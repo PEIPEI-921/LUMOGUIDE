@@ -311,13 +311,16 @@ class JourneyWork {
       isFromBooking: json.safeBool('is_from_booking') ?? false,
       // 资源
       attractionIds: (json['attraction_ids'] as List<dynamic>?)
-          ?.map((e) => e as int)
+          ?.map((e) => int.tryParse(e.toString()))
+          .whereType<int>()
           .toList(),
       activityIds: (json['activity_ids'] as List<dynamic>?)
-          ?.map((e) => e as int)
+          ?.map((e) => int.tryParse(e.toString()))
+          .whereType<int>()
           .toList(),
       merchantIds: (json['merchant_ids'] as List<dynamic>?)
-          ?.map((e) => e as int)
+          ?.map((e) => int.tryParse(e.toString()))
+          .whereType<int>()
           .toList(),
       // 客户行程
       hasClientItinerary: json.safeBool('has_client_itinerary') ?? false,
@@ -589,7 +592,10 @@ class ItineraryDay {
       final List<int> oldCityIds;
       final dynamic rawCityIds = json['city_ids'] ?? json['city_id'];
       if (rawCityIds is List) {
-        oldCityIds = rawCityIds.map<int>((e) => e as int).toList();
+        oldCityIds = rawCityIds
+            .map((e) => int.tryParse(e.toString()))
+            .whereType<int>()
+            .toList();
       } else if (rawCityIds is int) {
         oldCityIds = [rawCityIds];
       } else {

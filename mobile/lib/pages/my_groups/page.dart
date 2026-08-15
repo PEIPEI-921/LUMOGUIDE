@@ -11,7 +11,7 @@ class MyGroupsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(MyGroupsController());
+    Get.put(MyGroupsController());
     return IScaffold(
       appBar: IAppBar(title: '我的群聊'.tr),
       body: Obx(() {

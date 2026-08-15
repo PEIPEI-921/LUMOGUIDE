@@ -109,4 +109,21 @@ class StorageStone {
       value,
     );
   }
+
+  /// 待處理的深鏈參數（JSON 字串，詳見 DeepLinkService）
+  static String get pendingDeepLink =>
+      StorageService.to.getString(STORAGE_PENDING_DEEP_LINK_KEY);
+  static setPendingDeepLink(String value) async {
+    await StorageService.to.setString(STORAGE_PENDING_DEEP_LINK_KEY, value);
+  }
+
+  /// 冷啟動延遲深鏈是否已檢查過（每次安裝只檢查一次）
+  static bool get deepLinkColdChecked =>
+      StorageService.to.getBool(
+        STORAGE_DEEP_LINK_COLD_CHECKED_KEY,
+        defaultValue: false,
+      );
+  static setDeepLinkColdChecked(bool value) async {
+    await StorageService.to.setBool(STORAGE_DEEP_LINK_COLD_CHECKED_KEY, value);
+  }
 }

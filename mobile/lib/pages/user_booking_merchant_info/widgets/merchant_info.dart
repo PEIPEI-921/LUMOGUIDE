@@ -131,7 +131,6 @@ class _InfoItem extends StatelessWidget {
   final String title;
   final String content;
   final bool hasAction;
-  final bool hasArrow;
   final bool isLast;
   final bool isGrey;
   final VoidCallback? onTap;
@@ -140,7 +139,6 @@ class _InfoItem extends StatelessWidget {
     required this.title,
     required this.content,
     this.hasAction = false,
-    this.hasArrow = false,
     this.isLast = false,
     this.isGrey = false,
     this.onTap,
@@ -174,14 +172,6 @@ class _InfoItem extends StatelessWidget {
         if (hasAction && content.isNotEmpty) ...[
           8.w.horizontalSpace,
           Image.asset(Assets.iconTelFill, width: 16.w),
-        ],
-        if (hasArrow && content.isNotEmpty) ...[
-          8.w.horizontalSpace,
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 14.w,
-            color: AppColors.assistantText,
-          ),
         ],
       ],
     ).padding(bottom: isLast ? 0 : 10.w).gestures(

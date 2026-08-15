@@ -185,8 +185,6 @@ class MineController extends GetxController with UserStoreMixin {
       case MineMenu.journey:
         await Get.toNamed(AppRoutes.JOURNEY);
         break;
-      default:
-        break;
     }
     onRefresh();
   }

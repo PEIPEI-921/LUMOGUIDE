@@ -4,7 +4,6 @@ import '../../common/index.dart';
 import 'controller.dart';
 import 'widgets/address.dart';
 import 'widgets/goods.dart';
-import 'widgets/price.dart';
 import 'widgets/order_info.dart';
 import 'widgets/express.dart';
 import 'widgets/status.dart';

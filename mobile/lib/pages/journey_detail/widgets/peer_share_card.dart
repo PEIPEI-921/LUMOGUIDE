@@ -27,7 +27,7 @@ class JourneyPeerShareCardWidget extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8.w),
           border: Border.all(
-            color: AppColors.assistantText.withOpacity(0.2),
+            color: AppColors.assistantText.withValues(alpha: 0.2),
             width: 1.w,
           ),
         ),
@@ -72,7 +72,7 @@ class JourneyPeerShareCardWidget extends StatelessWidget {
                 16.w.verticalSpace,
                 Container(
                   height: 1.w,
-                  color: AppColors.assistantText.withOpacity(0.1),
+                  color: AppColors.assistantText.withValues(alpha: 0.1),
                 ),
                 16.w.verticalSpace,
                 // 底部：品牌 + QR 碼

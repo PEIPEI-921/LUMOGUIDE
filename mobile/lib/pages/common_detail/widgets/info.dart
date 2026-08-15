@@ -35,7 +35,7 @@ class CommonDetailInfoWidget extends StatelessWidget {
                           )
                           .padding(horizontal: 12.w, vertical: 5.w)
                           .decorated(
-                            color: AppColors.primary.withOpacity(0.08),
+                            color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(12.w),
                           ),
                       if (controller.merchantInfo.cityName.isNotEmpty)
@@ -141,7 +141,7 @@ class CommonDetailInfoWidget extends StatelessWidget {
                       )
                       .padding(all: 10.w)
                       .decorated(
-                        color: AppColors.primaryText.withOpacity(0.03),
+                        color: AppColors.primaryText.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(8.w),
                       ),
                 ],
@@ -161,7 +161,6 @@ class _InfoItem extends StatelessWidget {
   final String title;
   final String content;
   final bool hasAction;
-  final bool hasArrow;
   final VoidCallback? onTap;
   final bool isLast;
   const _InfoItem({
@@ -169,7 +168,6 @@ class _InfoItem extends StatelessWidget {
     required this.title,
     required this.content,
     this.hasAction = false,
-    this.hasArrow = false,
     this.isLast = false,
     this.onTap,
   });
@@ -199,14 +197,6 @@ class _InfoItem extends StatelessWidget {
             if (hasAction && content.isNotEmpty) ...[
               8.w.horizontalSpace,
               Image.asset(Assets.iconTelFill, width: 16.w),
-            ],
-            if (hasArrow && content.isNotEmpty) ...[
-              8.w.horizontalSpace,
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 14.w,
-                color: AppColors.assistantText,
-              ),
             ],
           ],
         )

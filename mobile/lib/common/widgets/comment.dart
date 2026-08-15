@@ -25,7 +25,7 @@ class CommentWidget extends StatelessWidget {
               item.createdAt ?? '',
               style: TextStyle(
                 fontSize: 12.sp,
-                color: AppColors.primaryText.withOpacity(0.6),
+                color: AppColors.primaryText.withValues(alpha: 0.6),
               ),
             ),
           ],

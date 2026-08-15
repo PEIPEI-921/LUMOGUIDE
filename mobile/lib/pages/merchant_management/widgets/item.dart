@@ -118,7 +118,7 @@ class MerchantManagementItemWidget extends StatelessWidget {
     ).decorated(
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),
@@ -254,7 +254,7 @@ class _OperateWidget extends StatelessWidget {
         Container(
           width: 1,
           height: 20.w,
-          color: AppColors.assistantText.withOpacity(0.3),
+          color: AppColors.assistantText.withValues(alpha: 0.3),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -281,6 +281,6 @@ class _OperateWidget extends StatelessWidget {
             )
             .expanded(),
       ],
-    ).height(40.w).backgroundColor(Colors.white.withOpacity(0.6));
+    ).height(40.w).backgroundColor(Colors.white.withValues(alpha: 0.6));
   }
 }

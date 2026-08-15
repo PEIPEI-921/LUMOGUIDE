@@ -244,7 +244,7 @@ class _HotelRow extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 2.w),
       child: Row(children: [
         SizedBox(width: 42.w),
-        SizedBox(width: 2),
+        const SizedBox(width: 2),
         SizedBox(width: 8.w),
         Icon(Icons.hotel_outlined, size: 12.sp, color: AppColors.assistantText),
         SizedBox(width: 4.w),

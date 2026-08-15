@@ -68,7 +68,9 @@ class GuideDetailController extends GetxController with ApiMixin {
     if (guideInfo?.phone?.isEmpty ?? true) return;
     try {
       launchUrl(Uri.parse('tel:${guideInfo?.phone}'));
-    } catch (e) {}
+    } catch (e) {
+      log('makePhoneCall error: $e');
+    }
   }
 
   onCopy(String? text) {

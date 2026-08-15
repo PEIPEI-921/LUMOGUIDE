@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 import 'package:lumotrip/pages/message/controller.dart';
@@ -225,7 +224,7 @@ class GroupProfilePage extends StatelessWidget {
                 ),
                 Divider(
                   height: 2,
-                  color: AppColors.assistantText.withOpacity(0.2),
+                  color: AppColors.assistantText.withValues(alpha: 0.2),
                 ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -242,7 +241,7 @@ class GroupProfilePage extends StatelessWidget {
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           filled: true,
-                          fillColor: AppColors.assistantText.withOpacity(0.08),
+                          fillColor: AppColors.assistantText.withValues(alpha: 0.08),
                           isDense: true,
                           hintText: '修改群名稱'.tr,
                         ),
@@ -269,6 +268,7 @@ class GroupProfilePage extends StatelessWidget {
                               listen: false,
                             );
                             final res = await model.setGroupName(name);
+                            if (!ctx.mounted) return;
                             Navigator.pop(ctx);
                             if (context.mounted &&
                                 res != null &&

@@ -23,3 +23,9 @@ const String STORAGE_SYSTEM_WELCOME_EN_PATH_KEY = 'system_welcome_en_path';
 
 const String STORAGE_JOURNEY_TEMPLATES_KEY = 'journey_templates';
 const String STORAGE_JOURNEY_DRAFT_KEY = 'journey_draft';
+
+/// 待處理的深鏈參數（JSON: {code, type, id, ts}），用於未登錄時登錄後恢復跳轉 + 綁定邀請
+const String STORAGE_PENDING_DEEP_LINK_KEY = 'pending_deep_link';
+
+/// 冷啟動延遲深鏈是否已檢查過（每次安裝只檢查一次，deferred token 服務端一次性消費）
+const String STORAGE_DEEP_LINK_COLD_CHECKED_KEY = 'deep_link_cold_checked';

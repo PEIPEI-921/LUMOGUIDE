@@ -5,8 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../utils/alert.dart';
 import '../values/colors.dart';
 
 class ImagePickerUtil {

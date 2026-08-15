@@ -83,7 +83,7 @@ class NewsDetailTitleWidget extends StatelessWidget {
                                 .padding(horizontal: 7.w, vertical: 4.w)
                                 .decorated(
                                   borderRadius: BorderRadius.circular(100),
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                 ),
                           ],
                         ).expanded(),
@@ -94,14 +94,14 @@ class NewsDetailTitleWidget extends StatelessWidget {
                       '${controller.news.view ?? 0}${'次瀏覽'.tr} | ${controller.news.createdAt ?? ''}',
                       style: TextStyle(
                         fontSize: 12.sp,
-                        color: AppColors.primaryText.withOpacity(0.6),
+                        color: AppColors.primaryText.withValues(alpha: 0.6),
                       ),
                       textAlign: TextAlign.right,
                     ).padding(top: 10.w),
                     Divider(
                       height: 20,
                       thickness: 1,
-                      color: AppColors.primaryText.withOpacity(0.05),
+                      color: AppColors.primaryText.withValues(alpha: 0.05),
                     ),
                   ],
                 )

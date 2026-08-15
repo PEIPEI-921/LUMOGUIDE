@@ -152,7 +152,7 @@ class SearchPageController extends GetxController with ApiMixin {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: hideSearchOverlay,
-              child: Container(color: Colors.black.withOpacity(0.1)),
+              child: Container(color: Colors.black.withValues(alpha: 0.1)),
             ),
           ),
           Positioned(

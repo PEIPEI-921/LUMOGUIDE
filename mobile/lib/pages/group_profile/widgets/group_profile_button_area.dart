@@ -173,7 +173,7 @@ class GroupProfileButtonAreaNoTransfer extends StatelessWidget {
                   color: Colors.white,
                   border: Border(
                     bottom: BorderSide(
-                      color: AppColors.assistantText.withOpacity(0.2),
+                      color: AppColors.assistantText.withValues(alpha: 0.2),
                     ),
                   ),
                 ),

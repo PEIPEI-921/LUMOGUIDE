@@ -123,28 +123,25 @@ class MerchantEditorController extends GetxController with ApiMixin {
   }
 
   onSelectCategory() async {
-    var data = categories.map((e) => e.name ?? '').toList();
-    if (data.isEmpty) {
-      Loading.show();
-      final res = await get(
-        ApiUrl.typeClass,
-        parameters: {'type_id': merchantShop.typeId},
-      );
-      Loading.dismiss();
-      if (!res.isSuccess) {
-        Loading.toast('error'.tr);
-        return;
-      }
-      final temp = res.dataList;
-      data = temp.map((e) => Category.fromJson(e).name ?? '').toList();
+    final typeId = merchantShop.typeId;
+    if (typeId == null || typeId == 0) {
+      Loading.toast('請選擇商家類型'.tr);
+      return;
     }
+    // 緩存為空時即時從 API 拉取並寫回緩存；返回的 list 用於顯示與匹配（避免對空列表 firstWhere 崩潰）
+    final list = await ConfigService.to.ensureTypeCategories(typeId);
+    if (list.isEmpty) {
+      Loading.toast('暫無可用分類'.tr);
+      return;
+    }
+    final data = list.map((e) => e.name ?? '').toList();
     final res = await ValuePicker.show(
       title: '分類'.tr,
       datas: data,
       selectedDatas: [merchantShop.typeClassName ?? ''],
     );
     if (res == null) return;
-    final category = categories.firstWhere((e) => e.name == res.first);
+    final category = list.firstWhere((e) => e.name == res.first);
     _merchantShop.update((val) {
       val?.typeClassId = category.id ?? 0;
       val?.typeClassName = category.name ?? '';
@@ -435,10 +432,13 @@ extension on MerchantEditorController {
   fillData() {
     if (merchantShop.id == null) return;
     _merchantShop.update((val) {
-      val?.cityName = cities.firstWhereOrNull((e) => e.id == val.cityId)?.name;
-      val?.typeClassName = categories
-          .firstWhereOrNull((e) => e.id == val.typeClassId)
-          ?.name;
+      if (val == null) return;
+      // 僅在能找到匹配時覆寫；否則保留伺服器返回的值（分類緩存未載入時不應清空）
+      final city = cities.firstWhereOrNull((e) => e.id == val.cityId);
+      if (city != null) val.cityName = city.name;
+      final category =
+          categories.firstWhereOrNull((e) => e.id == val.typeClassId);
+      if (category != null) val.typeClassName = category.name;
     });
     nameController.text = merchantShop.name ?? '';
     phoneController.text = merchantShop.phone ?? '';

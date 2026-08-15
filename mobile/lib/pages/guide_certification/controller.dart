@@ -384,11 +384,11 @@ class GuideCertificationController extends GetxController
           _certification.update((val) => val?.photo = url);
         } else {
           failCount++;
-          debugPrint('[GuideCert] photo upload returned empty URL');
+          log('[GuideCert] photo upload returned empty URL', name: 'GuideCert');
         }
       } catch (e) {
         failCount++;
-        debugPrint('[GuideCert] photo upload exception: $e');
+        log('[GuideCert] photo upload exception: $e', name: 'GuideCert');
       }
     }
     if (certificatePicture.value != null) {
@@ -398,11 +398,11 @@ class GuideCertificationController extends GetxController
           _certification.update((val) => val?.certificatePicture = url);
         } else {
           failCount++;
-          debugPrint('[GuideCert] certificatePicture upload returned empty URL');
+          log('[GuideCert] certificatePicture upload returned empty URL', name: 'GuideCert');
         }
       } catch (e) {
         failCount++;
-        debugPrint('[GuideCert] certificatePicture upload exception: $e');
+        log('[GuideCert] certificatePicture upload exception: $e', name: 'GuideCert');
       }
     }
     if (passportPicture.value != null) {
@@ -412,11 +412,11 @@ class GuideCertificationController extends GetxController
           _certification.update((val) => val?.passportPicture = url);
         } else {
           failCount++;
-          debugPrint('[GuideCert] passportPicture upload returned empty URL');
+          log('[GuideCert] passportPicture upload returned empty URL', name: 'GuideCert');
         }
       } catch (e) {
         failCount++;
-        debugPrint('[GuideCert] passportPicture upload exception: $e');
+        log('[GuideCert] passportPicture upload exception: $e', name: 'GuideCert');
       }
     }
     if (driverLicenseFront.value != null) {
@@ -426,11 +426,11 @@ class GuideCertificationController extends GetxController
           _certification.update((val) => val?.driverLicenseFront = url);
         } else {
           failCount++;
-          debugPrint('[GuideCert] driverLicenseFront upload returned empty URL');
+          log('[GuideCert] driverLicenseFront upload returned empty URL', name: 'GuideCert');
         }
       } catch (e) {
         failCount++;
-        debugPrint('[GuideCert] driverLicenseFront upload exception: $e');
+        log('[GuideCert] driverLicenseFront upload exception: $e', name: 'GuideCert');
       }
     }
     if (driverLicenseBack.value != null) {
@@ -440,11 +440,11 @@ class GuideCertificationController extends GetxController
           _certification.update((val) => val?.driverLicenseBack = url);
         } else {
           failCount++;
-          debugPrint('[GuideCert] driverLicenseBack upload returned empty URL');
+          log('[GuideCert] driverLicenseBack upload returned empty URL', name: 'GuideCert');
         }
       } catch (e) {
         failCount++;
-        debugPrint('[GuideCert] driverLicenseBack upload exception: $e');
+        log('[GuideCert] driverLicenseBack upload exception: $e', name: 'GuideCert');
       }
     }
 
@@ -460,11 +460,11 @@ class GuideCertificationController extends GetxController
             uploadedCarPics.add(url);
           } else {
             failCount++;
-            debugPrint('[GuideCert] carPicture upload returned empty URL: $e');
+            log('[GuideCert] carPicture upload returned empty URL: $e', name: 'GuideCert');
           }
         } catch (e) {
           failCount++;
-          debugPrint('[GuideCert] carPicture upload exception: $e');
+          log('[GuideCert] carPicture upload exception: $e', name: 'GuideCert');
         }
       }
     }
@@ -484,11 +484,11 @@ class GuideCertificationController extends GetxController
     final attemptedCount = newPhotos.length + newCarPicsCount;
 
     if (attemptedCount > 0 && failCount >= attemptedCount) {
-      debugPrint('[GuideCert] ALL uploads failed: $failCount / $attemptedCount');
+      log('[GuideCert] ALL uploads failed: $failCount / $attemptedCount', name: 'GuideCert');
       return false;
     }
 
-    debugPrint('[GuideCert] Uploads: $failCount failures out of $attemptedCount attempts');
+    log('[GuideCert] Uploads: $failCount failures out of $attemptedCount attempts', name: 'GuideCert');
     return true;
   }
 

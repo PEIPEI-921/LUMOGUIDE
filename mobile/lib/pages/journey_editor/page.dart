@@ -467,7 +467,7 @@ class _CityBlockSectionState extends State<_CityBlockSection> {
             ),
             SizedBox(width: 4.w),
             _typeBadge(block.items[item.key].type),
-            Expanded(child: _TnyInput(
+            Expanded(child: _tinyInput(
               block.items[item.key].title ?? '',
               (v) => ctrl.updateDayItem(di, bi, item.key, 'title', v),
               hint: '活动/景点',
@@ -608,7 +608,7 @@ class _DayCardState extends State<_DayCard> {
           Text(day.date ?? '', style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
         ]),
         SizedBox(height: 6.w),
-        _SmlInput('主题', (v) => ctrl.updateDayField(index, 'theme', v), day.theme),
+        _smallInput('主题', (v) => ctrl.updateDayField(index, 'theme', v), day.theme),
         SizedBox(height: 6.w),
         // ---- 每个城市块独立渲染 ----
         ...List.generate(day.cityBlocks.length, (bi) {
@@ -642,11 +642,11 @@ class _DayCardState extends State<_DayCard> {
           ),
         ),
         SizedBox(height: 8.w),
-        _SmlInput('酒店', (v) => ctrl.updateDayField(index, 'hotel_name', v), day.hotelName),
+        _smallInput('酒店', (v) => ctrl.updateDayField(index, 'hotel_name', v), day.hotelName),
         SizedBox(height: 4.w),
-        _SmlInput('车程(h)', (v) => ctrl.updateDayField(index, 'driving_hours', v), day.drivingHours),
+        _smallInput('车程(h)', (v) => ctrl.updateDayField(index, 'driving_hours', v), day.drivingHours),
         SizedBox(height: 4.w),
-        _SmlInput('备注', (v) => ctrl.updateDayField(index, 'day_note', v), day.dayNote),
+        _smallInput('备注', (v) => ctrl.updateDayField(index, 'day_note', v), day.dayNote),
       ]),
     );
   }
@@ -745,7 +745,7 @@ class _MiniField extends StatelessWidget {
       border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero));
 }
 
-Widget _SmlInput(String hint, Function(String) onChanged, String? value) {
+Widget _smallInput(String hint, Function(String) onChanged, String? value) {
   return SizedBox(height: 34.w, child: TextFormField(
     initialValue: value ?? '', onChanged: onChanged,
     style: TextStyle(fontSize: 12.sp, color: AppColors.primaryText),
@@ -755,7 +755,7 @@ Widget _SmlInput(String hint, Function(String) onChanged, String? value) {
       isDense: true)));
 }
 
-Widget _TnyInput(String value, Function(String) onChanged, {String hint = ''}) {
+Widget _tinyInput(String value, Function(String) onChanged, {String hint = ''}) {
   return SizedBox(height: 28.w, child: TextFormField(
     initialValue: value, onChanged: onChanged,
     style: TextStyle(fontSize: 11.sp, color: AppColors.primaryText),

@@ -8,7 +8,6 @@ import 'package:tencent_cloud_chat_push/common/tim_push_message.dart';
 import 'package:tencent_cloud_chat_push/tencent_cloud_chat_push.dart';
 import 'package:tencent_cloud_chat_sdk/tencent_im_sdk_plugin.dart';
 import 'package:tencent_cloud_chat_sdk/enum/V2TimSDKListener.dart';
-import 'package:tencent_cloud_chat_sdk/enum/V2TimFriendshipListener.dart';
 import 'package:tencent_cloud_chat_sdk/enum/V2TimConversationListener.dart';
 import 'package:tencent_cloud_chat_sdk/enum/log_level_enum.dart';
 import 'package:tencent_cloud_chat_sdk/enum/group_add_opt_enum.dart';
@@ -35,7 +34,6 @@ class TIMStore extends GetxController {
   final sdkInstance = TIMUIKitCore.getSDKInstance();
 
   bool _isInitIMSDK = false;
-  bool _isSDKListenerRegistered = false;
 
   final _isIMLoginReady = false.obs;
   bool get isIMLoginReady => _isIMLoginReady.value;
@@ -357,11 +355,6 @@ extension TIMStoreExt on TIMStore {
 }
 
 extension on TIMStore {
-  void _registerSDKListener() {
-    if (_isSDKListenerRegistered) return;
-    _isSDKListenerRegistered = true;
-  }
-
   V2TimSDKListener _createSDKListener() => V2TimSDKListener(
     onConnectSuccess: () {
       log('TIMStore: onConnectSuccess');

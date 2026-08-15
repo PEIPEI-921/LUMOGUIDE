@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -191,11 +192,10 @@ class PublishCityController extends GetxController with ApiMixin {
 
     final url = id == 0 ? ApiUrl.guidePublishCity : ApiUrl.guideEditCity;
     final payload = cityInfo.toJson();
-    debugPrint('[PublishCity] POST $url payload keys: ${payload.keys}, name: ${payload['name']}, pictures count: ${(payload['pictures'] as List?)?.length ?? 0}');
     final res = await post(url, data: payload);
     Loading.dismiss();
     if (!res.isSuccess) {
-      debugPrint('[PublishCity] Submit failed: code=${res.code}, message=${res.message}');
+      log('[PublishCity] Submit failed: code=${res.code}, message=${res.message}', name: 'PublishCity');
       AlertUtils.error(res.message);
       return;
     }

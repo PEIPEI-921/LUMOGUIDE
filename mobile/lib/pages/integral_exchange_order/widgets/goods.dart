@@ -57,7 +57,7 @@ class GoodsCard extends StatelessWidget {
             ).expanded(),
           ],
         ).height(84.w),
-        Divider(color: AppColors.primaryText.withOpacity(0.1)),
+        Divider(color: AppColors.primaryText.withValues(alpha: 0.1)),
         const PriceRow(),
       ],
     )

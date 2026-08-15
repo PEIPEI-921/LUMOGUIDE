@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 import '../../index.dart';
@@ -23,7 +25,7 @@ class AuthInterceptor extends Interceptor {
         }
       }
     } catch (e) {
-      print(e.toString());
+      log(e.toString(), name: 'AuthInterceptor');
     }
     super.onResponse(response, handler);
   }

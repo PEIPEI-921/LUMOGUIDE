@@ -10,3 +10,4 @@ export 'image_compression.dart';
 export 'vip_check.dart';
 export 'chinese_search_normalize.dart';
 export 'map.dart';
+export 'journey_import.dart';

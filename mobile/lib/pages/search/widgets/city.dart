@@ -135,7 +135,7 @@ class _Item extends StatelessWidget {
                   item.nameEn ?? '',
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,

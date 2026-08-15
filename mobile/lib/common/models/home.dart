@@ -17,27 +17,14 @@ class HomeModel {
   List<HomeModelInformation> information;
 
   factory HomeModel.fromJson(Map<String, dynamic> json) => HomeModel(
-    city:
-        (json['city'] as List<dynamic>?)
-            ?.map((x) => CityList.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
-    guide:
-        (json['guide'] as List<dynamic>?)
-            ?.map((x) => HomeModelGuide.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
-    shop:
-        (json['shop'] as List<dynamic>?)
-            ?.map((x) => HomeModelShop.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
+    city: json.safeObjectList<CityList>('city', CityList.fromJson) ?? [],
+    guide: json.safeObjectList<HomeModelGuide>('guide', HomeModelGuide.fromJson) ?? [],
+    shop: json.safeObjectList<HomeModelShop>('shop', HomeModelShop.fromJson) ?? [],
     information:
-        (json['information'] as List<dynamic>?)
-            ?.map(
-              (x) => HomeModelInformation.fromJson(x as Map<String, dynamic>),
-            )
-            .toList() ??
+        json.safeObjectList<HomeModelInformation>(
+          'information',
+          HomeModelInformation.fromJson,
+        ) ??
         [],
   );
 
@@ -59,13 +46,9 @@ class HomeModelGuide {
   List<GuideList> list;
 
   factory HomeModelGuide.fromJson(Map<String, dynamic> json) => HomeModelGuide(
-    id: json['id'] as int?,
-    name: json['name'] as String?,
-    list:
-        (json['list'] as List<dynamic>?)
-            ?.map((x) => GuideList.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
+    id: json.safeInt('id'),
+    name: json.safeString('name'),
+    list: json.safeObjectList<GuideList>('list', GuideList.fromJson) ?? [],
   );
 
   Map<String, dynamic> toJson() {
@@ -93,19 +76,11 @@ class HomeModelShop {
   List<MerchantList> banner;
 
   factory HomeModelShop.fromJson(Map<String, dynamic> json) => HomeModelShop(
-    id: json['id'] as int?,
+    id: json.safeInt('id'),
     typeId: json.safeInt('type_id'),
     name: json.safeString('name'),
-    list:
-        (json['list'] as List<dynamic>?)
-            ?.map((x) => MerchantList.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
-    banner:
-        (json['banner'] as List<dynamic>?)
-            ?.map((x) => MerchantList.fromJson(x as Map<String, dynamic>))
-            .toList() ??
-        [],
+    list: json.safeObjectList<MerchantList>('list', MerchantList.fromJson) ?? [],
+    banner: json.safeObjectList<MerchantList>('banner', MerchantList.fromJson) ?? [],
   );
 
   Map<String, dynamic> toJson() {
@@ -127,16 +102,13 @@ class HomeModelInformation {
 
   factory HomeModelInformation.fromJson(Map<String, dynamic> json) =>
       HomeModelInformation(
-        id: json['id'] as int?,
-        name: json['name'] as String?,
+        id: json.safeInt('id'),
+        name: json.safeString('name'),
         list:
-            (json['list'] as List<dynamic>?)
-                ?.map(
-                  (x) => HomeModelInformationList.fromJson(
-                    x as Map<String, dynamic>,
-                  ),
-                )
-                .toList() ??
+            json.safeObjectList<HomeModelInformationList>(
+              'list',
+              HomeModelInformationList.fromJson,
+            ) ??
             [],
       );
 
@@ -176,15 +148,15 @@ class HomeModelInformationList {
 
   factory HomeModelInformationList.fromJson(Map<String, dynamic> json) =>
       HomeModelInformationList(
-        id: json['id'] as int?,
-        title: json['title'] as String?,
-        desc: json['desc'] as String?,
-        createdAt: json['created_at'] as String?,
-        guideType: json['guide_type'] as String?,
-        userNickname: json['user_nickname'] as String?,
-        userAvatar: json['user_avatar'] as String?,
-        evaluateCount: json['evaluate_count'] as int?,
-        firstPicture: json['first_picture'] as String?,
+        id: json.safeInt('id'),
+        title: json.safeString('title'),
+        desc: json.safeString('desc'),
+        createdAt: json.safeString('created_at'),
+        guideType: json.safeString('guide_type'),
+        userNickname: json.safeString('user_nickname'),
+        userAvatar: json.safeString('user_avatar'),
+        evaluateCount: json.safeInt('evaluate_count'),
+        firstPicture: json.safeString('first_picture'),
         pictures: json.safeList<String>('pictures') ?? [],
       );
 

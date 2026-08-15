@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import '../../merchant_list/controller.dart';
 import '../controller.dart';
 
 class CitySelectionPanel extends StatefulWidget {
@@ -37,7 +36,7 @@ class _CitySelectionPanelState extends State<CitySelectionPanel> {
           borderRadius: BorderRadius.circular(8.w),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

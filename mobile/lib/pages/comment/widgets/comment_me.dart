@@ -38,7 +38,7 @@ class CommentMeItemWidget extends StatelessWidget {
                 Text(
                   item.title ?? '',
                   style: TextStyle(
-                    color: AppColors.primaryText.withOpacity(0.6),
+                    color: AppColors.primaryText.withValues(alpha: 0.6),
                     fontSize: 12.sp,
                   ),
                 ).padding(horizontal: 4.w),
@@ -58,7 +58,7 @@ class CommentMeItemWidget extends StatelessWidget {
             Text(
               item.formatDate ?? '',
               style: TextStyle(
-                color: AppColors.primaryText.withOpacity(0.6),
+                color: AppColors.primaryText.withValues(alpha: 0.6),
                 fontSize: 12.sp,
               ),
               maxLines: 1,

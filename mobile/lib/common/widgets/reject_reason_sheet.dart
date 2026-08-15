@@ -54,7 +54,7 @@ class RejectReasonSheet extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10.w),
                 border: Border.all(
-                  color: AppColors.assistantText.withOpacity(0.2),
+                  color: AppColors.assistantText.withValues(alpha: 0.2),
                 ),
               ),
               child: TextField(

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
 
-import '../index.dart';
-
 class IntegralMallListController extends GetxController
     with ApiMixin, RefreshableMixin {
   final int id;
@@ -123,7 +121,7 @@ class _Item extends StatelessWidget {
                 fontSize: 10.sp,
               ),
             ).center().constrained(width: 50.w, height: 20.w).decorated(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
                 ),
           ],
