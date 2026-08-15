@@ -17,9 +17,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          # 与本地开发环境一致（~/flutter = 3.38.5）。勿升 3.44.4：
-          # 会触发 cacheExtent 弃用告警 + tencent_cloud_chat_uikit 重解析到损坏的 5.0.1+5。
-          flutter-version: '3.38.5'
+          flutter-version: '3.44.4'
           channel: stable
           cache: true
 
