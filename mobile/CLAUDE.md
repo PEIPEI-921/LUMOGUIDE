@@ -164,7 +164,11 @@ Debug mode default credentials (in `lib/pages/login/controller.dart`): `zhouguan
   - status=1 (pending) → `AppColors.primary` (#666FFF purple)
   - status=2 (confirmed) → `AppColors.jadeGreen` (#44D7B6 green)
   - status≥3 (completed/cancelled/rejected/expired) → `AppColors.assistantText` (#999999 gray)
-- `StatusWidget` badge colors updated to match
+- `StatusWidget` badge (`lib/pages/user_booking_manager/widgets/status.dart`) — **独立映射，与左边框不完全一致**：
+  - status=1 (待確認) → `AppColors.primary` (#666FFF purple)
+  - status=2 (已確認) → `AppColors.jadeGreen` (#44D7B6 green)
+  - status=3 (已完成) → `AppColors.primaryText` (#162539 dark，非灰)
+  - status=4/5/6 (已取消/已拒絕/已過期) → `AppColors.assistantText` (#999999 gray)
 
 See [[calendar-redesign]], [[booking-color-coding]].
 
@@ -410,11 +414,13 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **Deep Link 雙格式支援（2026-08-02）：** `_handleDeepLink()` (`lib/common/services/deep_link.dart`) 同時支援 `lumoguide://share?...`（自定義 scheme，向後兼容）和 `https://lumoguide.com/share?...`（Universal Link / App Link）。
 
+**未登錄深鏈恢復（2026-08-03，配合後端深鏈文檔 P1-1）：** `_handleDeepLink()` 收到深鏈後一律先存待處理參數到 SharedPreferences（key `pending_deep_link`，JSON `{code, type, id, ts}`，見 `STORAGE_PENDING_DEEP_LINK_KEY`）。已登錄 → 立即綁定邀請 + 跳轉；未登錄 → 不跳轉（welcome 流程會先進 LOGIN 頁），登錄後由 `DeepLinkService.checkPendingDeepLink()` 恢復：綁定邀請 → 跳轉內容頁 → 清除待處理。調用點：`_handleDeepLink`（已登錄即時）+ `UserStore.login()`（登錄後）。之前未登錄時 `c` 邀請碼會被丟棄。iOS Universal Links 由 app_links 6.4.1 的 `addApplicationDelegate` 處理，`AppDelegate.swift` 無需加 `AppLinksAppDelegate` mixin。
+
 **iOS Universal Links（2026-08-02）：** `ios/Runner/Runner.entitlements` 新增 `com.apple.developer.associated-domains` → `applinks:lumoguide.com`。需服務端部署 AASA 文件。**iOS 僅在 App 首次安裝/更新時下載 AASA，若 App 在 AASA 部署前安裝需刪除重裝才能讓 Universal Links 生效。**
 
 **Android App Links（2026-08-02）：** `android/app/src/main/AndroidManifest.xml` 新增 `https://lumoguide.com/share` intent filter + `android:autoVerify="true"`。保留 `lumoguide://share` 自定義 scheme。
 
-**Android Keystore & SHA256（2026-08-02，2026-08-03 更新）：** Release keystore `key.jks` 未提交到 repo（`.gitignore`），需聯繫項目負責人獲取或重新生成。`keystore.properties` 指向 `../key.jks`（alias=key, storepass/keypass=123456）。Release SHA256: `5BACAB02269E9F8AAFEB0C3D0A5231271F800FFF2BAC8EC20840EDBBE105D579`。Debug SHA256: `01F80B37279B8C4430C527FDC42A131385D28A54DF47EB18A06A58B23A54ABBD`。
+**Android Keystore & SHA256（2026-08-02，2026-08-03/05 更新）：** Release keystore `key.jks` 未提交到 repo（`.gitignore`），需聯繫項目負責人獲取或重新生成。`keystore.properties` 指向 `../../key.jks`（⚠️ Gradle 相對路徑基準是 `android/app/`，`../../` 才到 repo 根目錄的 key.jks；曾用 `../` 指向 `android/key.jks` 導致 `validateSigningRelease` 報「Keystore file not found」）。alias=key, storepass/keypass=123456。Release SHA256: `5BACAB02269E9F8AAFEB0C3D0A5231271F800FFF2BAC8EC20840EDBBE105D579`。Debug SHA256: `01F80B37279B8C4430C527FDC42A131385D28A54DF47EB18A06A58B23A54ABBD`。**Play 上傳密鑰**另見下方「Play 上傳密鑰重置」。
 
 **Android 構建配置（2026-08-03 更新）：** 
 - `compileSdk` 36, `targetSdk` 36, `buildToolsVersion = "36.0.0"`, `ndkVersion = "28.2.13676358"`
@@ -439,7 +445,39 @@ See [[calendar-redesign]], [[booking-color-coding]].
 - 客戶行程預覽：換用 ShareWatermark + 新增導遊認證名（`UserStore.to.profile.guideInfo?.name ?? work.leaderName`）
 - `_bindInviter()` 已實現：調用 `POST /user/bindInviter`
 
-詳見 [[share-system-overhaul]]、[[deep-link-https-universal-links]]。
+**冷啟動深鏈完整修復（2026-08-03 ~ 08-05，配合後端深鏈文檔）：**
+
+- **冷啟動競態修復（2026-08-03）**：`getInitialLink()` 可能在 `runApp()` 前 resolve，且 welcome/login 的 `Get.offAll(ROOT)` 會清掉剛 push 的內容頁（雙重競態）。三重修復：① `checkPendingDeepLink()` 先 `_waitForNavigator()`（20×250ms 輪詢 `Get.context` 非空）；② 路由守衛（`Get.currentRoute == WELCOME || LOGIN` 時保留 pending 不跳轉）；③ 三處主導航**之後**補調用 `DeepLinkService.checkPendingDeepLink()` — `welcome/controller.dart`（`Get.offAll(ROOT/LOGIN)` 後）、`login/controller.dart:107`、`password_input/controller.dart:106`。
+- **Android `flutter_deeplinking_enabled` 移除（2026-08-04，冷啟動空白根因）**：Flutter 源碼 `app.dart:1426-1429` — `defaultRouteName != '/'` 時**覆蓋** GetMaterialApp 顯式 `initialRoute`（即使設了 `/welcome`）。該 meta-data 開啟時引擎把冷啟動深鏈 URL 設為 defaultRouteName → GetX `PageRedirect.page()` 對未知 URL 路由執行 `(isUnknown ? unknownRoute : route)!` → null 斷言 → **空白/崩潰**。已移除 `AndroidManifest.xml` 中的該 meta-data（app_links 直接讀 Intent，不依賴引擎路由）。
+- **iOS `FlutterDeepLinkingEnabled=false`（2026-08-05，iOS 冷啟動空白根因）**：Flutter 引擎 `FlutterSharedApplication.mm:60-66` — Info.plist **未設置時默認 YES**（Flutter 3.24+ 內置深鏈默認開啟）。開啟時引擎 `sendDeepLinkToFramework` 把 universal link URL 設為 defaultRouteName → 與 Android 相同問題。`ios/Runner/Info.plist` 已加 `<key>FlutterDeepLinkingEnabled</key><false/>`（app_links 官方 README 要求，app_links 不需要它）。
+- **AppDelegate.swift 無需手動轉發（2026-08-05 澄清）**：app_links 6.4.1 插件 `registrar.addApplicationDelegate(instance)` 自動註冊；FlutterAppDelegate（Flutter 3.44）`application(open:)`/`continueUserActivity` 經 `lifeCycleDelegate` **自動轉發**給插件。App 無 scene 生命周期（Info.plist 無 `UIApplicationSceneManifest`）→ 經典路徑生效。⚠️ 後端建議的 `AppLinks.shared.handleUniversalLink(...)` 是 app_links **7.x** API，6.4.1 不存在，照搬編譯失敗；手動轉發還會雙重觸發 handleLink。
+- **Stripe `flutterstripe://safepay` autoVerify→false（2026-08-05）**：自定義 scheme 加 `autoVerify="true"` 會使部分 Android 12+ 設備 **App Links 整體驗證失敗**（已知問題）。stripe_android 12.x 庫 manifest 是空的（filter 完全來自自己 manifest，非 SDK 注入），改 `android:autoVerify="false"`；`https://lumoguide.com/share` 的 App Links filter 保持 `autoVerify="true"`。
+- **雙格式解析確認（2026-08-05）**：`_handleDeepLink`（`deep_link.dart:34-44`）同時處理 `lumoguide://share`（`uri.scheme == 'lumoguide' && uri.host == 'share'`）和 `https://lumoguide.com/share`。後端 APK 快照只找到 https 字符串是**工具誤判**（代碼無字面 `lumoguide://`，用 `uri.scheme` 比較）。
+
+**冷啟動延遲深鏈三通道（2026-08-07，配合後端 deferredLink 接口）：**
+
+後端 Web 端已實施延遲深鏈（掃碼落地頁生成 16 位 token → 剪貼板 + `POST /common/deferredLink` 記錄 IP + `/dl` 下載 URL 帶 `referrer=token`）。App 冷啟動（`getInitialLink()` 返回 null）時按優先級嘗試三通道：
+
+| 通道 | 數據源 | API |
+|------|--------|-----|
+| 1 剪貼板（主） | Web 寫入 `{"c","t","i","token"}` | `GET /common/checkDeferredLink?token=xxx` |
+| 2 InstallReferrer | Play 安裝 referrer 中的 `token=` | 同上 |
+| 3 服務端 IP | 無參數（後端 IP 匹配） | `GET /common/checkDeferredLink` |
+
+- **新增依賴** `play_install_referrer: ^0.5.0`（Android-only）。⚠️ 後端文檔建議的 `install_referrer` / `android_play_install_referrer` 都不適用：前者 SDK 約束 `<3.0.0`（不兼容 Dart 3.12），後者已棄用。`play_install_referrer` API：`PlayInstallReferrer.installReferrer` → `ReferrerDetails.installReferrer`（String?，iOS/無 Play 環境拋異常，try-catch 靜默跳過）。
+- **`_fetchDeferredLink`**（`deep_link.dart`）：調 `ApiProvider().get(ApiUrl.commonCheckDeferredLink)`，解析 `data.found==true` 後取 `inviter_code/content_type/content_id`。**接口必須免登錄**（冷啟動在登錄前調用）。
+- 找到後統一 `_savePendingDeepLink(code,type,id)` + `checkPendingDeepLink()`（已登錄即時綁定+跳轉；未登錄等登錄後恢復）→ 清除剪貼板。
+- **`invite` 類型**：`t=invite` 無需 `i` 參數（`idInt=0`），綁定邀請碼後跳 `/invite`（我的邀請頁）。`_navigateToContent` 新增 `case 'invite'`。
+- **`/share.html` 路徑**：Universal Link 兼容 `uri.path == '/share' || '/share.html'`。
+- **防重入**：`STORAGE_DEEP_LINK_COLD_CHECKED_KEY`（`deep_link_cold_checked`）每次安裝只檢查一次，**檢查完成後**寫入（進程中途被殺可重試）；`_checkColdStartChannels` 開頭等待 `StorageService` 註冊（最多 5s）。
+- **兼容舊格式**：剪貼板若無 token，直接取 `c/t/i`（新格式）或 `code/type/id`（舊格式）兜底。
+- **移除** `ClipboardService.checkShareParams()`（舊剪貼板格式被新通道取代）及 login 中調用（`user.dart`）。
+
+**Play 上傳密鑰重置（2026-08-05 已生效）：** 原 Play 上傳密鑰遺失（SHA1 `c9bc...`，Play Console 記錄），Play 拒絕舊密鑰簽名的 AAB。已生成新 `upload-keystore.jks`（alias=upload, storepass/keypass=txK957qd3pc6W22j，SHA256 `5F130901D952F4E8C665AA26C78BF84A43E86086ED6D97E7F9F28A47DB9E9850`）並導出 `upload_certificate.pem`。**2026-08-06 審核通過，已用新密鑰重建 AAB**（`LUMOGUIDE-v1.0.6+26-googleplay.aab`，簽名 `5F:13:09:01:...:98:50`）供上傳 Play；同時用原 release 密鑰重建 `/dl` APK（`LUMOGUIDE-v1.0.6+26.apk`，簽名 `5bacab02...` 不變，用戶可原地升級）。**待辦：上傳 Play + 替換 /dl APK 後，通知後端把冒號格式指紋 `5F:13:09:01:...:98:50` 追加到 assetlinks.json**（保留舊 `5BACAB02...`，兩個共存）。⚠️ Play 路徑新舊簽名不一致是**上傳密鑰重置的正常流程**（Google 仍用 app signing 證書簽發，Play 用戶不受影響）；/dl APK 簽名保持 key.jks 連續。
+
+**iOS 正式版上傳（2026-08-07）：** `MARKETING_VERSION=1.0.8`，`CFBundleVersion` 硬寫在 `Info.plist`（不用 `$(CURRENT_PROJECT_VERSION)`）。⚠️ 構建號在 TestFlight 和 App Store 間**共享**，測試版已用 `1.0.8 (2)~(14)`，正式版用 `1.0.8 (15)`（已上傳）。下次上傳需 `Info.plist` 構建號再 +1。`flutter build ipa` 後 `open build/ios/archive/Runner.xcarchive` → Distribute App → Upload。
+
+詳見 [[share-system-overhaul]]、[[deep-link-https-universal-links]]、[[deep-link-cold-start-race]]、[[deep-link-deferred-cold-start]]。
 
 ### 地址點擊開啟地圖（2026-08-01）
 
@@ -465,6 +503,10 @@ See [[calendar-redesign]], [[booking-color-coding]].
 `patched_packages/extended_text_field/` is a locally patched copy of `extended_text_field` 16.0.2, loaded via `dependency_overrides` in pubspec.yaml. 
 
 **Why:** Flutter 3.44 removed `ExtendSelectionByPageIntent` from the services package. `extended_text_field` (a transitive dependency of `tencent_cloud_chat_uikit`) references this class in `editable_text.dart`, causing compile errors on all platforms. The patch removes the `_extendSelectionByPage` method and its action binding.
+
+**Analyzer exclusion:** `analysis_options.yaml` excludes `patched_packages/**` and `plugins/**` from `flutter analyze` (vendored third-party code carries upstream Flutter-3.44 deprecation warnings like `toolbarOptions`/`scribble` that are deliberately not patched — high-risk, waiting on upstream). The project's own `lib/` code is fully clean (`flutter analyze` → 0 issues).
+
+**Direct deps added (2026-08-15):** `tencent_cloud_chat_sdk`/`tencent_chat_i18n_tool`/`flutter_markdown`/`dotted_border`/`flutter_cache_manager`/`image_picker_android`/`image_picker_platform_interface` were promoted from transitive to direct `dependencies` because `lib/` imports them directly (silences `depend_on_referenced_packages`).
 
 ## Known issues
 
@@ -573,6 +615,12 @@ See [[calendar-redesign]], [[booking-color-coding]].
     - `android/gradle/wrapper/gradle-wrapper.properties`：Gradle ≥ 8.13
     - `android/build.gradle` + `android/settings.gradle`：阿里雲鏡像是否保留
     - 若被覆蓋，重新應用以上修改
+29. ✅ **發布頁面分類顯示修復（2026-08-06）:** 導遊發布內容（景點/活動/設施/交通/資訊）分類不能正確顯示 + 交通頁分類標題錯誤。根因：
+    - **標題錯誤**：`publish_transportation/controller.dart` 分類選擇器標題誤用「景點類型」（複製自景點頁），改為「交通類型」；`publish_facility` 用通用「分類」，改為「設施類型」（選擇器 + 頁面 label 同步改）。
+    - **緩存競態**：`ConfigService.loadTypeCategories()` 在 `enterApp()` fire-and-forget（8 個串行請求），打開發布頁時 `typeCategories` 緩存可能為空 → 點分類彈空列表。**修復：新增 `ConfigService.ensureTypeCategories(typeId)`**（`config.dart`），緩存為空即時調 `/common/getTypeClass?type_id=X` 並**寫回緩存**；5 個發布頁 `onSelectCategory` 統一改用它。
+    - **編輯模式覆蓋 bug**：`fillData()` 用 `categories.firstWhereOrNull(...)?.name` **覆寫**服務器返回的 `typeClassName`，緩存為空時把正確值覆寫成 null → 字段空白。**修復：僅在匹配到時覆寫**，否則保留服務器值（`cityName` 同理）。
+    - **類似問題**：`merchant_editor` 原代碼緩存為空從 API 拉列表後仍用空 `categories` 做 `firstWhere` → 用戶選中分類直接 **StateError 崩潰**；`merchant_entry` 緩存為空時 `typeClassId` 變 null。均改用 `ensureTypeCategories`。`publish_information` 分類空時即時 `_fetchNewsCategory()`。
+    - i18n 新增 `交通類型`/`設施類型`/`暫無可用分類` 三語鍵。詳見 [[publish-category-fix]]。
 
 ## New machine setup
 

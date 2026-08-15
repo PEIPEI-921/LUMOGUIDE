@@ -4,7 +4,9 @@ plugins {
 
 allprojects {
     repositories {
+        // 项目依赖用阿里云优先（速度快）；腾讯镜像兜底（阿里云个别路径 502）
         maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://mirrors.cloud.tencent.com/maven/' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         google()
         mavenCentral()

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刪除數據請求 | LUMOGUIDE Data Deletion Request</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: linear-gradient(160deg, #f4f5ff 0%, #ffffff 100%);
+    color: #1f2137;
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+  .container { max-width: 620px; margin: 0 auto; padding: 48px 20px 64px; }
+  .logo { font-size: 24px; font-weight: 800; color: #666FFF; letter-spacing: 1px; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #8a8ba3; margin-bottom: 28px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .en-title { font-size: 13px; color: #8a8ba3; margin-bottom: 24px; }
+  .card {
+    background: #fff; border-radius: 16px; padding: 24px;
+    box-shadow: 0 4px 20px rgba(102,111,255,0.08);
+    margin-bottom: 20px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 12px; color: #666FFF; }
+  .card p, .card li { font-size: 14px; color: #44465f; }
+  .card ul { padding-left: 20px; margin: 8px 0; }
+  label { display:block; font-size: 13px; color:#44465f; margin: 16px 0 6px; font-weight:600; }
+  input[type=email], input[type=text], select, textarea {
+    width: 100%; padding: 12px 14px; border: 1px solid #dfe1f0; border-radius: 10px;
+    font-size: 14px; background: #fafbff; outline:none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #666FFF; }
+  textarea { min-height: 90px; resize: vertical; }
+  button {
+    width: 100%; margin-top: 20px; padding: 14px; border:none; border-radius: 100px;
+    background: #666FFF; color:#fff; font-size: 15px; font-weight:600; cursor:pointer;
+  }
+  button:active { opacity:0.85; }
+  .note { font-size: 12px; color: #8a8ba3; margin-top: 12px; }
+  .en { color:#8a8ba3; }
+  .footer { text-align:center; font-size: 12px; color: #b0b1c5; margin-top: 32px; }
+  .success { display:none; margin-top:14px; padding:12px; background:#eefaf3; color:#1e8e5a; border-radius:10px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">LUMOGUIDE</div>
+  <div class="subtitle">旅遊向導 App</div>
+
+  <h1>刪除數據請求</h1>
+  <div class="en-title">Data Deletion Request</div>
+
+  <div class="card">
+    <h2>📌 說明 / How it works</h2>
+    <ul>
+      <li>您可以在 App 內隨時刪除自己發布的內容（景點、活動、設施、交通、資訊等）。</li>
+      <li class="en">You can delete content you published at any time inside the App.</li>
+      <li>如需刪除您的<b>賬號及全部相關數據</b>（個人資料、發布內容、訂單記錄、聊天記錄等），請填寫下方表單提交請求。</li>
+      <li class="en">To delete your <b>account and all associated data</b> (profile, published content, bookings, chat history, etc.), please submit the form below.</li>
+      <li>我們會在收到請求後 <b>7 個工作日</b>內完成刪除並通過郵件確認。</li>
+      <li class="en">We will process your request within <b>7 business days</b> and confirm by email.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>✍️ 提交請求 / Submit a request</h2>
+
+    <label for="email">註冊郵箱 * / Registered email *</label>
+    <input type="email" id="email" required placeholder="您註冊 LUMOGUIDE 時使用的郵箱 / the email you registered with">
+
+    <label for="type">請求類型 / Request type</label>
+    <select id="type">
+      <option value="account">刪除賬號及全部數據 / Delete account and all data</option>
+      <option value="partial">僅刪除部分數據 / Delete specific data</option>
+    </select>
+
+    <label for="detail">補充說明（可選）/ Additional details (optional)</label>
+    <textarea id="detail" placeholder="請描述您希望刪除的具體數據，例如：刪除我在 XX 城市發布的所有景點 / e.g. delete all attractions I published in XX city"></textarea>
+
+    <button id="submit">提交刪除請求 / Submit Deletion Request</button>
+    <div class="success" id="success"></div>
+    <p class="note">
+      點擊提交會打開您的郵箱發送郵件，發送後請回到此頁面即可。
+      <span class="en">Clicking submit opens your mail app to send the request.</span><br>
+      如無法使用表單，可直接發郵件至 <b id="maildisplay"></b>，標題註明「賬號刪除請求」。
+    </p>
+  </div>
+
+  <div class="footer">© 2026 LUMOGUIDE · 用戶隱私與數據刪除</div>
+</div>
+
+<script>
+  // TODO: 替換為你公司的真實客服/數據刪除郵箱
+  var SUPPORT_EMAIL = 'support@lumoguide.com';
+  document.getElementById('maildisplay').textContent = SUPPORT_EMAIL;
+
+  document.getElementById('submit').addEventListener('click', function () {
+    var email = document.getElementById('email').value.trim();
+    var type = document.getElementById('type').value;
+    var detail = document.getElementById('detail').value.trim();
+    var success = document.getElementById('success');
+
+    if (!email) {
+      alert('請填寫註冊郵箱 / Please enter your registered email');
+      return;
+    }
+
+    var subject = '[LUMOGUIDE 數據刪除請求] ' + email;
+    var body = '註冊郵箱: ' + email + '\n'
+             + '請求類型: ' + (type === 'account' ? '刪除賬號及全部數據' : '僅刪除部分數據') + '\n'
+             + '補充說明: ' + (detail || '無') + '\n\n'
+             + '請刪除上述賬號在 LUMOGUIDE 中的全部相關數據，並通過此郵箱回復確認。';
+
+    var href = 'mailto:' + SUPPORT_EMAIL
+             + '?subject=' + encodeURIComponent(subject)
+             + '&body=' + encodeURIComponent(body);
+
+    success.style.display = 'block';
+    success.textContent = '正在打開郵箱… 如未自動打開，請點擊這裡手動發送: ' + SUPPORT_EMAIL;
+
+    window.location.href = href;
+  });
+</script>
+</body>
+</html>
