@@ -45,3 +45,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signing keystores & secrets (NEVER commit)
+*.jks
+*.pem
+*.bak
+keystore.properties
+
+# Build artifacts
+*.apk
+*.aab
+
+# Android local machine config (SDK path etc.)
+local.properties
