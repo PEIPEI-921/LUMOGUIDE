@@ -83,6 +83,15 @@ extension StringRegExp on String {
   bool get isNumber {
     return RegExp(r'^[0-9]+$').hasMatch(this);
   }
+
+  // 密码复杂度：至少 6 位，且同时包含数字和字母。
+  // modify_password / password_input 两个 controller 共用此规则（原为各自 private 实现）。
+  bool get isValidPassword {
+    if (length < 6) return false;
+    final hasDigit = contains(RegExp(r'[0-9]'));
+    final hasLetter = contains(RegExp(r'[a-zA-Z]'));
+    return hasDigit && hasLetter;
+  }
 }
 
 extension StringLocalized on String {

@@ -16,17 +16,6 @@ class ModifyPasswordController extends GetxController with ApiMixin {
   bool get isCountingDown => _isCountingDown.value;
   Timer? _timer;
 
-  bool _validatePassword(String password) {
-    if (password.length < 6) {
-      return false;
-    }
-
-    bool hasDigit = password.contains(RegExp(r'[0-9]'));
-    bool hasLetter = password.contains(RegExp(r'[a-zA-Z]'));
-
-    return hasDigit && hasLetter;
-  }
-
   onSubmit() async {
     if (emailController.text.isEmpty) {
       Loading.toast('請輸入注册时填写的邮箱'.tr);
@@ -40,7 +29,7 @@ class ModifyPasswordController extends GetxController with ApiMixin {
       Loading.toast('請輸入新密碼'.tr);
       return;
     }
-    if (!_validatePassword(passwordController.text)) {
+    if (!passwordController.text.isValidPassword) {
       Loading.toast('密碼格式不正確，請輸入至少6位密碼，包含數字和字母'.tr);
       return;
     }

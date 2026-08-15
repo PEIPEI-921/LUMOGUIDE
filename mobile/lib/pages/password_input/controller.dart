@@ -51,24 +51,13 @@ class PasswordInputController extends GetxController with ApiMixin {
     isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value;
   }
 
-  bool _validatePassword(String password) {
-    if (password.length < 6) {
-      return false;
-    }
-
-    bool hasDigit = password.contains(RegExp(r'[0-9]'));
-    bool hasLetter = password.contains(RegExp(r'[a-zA-Z]'));
-
-    return hasDigit && hasLetter;
-  }
-
   void submit() async {
     if (password.isEmpty) {
       Loading.error('請輸入密碼'.tr);
       return;
     }
 
-    if (!_validatePassword(password.value)) {
+    if (!password.value.isValidPassword) {
       Loading.error('密碼格式不正確，請輸入至少6位密碼，包含數字和字母'.tr);
       return;
     }
