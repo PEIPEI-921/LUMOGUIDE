@@ -1,30 +1,12 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lumotrip/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  // 应用级 widget 冒烟测试。
+  // 完整 App 启动依赖 Global.init() + GetX 服务 + 网络，不适合在单元测试中 pump，
+  // 因此这里只做最小渲染冒烟验证；业务逻辑（行程导入解析）见 journey_import_test.dart。
+  testWidgets('Smoke test: renders a basic widget', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: Text('LUMOGUIDE'))));
+    expect(find.text('LUMOGUIDE'), findsOneWidget);
   });
 }
