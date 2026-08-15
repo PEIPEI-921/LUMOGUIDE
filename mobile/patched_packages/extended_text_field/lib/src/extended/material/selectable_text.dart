@@ -170,7 +170,7 @@ class _ExtendedSelectableTextState extends _SelectableTextState {
             selectionStyle.cursorColor ??
             cupertinoTheme.primaryColor;
         selectionColor = selectionStyle.selectionColor ??
-            cupertinoTheme.primaryColor.withOpacity(0.40);
+            cupertinoTheme.primaryColor.withValues(alpha: 0.40);
         cursorRadius ??= const Radius.circular(2.0);
         cursorOffset = Offset(
             iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
@@ -185,7 +185,7 @@ class _ExtendedSelectableTextState extends _SelectableTextState {
             selectionStyle.cursorColor ??
             cupertinoTheme.primaryColor;
         selectionColor = selectionStyle.selectionColor ??
-            cupertinoTheme.primaryColor.withOpacity(0.40);
+            cupertinoTheme.primaryColor.withValues(alpha: 0.40);
         cursorRadius ??= const Radius.circular(2.0);
         cursorOffset = Offset(
             iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
@@ -200,7 +200,7 @@ class _ExtendedSelectableTextState extends _SelectableTextState {
             selectionStyle.cursorColor ??
             theme.colorScheme.primary;
         selectionColor = selectionStyle.selectionColor ??
-            theme.colorScheme.primary.withOpacity(0.40);
+            theme.colorScheme.primary.withValues(alpha: 0.40);
 
       case TargetPlatform.linux:
       case TargetPlatform.windows:
@@ -212,7 +212,7 @@ class _ExtendedSelectableTextState extends _SelectableTextState {
             selectionStyle.cursorColor ??
             theme.colorScheme.primary;
         selectionColor = selectionStyle.selectionColor ??
-            theme.colorScheme.primary.withOpacity(0.40);
+            theme.colorScheme.primary.withValues(alpha: 0.40);
     }
 
     final DefaultTextStyle defaultTextStyle = DefaultTextStyle.of(context);

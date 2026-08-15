@@ -21,7 +21,7 @@ class AtText extends SpecialText {
 
     return showAtBackground
         ? BackgroundTextSpan(
-            background: Paint()..color = Colors.blue.withOpacity(0.15),
+            background: Paint()..color = Colors.blue.withValues(alpha: 0.15),
             text: atText,
             actualText: atText,
             start: start!,

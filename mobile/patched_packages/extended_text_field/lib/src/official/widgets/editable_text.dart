@@ -2015,7 +2015,7 @@ class _EditableTextState extends State<_EditableText>
   Color get _cursorColor {
     final double effectiveOpacity = math.min(
         widget.cursorColor.alpha / 255.0, _cursorBlinkOpacityController.value);
-    return widget.cursorColor.withOpacity(effectiveOpacity);
+    return widget.cursorColor.withValues(alpha: effectiveOpacity);
   }
 
   @override
@@ -4048,7 +4048,7 @@ class _EditableTextState extends State<_EditableText>
     final double effectiveOpacity = math.min(
         widget.cursorColor.alpha / 255.0, _cursorBlinkOpacityController.value);
     renderEditable.cursorColor =
-        widget.cursorColor.withOpacity(effectiveOpacity);
+        widget.cursorColor.withValues(alpha: effectiveOpacity);
     _cursorVisibilityNotifier.value = widget.showCursor &&
         (EditableText.debugDeterministicCursor ||
             _cursorBlinkOpacityController.value > 0);

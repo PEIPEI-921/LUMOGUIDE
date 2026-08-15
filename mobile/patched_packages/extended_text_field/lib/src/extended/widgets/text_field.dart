@@ -300,7 +300,7 @@ class ExtendedTextFieldState extends _TextFieldState {
     final DefaultSelectionStyle selectionStyle =
         DefaultSelectionStyle.of(context);
     final TextStyle? providedStyle =
-        MaterialStateProperty.resolveAs(widget.style, _statesController.value);
+        WidgetStateProperty.resolveAs(widget.style, _statesController.value);
     final TextStyle style = _getInputStyleForState(theme.useMaterial3
             ? _m3InputStyle(context)
             : theme.textTheme.titleMedium!)
@@ -366,7 +366,7 @@ class ExtendedTextFieldState extends _TextFieldState {
                 selectionStyle.cursorColor ??
                 cupertinoTheme.primaryColor;
         selectionColor = selectionStyle.selectionColor ??
-            cupertinoTheme.primaryColor.withOpacity(0.40);
+            cupertinoTheme.primaryColor.withValues(alpha: 0.40);
         cursorRadius ??= const Radius.circular(2.0);
         cursorOffset = Offset(
             iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
@@ -384,7 +384,7 @@ class ExtendedTextFieldState extends _TextFieldState {
                 selectionStyle.cursorColor ??
                 cupertinoTheme.primaryColor;
         selectionColor = selectionStyle.selectionColor ??
-            cupertinoTheme.primaryColor.withOpacity(0.40);
+            cupertinoTheme.primaryColor.withValues(alpha: 0.40);
         cursorRadius ??= const Radius.circular(2.0);
         cursorOffset = Offset(
             iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
@@ -411,7 +411,7 @@ class ExtendedTextFieldState extends _TextFieldState {
                 selectionStyle.cursorColor ??
                 theme.colorScheme.primary;
         selectionColor = selectionStyle.selectionColor ??
-            theme.colorScheme.primary.withOpacity(0.40);
+            theme.colorScheme.primary.withValues(alpha: 0.40);
 
       case TargetPlatform.linux:
         forcePressEnabled = false;
@@ -424,7 +424,7 @@ class ExtendedTextFieldState extends _TextFieldState {
                 selectionStyle.cursorColor ??
                 theme.colorScheme.primary;
         selectionColor = selectionStyle.selectionColor ??
-            theme.colorScheme.primary.withOpacity(0.40);
+            theme.colorScheme.primary.withValues(alpha: 0.40);
         handleDidGainAccessibilityFocus = () {
           // Automatically activate the TextField when it receives accessibility focus.
           if (!_effectiveFocusNode.hasFocus &&
@@ -447,7 +447,7 @@ class ExtendedTextFieldState extends _TextFieldState {
                 selectionStyle.cursorColor ??
                 theme.colorScheme.primary;
         selectionColor = selectionStyle.selectionColor ??
-            theme.colorScheme.primary.withOpacity(0.40);
+            theme.colorScheme.primary.withValues(alpha: 0.40);
         handleDidGainAccessibilityFocus = () {
           // Automatically activate the TextField when it receives accessibility focus.
           if (!_effectiveFocusNode.hasFocus &&
@@ -560,8 +560,8 @@ class ExtendedTextFieldState extends _TextFieldState {
       );
     }
     final MouseCursor effectiveMouseCursor =
-        MaterialStateProperty.resolveAs<MouseCursor>(
-      widget.mouseCursor ?? MaterialStateMouseCursor.textable,
+        WidgetStateProperty.resolveAs<MouseCursor>(
+      widget.mouseCursor ?? WidgetStateMouseCursor.textable,
       _statesController.value,
     );
 
