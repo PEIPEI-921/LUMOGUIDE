@@ -55,6 +55,8 @@ dependencies:
   qr_flutter: ^4.1.0
   image_gallery_saver_plus: ^4.0.1
   marquee: ^2.3.0
+  # 锁定 + vendor（见 dependency_overrides）：pub.dev 上的 5.0.1+4 / 5.0.1+5 都缺
+  # tim_uikit_chat_videoplayer.dart（该包已 discontinued），CI fresh pub get 会编译失败。
   tencent_cloud_chat_uikit: 5.0.1+4
   flutter_slidable: ^4.0.3
   mobile_scanner: ^7.1.4
@@ -82,6 +84,8 @@ dependency_overrides:
   tencent_cloud_chat_sdk: 8.8.7373+4
   extended_text_field:
     path: patched_packages/extended_text_field
+  tencent_cloud_chat_uikit:
+    path: patched_packages/tencent_cloud_chat_uikit
 
 dev_dependencies:
   flutter_test:
