@@ -22,7 +22,6 @@ class HomeHotCityWidget extends StatelessWidget {
                 ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.zero,
-                  cacheExtent: 100.w,
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return _SingleItem(city: controller.home!.city[0]);
