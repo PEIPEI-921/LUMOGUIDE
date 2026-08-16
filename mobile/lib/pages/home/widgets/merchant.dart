@@ -26,8 +26,10 @@ class HomeMerchantWidget extends StatelessWidget {
           .reduce((a, b) => a > b ? a : b);
 
       // 轮播区域固定高度：banner + 指示器圆点 + 底部间距
+      // +4.w 余量：真机上 CarouselSlider 亚像素渲染会多 ~1.7px，
+      // 精确等高会触发 debug 黄黑 overflow 条纹
       final carouselHeight = hasAnyBanner
-          ? 265.w + (maxBannerCount > 1 ? 22.w : 0) + 10.w
+          ? 265.w + (maxBannerCount > 1 ? 22.w : 0) + 10.w + 4.w
           : 0.0;
 
       // 网格区域固定高度：按最大行数预留

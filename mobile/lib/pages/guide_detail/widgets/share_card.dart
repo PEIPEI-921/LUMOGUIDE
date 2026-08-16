@@ -48,7 +48,7 @@ class GuideShareCardWidget extends StatelessWidget {
                     children: [
                       4.w.verticalSpace,
                       Text(
-                        controller.guideInfo!.fullName,
+                        controller.guideInfo!.name ?? '',
                         style: TextStyle(
                           fontSize: 20.sp,
                           fontWeight: FontWeight.bold,
@@ -57,6 +57,18 @@ class GuideShareCardWidget extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (controller.guideInfo!.nameEn?.isNotEmpty ?? false) ...[
+                        2.w.verticalSpace,
+                        Text(
+                          controller.guideInfo!.nameEn ?? '',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.assistantText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                       5.w.verticalSpace,
                       Text(
                             controller.guideInfo!.identityTypeName ?? '',

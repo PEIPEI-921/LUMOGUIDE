@@ -40,7 +40,7 @@ class GuideDetailHeaderWidget extends StatelessWidget with UserStoreMixin {
                   children: [
                     4.w.verticalSpace,
                     Text(
-                      controller.guideInfo!.fullName,
+                      controller.guideInfo!.name ?? '',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
@@ -49,6 +49,18 @@ class GuideDetailHeaderWidget extends StatelessWidget with UserStoreMixin {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (controller.guideInfo!.nameEn?.isNotEmpty ?? false) ...[
+                      2.w.verticalSpace,
+                      Text(
+                        controller.guideInfo!.nameEn ?? '',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.assistantText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     5.w.verticalSpace,
                     Text(
                           controller.guideInfo!.identityTypeName ?? '',
