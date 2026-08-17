@@ -470,6 +470,24 @@ class CommonController extends BaseController
         return $this->success('ok');
     }
 
+
+    /**
+     * App 运行时错误上报（Flutter FlutterError/PlatformDispatcher 全局错误）
+     * 公开接口：错误可能发生在登录之前，只记录日志，不暴露任何内部信息
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function appError(Request $request)
+    {
+        $page = mb_substr((string)$request->post('page', 'unknown'), 0, 100, 'UTF-8');
+        $error = mb_substr((string)$request->post('error', ''), 0, 2000, 'UTF-8');
+        $stack = mb_substr((string)$request->post('stack', ''), 0, 4000, 'UTF-8');
+        $time = $request->post('time', '');
+
+        Log::error("AppError [page={$page}] [time={$time}]: {$error}\n{$stack}");
+        return $this->success(__('res.success'));
+    }
+
     public function data($lang, CommonService $service)
     {
         $config = $service->config();
