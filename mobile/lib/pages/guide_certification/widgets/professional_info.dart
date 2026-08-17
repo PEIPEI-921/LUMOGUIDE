@@ -16,6 +16,21 @@ class ProfessionalInfoWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('專業信息'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
+          if (controller.languages.isEmpty || controller.guideTypes.isEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                8.w.verticalSpace,
+                Text(
+                  '選項加載失敗，請完全關閉App後重新打開再試'
+                      .tr,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: AppColors.red,
+                  ),
+                ),
+              ],
+            ),
           10.w.verticalSpace,
           Column(
             children: [

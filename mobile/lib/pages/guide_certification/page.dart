@@ -35,27 +35,37 @@ class GuideCertificationPage extends StatelessWidget {
       ),
       body: Obx(() => controller.certification.auditStatus == 1
           ? const _InfoWidget()
-          : Column(
-              children: [
-                // 步骤指示器
-                const StepIndicatorWidget(),
-                const GuideCertificationAuditStatusWidget(),
-                // 页面内容
-                PageView(
-                  controller: controller.pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: const [
-                    // PrivilegeInfoWidget(),
-                    BasicInfoWidget(),
-                    ProfessionalInfoWidget(),
-                    CertificateInfoWidget(),
-                  ],
-                ).expanded(),
+          : const _CertificationFlow()),
+    );
+  }
+}
 
-                // 底部按钮
-                const ButtonBarWidget(),
-              ],
-            )),
+class _CertificationFlow extends StatelessWidget {
+  const _CertificationFlow();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<GuideCertificationController>();
+    return Column(
+      children: [
+        // 步骤指示器
+        const StepIndicatorWidget(),
+        const GuideCertificationAuditStatusWidget(),
+        // 页面内容
+        PageView(
+          controller: controller.pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            // PrivilegeInfoWidget(),
+            BasicInfoWidget(),
+            ProfessionalInfoWidget(),
+            CertificateInfoWidget(),
+          ],
+        ).expanded(),
+
+        // 底部按钮
+        const ButtonBarWidget(),
+      ],
     );
   }
 }

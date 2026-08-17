@@ -129,11 +129,7 @@ class GuideCertificationController extends GetxController
     if (currentPageIndex.value < 2) {
       updateCertification();
       currentPageIndex.value++;
-      pageController.animateToPage(
-        currentPageIndex.value,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      pageController.jumpToPage(currentPageIndex.value);
     } else {
       submitCertification();
     }
@@ -142,11 +138,7 @@ class GuideCertificationController extends GetxController
   void previousPage() {
     if (currentPageIndex.value > 0) {
       currentPageIndex.value--;
-      pageController.animateToPage(
-        currentPageIndex.value,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      pageController.jumpToPage(currentPageIndex.value);
     } else {
       Get.back();
     }
@@ -155,11 +147,7 @@ class GuideCertificationController extends GetxController
   void goToPage(int index) {
     if (index <= currentPageIndex.value) {
       currentPageIndex.value = index;
-      pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      pageController.jumpToPage(index);
     }
   }
 
