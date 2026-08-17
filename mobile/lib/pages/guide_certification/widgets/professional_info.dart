@@ -205,6 +205,22 @@ class _IdentityTypeWidget extends StatelessWidget {
 class _VehicleWidget extends StatelessWidget {
   const _VehicleWidget();
 
+  // 使用 Icon 選擇器替代 RadioGroup —— 跨 Flutter 版本兼容（3.32 前的 SDK 無 RadioGroup）
+  Widget _buildRadioOption(String label, bool isSelected, VoidCallback onTap) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isSelected ? Icons.check_circle : Icons.circle_outlined,
+          color: isSelected ? AppColors.primary : AppColors.assistantText,
+          size: 18.w,
+        ),
+        5.w.horizontalSpace,
+        Text(label).fontSize(14.sp).textColor(AppColors.primaryText),
+      ],
+    ).padding(vertical: 4.w).gestures(onTap: onTap);
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<GuideCertificationController>();
@@ -219,24 +235,20 @@ class _VehicleWidget extends StatelessWidget {
           ],
         ),
         10.w.verticalSpace,
-        Obx(() => RadioGroup<int>(
-              groupValue: controller.certification.haveVehicle,
-              onChanged: (value) {
-                controller.onChangeHaveVehicle(value!);
-              },
-              child: Row(
-                children: [
-                  const Radio<int>(value: 1, activeColor: AppColors.primary),
-                  Text('是'.tr)
-                      .fontSize(14.sp)
-                      .textColor(AppColors.primaryText),
-                  20.w.horizontalSpace,
-                  const Radio<int>(value: 0, activeColor: AppColors.primary),
-                  Text('否'.tr)
-                      .fontSize(14.sp)
-                      .textColor(AppColors.primaryText),
-                ],
-              ),
+        Obx(() => Row(
+              children: [
+                _buildRadioOption(
+                  '是'.tr,
+                  controller.certification.haveVehicle == 1,
+                  () => controller.onChangeHaveVehicle(1),
+                ),
+                20.w.horizontalSpace,
+                _buildRadioOption(
+                  '否'.tr,
+                  controller.certification.haveVehicle == 0,
+                  () => controller.onChangeHaveVehicle(0),
+                ),
+              ],
             )),
         Obx(() => controller.certification.haveVehicle == 1
             ? Column(
@@ -261,30 +273,20 @@ class _VehicleWidget extends StatelessWidget {
                     ],
                   ),
                   10.w.verticalSpace,
-                  Obx(() => RadioGroup<int>(
-                        groupValue: controller.certification.vehicleRent,
-                        onChanged: (value) {
-                          controller.onChangeVehicleRent(value!);
-                        },
-                        child: Row(
-                          children: [
-                            const Radio<int>(
-                              value: 1,
-                              activeColor: AppColors.primary,
-                            ),
-                            Text('是'.tr)
-                                .fontSize(14.sp)
-                                .textColor(AppColors.primaryText),
-                            20.w.horizontalSpace,
-                            const Radio<int>(
-                              value: 0,
-                              activeColor: AppColors.primary,
-                            ),
-                            Text('否'.tr)
-                                .fontSize(14.sp)
-                                .textColor(AppColors.primaryText),
-                          ],
-                        ),
+                  Obx(() => Row(
+                        children: [
+                          _buildRadioOption(
+                            '是'.tr,
+                            controller.certification.vehicleRent == 1,
+                            () => controller.onChangeVehicleRent(1),
+                          ),
+                          20.w.horizontalSpace,
+                          _buildRadioOption(
+                            '否'.tr,
+                            controller.certification.vehicleRent == 0,
+                            () => controller.onChangeVehicleRent(0),
+                          ),
+                        ],
                       )),
                 ],
               )
