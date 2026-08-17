@@ -336,19 +336,22 @@ class MerchantEntryController extends GetxController
       val?.documentsPicture = documentsPictureUrl;
     });
 
-    // 逐文件上傳商家圖片（單文件失敗不影響其他）
+    // 並行上傳商家圖片（單文件失敗不影響其他，保持原有順序）
     final uploadedPics = <String>[];
-    for (final e in merchantPictures) {
+    final picResults = await Future.wait(merchantPictures.map((e) async {
       if (e.startsWith('http://') || e.startsWith('https://')) {
-        uploadedPics.add(e);
-      } else {
-        try {
-          final url = await ConfigService.to.uploadFile(e);
-          if (url.isNotEmpty) uploadedPics.add(url);
-        } catch (_) {
-          // 單文件上傳失敗，跳過繼續
-        }
+        return e;
       }
+      try {
+        final url = await ConfigService.to.uploadFile(e);
+        if (url.isNotEmpty) return url;
+      } catch (_) {
+        // 單文件上傳失敗，跳過繼續
+      }
+      return '';
+    }));
+    for (final url in picResults) {
+      if (url.isNotEmpty) uploadedPics.add(url);
     }
     if (merchantPictures.isNotEmpty && uploadedPics.isEmpty) {
       final serverError = ConfigService.to.lastUploadError;

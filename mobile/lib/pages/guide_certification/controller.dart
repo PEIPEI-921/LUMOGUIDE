@@ -364,99 +364,65 @@ class GuideCertificationController extends GetxController
   Future<bool> _uploadImages() async {
     int failCount = 0;
 
-    // 逐文件上传主图片（单文件失败不影响其他，保留已有 URL）
-    if (photo.value != null) {
+    Future<String?> tryUpload(File? file, String label) async {
+      if (file == null) return null;
       try {
-        final url = await ConfigService.to.uploadFile(photo.value!.path);
-        if (url.isNotEmpty) {
-          _certification.update((val) => val?.photo = url);
-        } else {
+        final url = await ConfigService.to.uploadFile(file.path);
+        if (url.isEmpty) {
           failCount++;
-          log('[GuideCert] photo upload returned empty URL', name: 'GuideCert');
+          log('[GuideCert] $label upload returned empty URL', name: 'GuideCert');
+          return null;
         }
+        return url;
       } catch (e) {
         failCount++;
-        log('[GuideCert] photo upload exception: $e', name: 'GuideCert');
-      }
-    }
-    if (certificatePicture.value != null) {
-      try {
-        final url = await ConfigService.to.uploadFile(certificatePicture.value!.path);
-        if (url.isNotEmpty) {
-          _certification.update((val) => val?.certificatePicture = url);
-        } else {
-          failCount++;
-          log('[GuideCert] certificatePicture upload returned empty URL', name: 'GuideCert');
-        }
-      } catch (e) {
-        failCount++;
-        log('[GuideCert] certificatePicture upload exception: $e', name: 'GuideCert');
-      }
-    }
-    if (passportPicture.value != null) {
-      try {
-        final url = await ConfigService.to.uploadFile(passportPicture.value!.path);
-        if (url.isNotEmpty) {
-          _certification.update((val) => val?.passportPicture = url);
-        } else {
-          failCount++;
-          log('[GuideCert] passportPicture upload returned empty URL', name: 'GuideCert');
-        }
-      } catch (e) {
-        failCount++;
-        log('[GuideCert] passportPicture upload exception: $e', name: 'GuideCert');
-      }
-    }
-    if (driverLicenseFront.value != null) {
-      try {
-        final url = await ConfigService.to.uploadFile(driverLicenseFront.value!.path);
-        if (url.isNotEmpty) {
-          _certification.update((val) => val?.driverLicenseFront = url);
-        } else {
-          failCount++;
-          log('[GuideCert] driverLicenseFront upload returned empty URL', name: 'GuideCert');
-        }
-      } catch (e) {
-        failCount++;
-        log('[GuideCert] driverLicenseFront upload exception: $e', name: 'GuideCert');
-      }
-    }
-    if (driverLicenseBack.value != null) {
-      try {
-        final url = await ConfigService.to.uploadFile(driverLicenseBack.value!.path);
-        if (url.isNotEmpty) {
-          _certification.update((val) => val?.driverLicenseBack = url);
-        } else {
-          failCount++;
-          log('[GuideCert] driverLicenseBack upload returned empty URL', name: 'GuideCert');
-        }
-      } catch (e) {
-        failCount++;
-        log('[GuideCert] driverLicenseBack upload exception: $e', name: 'GuideCert');
+        log('[GuideCert] $label upload exception: $e', name: 'GuideCert');
+        return null;
       }
     }
 
-    // 逐文件上传车辆图片（已是 http URL 的跳过，失败跳过）
-    final uploadedCarPics = <String>[];
-    for (final e in carPictures) {
-      if (e.startsWith('http://') || e.startsWith('https://')) {
-        uploadedCarPics.add(e);
-      } else {
-        try {
-          final url = await ConfigService.to.uploadFile(e);
-          if (url.isNotEmpty) {
-            uploadedCarPics.add(url);
-          } else {
-            failCount++;
-            log('[GuideCert] carPicture upload returned empty URL: $e', name: 'GuideCert');
-          }
-        } catch (e) {
+    Future<String?> tryUploadCar(String path) async {
+      try {
+        final url = await ConfigService.to.uploadFile(path);
+        if (url.isEmpty) {
           failCount++;
-          log('[GuideCert] carPicture upload exception: $e', name: 'GuideCert');
+          log('[GuideCert] carPicture upload returned empty URL: $path', name: 'GuideCert');
+          return null;
         }
+        return url;
+      } catch (e) {
+        failCount++;
+        log('[GuideCert] carPicture upload exception: $e', name: 'GuideCert');
+        return null;
       }
     }
+
+    // 并行上传全部图片，缩短提交时的 Loading 等待时间
+    final results = await Future.wait([
+      tryUpload(photo.value, 'photo'),
+      tryUpload(certificatePicture.value, 'certificatePicture'),
+      tryUpload(passportPicture.value, 'passportPicture'),
+      tryUpload(driverLicenseFront.value, 'driverLicenseFront'),
+      tryUpload(driverLicenseBack.value, 'driverLicenseBack'),
+      ...carPictures.map((e) =>
+          e.startsWith('http://') || e.startsWith('https://')
+              ? Future.value(e)
+              : tryUploadCar(e)),
+    ]);
+
+    final photoUrl = results[0];
+    final certUrl = results[1];
+    final passportUrl = results[2];
+    final frontUrl = results[3];
+    final backUrl = results[4];
+    final uploadedCarPics = results.sublist(5).whereType<String>().toList();
+
     _certification.update((val) {
+      if (photoUrl != null) val?.photo = photoUrl;
+      if (certUrl != null) val?.certificatePicture = certUrl;
+      if (passportUrl != null) val?.passportPicture = passportUrl;
+      if (frontUrl != null) val?.driverLicenseFront = frontUrl;
+      if (backUrl != null) val?.driverLicenseBack = backUrl;
       val?.carPictures = uploadedCarPics;
     });
 
