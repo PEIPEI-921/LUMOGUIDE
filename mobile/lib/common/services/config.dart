@@ -74,6 +74,25 @@ class ConfigService extends GetxService with ApiMixin {
     _cacheWelcomeImages();
   }
 
+  Future<SystemConfig>? _systemConfigFuture;
+  Future<List<Category>>? _guideCategoriesFuture;
+
+  /// 确保系统配置已加载：已有缓存直接返回；否则拉取（并发去重）。
+  /// 认证页等场景在 enterApp 的 fire-and-forget 加载未完成/失败时兜底，
+  /// 避免语言等选项列表为空。
+  Future<SystemConfig> ensureSystemConfig() async {
+    if (_systemConfig != null) return _systemConfig!;
+    final pending = _systemConfigFuture;
+    if (pending != null) return pending;
+    final future = loadSystemConfig().then((_) => _systemConfig ?? SystemConfig());
+    _systemConfigFuture = future;
+    try {
+      return await future;
+    } finally {
+      _systemConfigFuture = null;
+    }
+  }
+
   Future<void> _cacheWelcomeImages() async {
     if (_systemConfig == null) return;
 
@@ -363,8 +382,28 @@ extension TypeCategory on ConfigService {
     if (!res.isSuccess) {
       return;
     }
-    final data = res.dataList;
+    // 兼容两种后端格式：裸数组（新）与 {'list': [...]} 包装（旧）
+    final data = res.dataJson['list'] ?? res.dataList;
+    if (data is! List) {
+      guideCategories = [];
+      return;
+    }
     guideCategories = data.map((e) => Category.fromJson(e)).toList();
+  }
+
+  /// 确保导游分类已加载：缓存为空时拉取（并发去重）。
+  /// 认证页「從業類型/身份類型」依赖该列表，enterApp 的加载可能尚未完成。
+  Future<List<Category>> ensureGuideCategories() async {
+    if (guideCategories.isNotEmpty) return guideCategories;
+    final pending = _guideCategoriesFuture;
+    if (pending != null) return pending;
+    final future = loadGuideCategories().then((_) => guideCategories);
+    _guideCategoriesFuture = future;
+    try {
+      return await future;
+    } finally {
+      _guideCategoriesFuture = null;
+    }
   }
 
   loadTypeCategories() async {

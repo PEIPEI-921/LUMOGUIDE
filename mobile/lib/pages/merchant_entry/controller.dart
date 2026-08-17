@@ -97,9 +97,12 @@ class MerchantEntryController extends GetxController
     FocusManager.instance.primaryFocus?.unfocus();
     _merchantEntry.update((val) {
       val?.auditStatus = null;
+      val?.auditFeedback = null;
     });
     currentPageIndex.value = 0;
     pageController.jumpTo(currentPageIndex.value.toDouble());
+    // 进入编辑模式后检测未完成草稿（审核中/已通过用户重进时此前不会弹草稿提示）
+    checkDraftAndPrompt();
   }
 
   // 页面导航方法
@@ -459,6 +462,8 @@ extension MerchantEntrySelection on MerchantEntryController {
     switch (type) {
       case MerchantPhotoType.documents:
         documentsPicture.value = File(path);
+        _scheduleDraftSave();
+        _uploadAndPersistDocuments(path);
         break;
       case MerchantPhotoType.merchantPictures:
         if (index != null && index < merchantPictures.length) {
@@ -466,9 +471,44 @@ extension MerchantEntrySelection on MerchantEntryController {
         } else {
           merchantPictures.add(path);
         }
+        _scheduleDraftSave();
+        _uploadAndPersistMerchantPic(path);
         break;
     }
-    _scheduleDraftSave();
+  }
+
+  /// 证件图选图后立即上传，URL 写回入驻数据与草稿（退出重进可恢复）
+  Future<void> _uploadAndPersistDocuments(String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      _merchantEntry.update((val) {
+        val?.documentsPicture = url;
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
+  }
+
+  /// 商家图片上传成功后把本地路径替换为 URL（草稿随之持久化）
+  Future<void> _uploadAndPersistMerchantPic(String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      final idx = merchantPictures.indexOf(path);
+      if (idx >= 0) {
+        merchantPictures[idx] = url;
+      }
+      _merchantEntry.update((val) {
+        if (val != null && !val.picture.contains(url)) {
+          val.picture.add(url);
+        }
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
   }
 
   removeMerchantPicture(int index) {
@@ -619,6 +659,9 @@ extension on MerchantEntryController {
     lineController.text = form['line'] as String? ?? '';
 
     _merchantEntry.update((val) {
+      // 防御：恢复草稿时强制进入可编辑状态（避免整页只读发灰）
+      val?.auditStatus = null;
+      val?.auditFeedback = null;
       val?.documentsPicture = form['photo'] as String? ?? '';
       val?.businessType = ((draft['selectedTypes'] as List?)?.isNotEmpty == true)
           ? (draft['selectedTypes'] as List).first as String?
@@ -667,5 +710,9 @@ extension on MerchantEntryController {
     whatsAppController.text = merchantEntry.whatsApp ?? '';
     lineController.text = merchantEntry.line ?? '';
     merchantPictures.value = merchantEntry.picture;
+    // 非只读状态（如被拒后重新编辑）也检测未完成草稿，避免草稿被服务器数据静默覆盖
+    if (!isReadOnly) {
+      checkDraftAndPrompt();
+    }
   }
 }

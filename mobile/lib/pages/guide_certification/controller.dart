@@ -26,8 +26,8 @@ class GuideCertificationController extends GetxController
   /// 草稿恢復標記（防止恢復時觸發保存）
   bool _restoring = false;
 
-  /// 从业类型
-  List<Category> get guideTypes => ConfigService.to.guideCategories;
+  /// 从业类型（响应式 — 支持 enterApp 加载未完成时异步补齐，UI 自动刷新）
+  final guideTypes = <Category>[].obs;
   final selectedGuideTypes = <Category>[].obs;
 
   /// 语言
@@ -86,6 +86,7 @@ class GuideCertificationController extends GetxController
     inviteCodeController.text = userInfo.inviterCode ?? '';
     _setupDraftListeners();
     fetchCityList();
+    _ensureGuideTypes();
     _fetchGuideApplyInfo();
   }
 
@@ -116,9 +117,37 @@ class GuideCertificationController extends GetxController
   onEdit() async {
     _certification.update((val) {
       val?.auditStatus = null;
+      val?.auditFeedback = null;
     });
     currentPageIndex.value = 0;
     pageController.jumpTo(currentPageIndex.value.toDouble());
+    // 进入编辑模式后检测未完成草稿（审核中/已通过用户重进时此前不会弹草稿提示）
+    checkDraftAndPrompt();
+  }
+
+  /// 确保从业类型列表已加载（enterApp 的 fire-and-forget 可能尚未完成/失败）
+  Future<void> _ensureGuideTypes() async {
+    guideTypes.value = ConfigService.to.guideCategories;
+    if (guideTypes.isNotEmpty) {
+      _syncSelectedGuideTypes();
+      return;
+    }
+    final list = await ConfigService.to.ensureGuideCategories();
+    guideTypes.value = list;
+    _syncSelectedGuideTypes();
+  }
+
+  /// 根据 certification.industryType 重建选中的类型（列表异步补齐后调用）
+  void _syncSelectedGuideTypes() {
+    if (certification.industryType.isEmpty) {
+      selectedGuideTypes.value = [];
+      return;
+    }
+    selectedGuideTypes.value = certification.industryType
+        .map((e) => guideTypes.firstWhereOrNull((element) => element.name == e))
+        .where((e) => e != null)
+        .map((e) => e!)
+        .toList();
   }
 
   // 页面导航方法
@@ -741,6 +770,9 @@ class GuideCertificationController extends GetxController
     otherIndustryTypeController.text = form['other_type'] as String? ?? '';
 
     _certification.update((val) {
+      // 防御：恢复草稿时强制进入可编辑状态（此前部分版本会出现恢复后整页只读发灰）
+      val?.auditStatus = null;
+      val?.auditFeedback = null;
       val?.photo = form['photo'] as String? ?? '';
       val?.year = form['year'] as String?;
       val?.identityType = form['identity_type'] as String?;
@@ -766,11 +798,7 @@ class GuideCertificationController extends GetxController
       val?.newCityCountryName = form['new_city_country_name'] as String?;
     });
 
-    selectedGuideTypes.value = certification.industryType
-        .map((e) => guideTypes.firstWhereOrNull((element) => element.name == e))
-        .where((e) => e != null)
-        .map((e) => e!)
-        .toList();
+    _syncSelectedGuideTypes();
 
     final photoUrl = form['photo'] as String? ?? '';
     if (photoUrl.isNotEmpty) {
@@ -779,7 +807,11 @@ class GuideCertificationController extends GetxController
       });
     }
 
-    carPictures.value = (draft['carPics'] as List?)?.cast<String>() ?? [];
+    final restoredCarPics = (draft['carPics'] as List?)?.cast<String>() ?? [];
+    carPictures.value = restoredCarPics;
+    _certification.update((val) {
+      val?.carPictures = restoredCarPics;
+    });
 
     // 恢復新城市模式
     if (certification.isNewCity == 1) {
@@ -827,11 +859,7 @@ class GuideCertificationController extends GetxController
     businessContactController.text = certification.businessContact ?? '';
     vehicleInfoController.text = certification.vehicleInfo ?? '';
     otherIndustryTypeController.text = certification.otherType ?? '';
-    selectedGuideTypes.value = certification.industryType
-        .map((e) => guideTypes.firstWhereOrNull((element) => element.name == e))
-        .where((e) => e != null)
-        .map((e) => e!)
-        .toList();
+    _syncSelectedGuideTypes();
     carPictures.value = certification.carPictures;
     // 恢復常駐城市
     if (certification.isNewCity == 1) {
@@ -845,6 +873,10 @@ class GuideCertificationController extends GetxController
           _fetchCountries(certification.newCityAreaId!);
         }
       }
+    }
+    // 非只读状态（如被拒后重新编辑）也检测未完成草稿，避免草稿被服务器数据静默覆盖
+    if (!isReadOnly) {
+      checkDraftAndPrompt();
     }
   }
 }
@@ -947,10 +979,20 @@ extension GuideCertificationSelection on GuideCertificationController {
     if (isReadOnly) {
       return;
     }
+    var langs = languages;
+    // 配置尚未加载/加载失败时兜底拉取，避免语言列表空白
+    if (langs.isEmpty) {
+      final config = await ConfigService.to.ensureSystemConfig();
+      langs = config.languages;
+    }
+    if (langs.isEmpty) {
+      Loading.toast('暫無可用語言，請檢查網絡後重試'.tr);
+      return;
+    }
     final selected = certification.language;
     final res = await ValuePicker.show(
       title: '請選擇語言'.tr,
-      datas: languages,
+      datas: langs,
       isMultiSelect: true,
       selectedDatas: selected,
     );
@@ -1015,9 +1057,65 @@ extension GuideCertificationSelection on GuideCertificationController {
         } else {
           carPictures.add(path);
         }
-        break;
+        _scheduleDraftSave();
+        // 立即上传：成功后本地路径替换为 URL，草稿持久化，退出重进可恢复
+        _uploadAndPersistCar(path);
+        return;
     }
     _scheduleDraftSave();
+    _uploadAndPersist(type, path);
+  }
+
+  /// 选图后立即上传，把 URL 写回认证数据与草稿（退出重进时图片可恢复）
+  Future<void> _uploadAndPersist(GuidePhotoType type, String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      _certification.update((val) {
+        switch (type) {
+          case GuidePhotoType.photo:
+            val?.photo = url;
+            break;
+          case GuidePhotoType.certificate:
+            val?.certificatePicture = url;
+            break;
+          case GuidePhotoType.passport:
+            val?.passportPicture = url;
+            break;
+          case GuidePhotoType.driverLicenseFront:
+            val?.driverLicenseFront = url;
+            break;
+          case GuidePhotoType.driverLicenseBack:
+            val?.driverLicenseBack = url;
+            break;
+          case GuidePhotoType.carPictures:
+            break;
+        }
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
+  }
+
+  /// 车辆图片上传成功后把本地路径替换为 URL（草稿随之持久化）
+  Future<void> _uploadAndPersistCar(String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      final idx = carPictures.indexOf(path);
+      if (idx >= 0) {
+        carPictures[idx] = url;
+      }
+      _certification.update((val) {
+        if (val != null && !val.carPictures.contains(url)) {
+          val.carPictures.add(url);
+        }
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
   }
 
   removeCarPicture(int index) {

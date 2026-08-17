@@ -41,7 +41,8 @@ class SystemConfig {
       integralRule: json.safeString('integral_rule'),
       inviteRule: json.safeString('invite_rule'),
       businessType: json.safeList<String>('business_type') ?? [],
-      languages: json.safeList<String>('languages') ?? [],
+      // 兼容两种后端格式：JSON 数组（新）与逗号分隔字符串（旧）
+      languages: _parseLanguages(json['languages']),
       vipUserProtocol: json.safeString('vip_user_protocol'),
       vipUserSubscribe: json.safeString('vip_user_subscribe'),
       systemLogo: json.safeString('system_logo'),
@@ -49,6 +50,21 @@ class SystemConfig {
       systemWelcomeEn: json.safeString('system_welcome_en'),
       stripeKey: json.safeString('stripe_key'),
     );
+  }
+
+  /// 语言列表解析：List 直接使用；逗号字符串拆分；其他情况返回空列表
+  static List<String> _parseLanguages(dynamic value) {
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    if (value is String && value.isNotEmpty) {
+      return value
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return [];
   }
 
   Map<String, dynamic> toJson() {
