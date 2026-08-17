@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -93,7 +94,7 @@ class GuideCertificationController extends GetxController
   @override
   void onClose() {
     _draftTimer?.cancel();
-    if (!isReadOnly && !_submitted) _saveDraft();
+    if (!isReadOnly && !_submitted) saveDraft();
     nameController.dispose();
     nameEnController.dispose();
     phoneController.dispose();
@@ -120,7 +121,9 @@ class GuideCertificationController extends GetxController
       val?.auditFeedback = null;
     });
     currentPageIndex.value = 0;
-    pageController.jumpTo(currentPageIndex.value.toDouble());
+    if (pageController.hasClients) {
+      pageController.jumpTo(currentPageIndex.value.toDouble());
+    }
     // 进入编辑模式后检测未完成草稿（审核中/已通过用户重进时此前不会弹草稿提示）
     checkDraftAndPrompt();
   }
@@ -129,16 +132,17 @@ class GuideCertificationController extends GetxController
   Future<void> _ensureGuideTypes() async {
     guideTypes.value = ConfigService.to.guideCategories;
     if (guideTypes.isNotEmpty) {
-      _syncSelectedGuideTypes();
+      syncSelectedGuideTypes();
       return;
     }
     final list = await ConfigService.to.ensureGuideCategories();
     guideTypes.value = list;
-    _syncSelectedGuideTypes();
+    syncSelectedGuideTypes();
   }
 
   /// 根据 certification.industryType 重建选中的类型（列表异步补齐后调用）
-  void _syncSelectedGuideTypes() {
+  @visibleForTesting
+  void syncSelectedGuideTypes() {
     if (certification.industryType.isEmpty) {
       selectedGuideTypes.value = [];
       return;
@@ -643,11 +647,12 @@ class GuideCertificationController extends GetxController
   void _scheduleDraftSave() {
     if (isReadOnly || _submitted || _restoring) return;
     _draftTimer?.cancel();
-    _draftTimer = Timer(const Duration(milliseconds: 400), _saveDraft);
+    _draftTimer = Timer(const Duration(milliseconds: 400), saveDraft);
   }
 
   /// 保存草稿到本地存儲
-  Future<void> _saveDraft() async {
+  @visibleForTesting
+  Future<void> saveDraft() async {
     if (isReadOnly || _submitted) return;
     final map = _buildDraftJson();
     if (!_hasDraftContent(map)) return;
@@ -798,7 +803,7 @@ class GuideCertificationController extends GetxController
       val?.newCityCountryName = form['new_city_country_name'] as String?;
     });
 
-    _syncSelectedGuideTypes();
+    syncSelectedGuideTypes();
 
     final photoUrl = form['photo'] as String? ?? '';
     if (photoUrl.isNotEmpty) {
@@ -859,7 +864,7 @@ class GuideCertificationController extends GetxController
     businessContactController.text = certification.businessContact ?? '';
     vehicleInfoController.text = certification.vehicleInfo ?? '';
     otherIndustryTypeController.text = certification.otherType ?? '';
-    _syncSelectedGuideTypes();
+    syncSelectedGuideTypes();
     carPictures.value = certification.carPictures;
     // 恢復常駐城市
     if (certification.isNewCity == 1) {
@@ -1059,15 +1064,16 @@ extension GuideCertificationSelection on GuideCertificationController {
         }
         _scheduleDraftSave();
         // 立即上传：成功后本地路径替换为 URL，草稿持久化，退出重进可恢复
-        _uploadAndPersistCar(path);
+        uploadAndPersistCar(path);
         return;
     }
     _scheduleDraftSave();
-    _uploadAndPersist(type, path);
+    uploadAndPersist(type, path);
   }
 
   /// 选图后立即上传，把 URL 写回认证数据与草稿（退出重进时图片可恢复）
-  Future<void> _uploadAndPersist(GuidePhotoType type, String path) async {
+  @visibleForTesting
+  Future<void> uploadAndPersist(GuidePhotoType type, String path) async {
     try {
       final url = await ConfigService.to.uploadFile(path);
       if (url.isEmpty) return;
@@ -1099,7 +1105,8 @@ extension GuideCertificationSelection on GuideCertificationController {
   }
 
   /// 车辆图片上传成功后把本地路径替换为 URL（草稿随之持久化）
-  Future<void> _uploadAndPersistCar(String path) async {
+  @visibleForTesting
+  Future<void> uploadAndPersistCar(String path) async {
     try {
       final url = await ConfigService.to.uploadFile(path);
       if (url.isEmpty) return;
@@ -1108,8 +1115,9 @@ extension GuideCertificationSelection on GuideCertificationController {
         carPictures[idx] = url;
       }
       _certification.update((val) {
+        // carPictures 默认 const [] 不可变，必须整体替换
         if (val != null && !val.carPictures.contains(url)) {
-          val.carPictures.add(url);
+          val.carPictures = [...val.carPictures, url];
         }
       });
       _scheduleDraftSave();
@@ -1126,7 +1134,10 @@ extension GuideCertificationSelection on GuideCertificationController {
     carPictures.removeAt(index);
     if (path.startsWith('http')) {
       _certification.update((val) {
-        val?.carPictures.remove(path);
+        // carPictures 默认 const [] 不可变，必须整体替换
+        if (val != null) {
+          val.carPictures = val.carPictures.where((e) => e != path).toList();
+        }
       });
     }
     _scheduleDraftSave();

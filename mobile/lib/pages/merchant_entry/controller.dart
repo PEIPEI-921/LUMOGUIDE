@@ -9,7 +9,6 @@ import 'package:lumotrip/pages/index.dart';
 
 import '../../common/index.dart';
 import 'index.dart';
-import 'value.dart';
 
 class MerchantEntryController extends GetxController
     with ApiMixin, UserStoreMixin {
@@ -75,7 +74,7 @@ class MerchantEntryController extends GetxController
   @override
   void onClose() {
     _draftTimer?.cancel();
-    if (!isReadOnly && !_submitted) _saveDraft();
+    if (!isReadOnly && !_submitted) saveDraft();
     nameController.dispose();
     nameEnController.dispose();
     addressController.dispose();
@@ -100,7 +99,9 @@ class MerchantEntryController extends GetxController
       val?.auditFeedback = null;
     });
     currentPageIndex.value = 0;
-    pageController.jumpTo(currentPageIndex.value.toDouble());
+    if (pageController.hasClients) {
+      pageController.jumpTo(currentPageIndex.value.toDouble());
+    }
     // 进入编辑模式后检测未完成草稿（审核中/已通过用户重进时此前不会弹草稿提示）
     checkDraftAndPrompt();
   }
@@ -463,7 +464,7 @@ extension MerchantEntrySelection on MerchantEntryController {
       case MerchantPhotoType.documents:
         documentsPicture.value = File(path);
         _scheduleDraftSave();
-        _uploadAndPersistDocuments(path);
+        uploadAndPersistDocuments(path);
         break;
       case MerchantPhotoType.merchantPictures:
         if (index != null && index < merchantPictures.length) {
@@ -472,13 +473,14 @@ extension MerchantEntrySelection on MerchantEntryController {
           merchantPictures.add(path);
         }
         _scheduleDraftSave();
-        _uploadAndPersistMerchantPic(path);
+        uploadAndPersistMerchantPic(path);
         break;
     }
   }
 
   /// 证件图选图后立即上传，URL 写回入驻数据与草稿（退出重进可恢复）
-  Future<void> _uploadAndPersistDocuments(String path) async {
+  @visibleForTesting
+  Future<void> uploadAndPersistDocuments(String path) async {
     try {
       final url = await ConfigService.to.uploadFile(path);
       if (url.isEmpty) return;
@@ -492,7 +494,8 @@ extension MerchantEntrySelection on MerchantEntryController {
   }
 
   /// 商家图片上传成功后把本地路径替换为 URL（草稿随之持久化）
-  Future<void> _uploadAndPersistMerchantPic(String path) async {
+  @visibleForTesting
+  Future<void> uploadAndPersistMerchantPic(String path) async {
     try {
       final url = await ConfigService.to.uploadFile(path);
       if (url.isEmpty) return;
@@ -501,8 +504,9 @@ extension MerchantEntrySelection on MerchantEntryController {
         merchantPictures[idx] = url;
       }
       _merchantEntry.update((val) {
+        // picture 默认 const [] 不可变，必须整体替换
         if (val != null && !val.picture.contains(url)) {
-          val.picture.add(url);
+          val.picture = [...val.picture, url];
         }
       });
       _scheduleDraftSave();
@@ -519,14 +523,17 @@ extension MerchantEntrySelection on MerchantEntryController {
     merchantPictures.removeAt(index);
     if (path.startsWith('http')) {
       _merchantEntry.update((val) {
-        val?.picture.remove(path);
+        // picture 默认 const [] 不可变，必须整体替换
+        if (val != null) {
+          val.picture = val.picture.where((e) => e != path).toList();
+        }
       });
     }
     _scheduleDraftSave();
   }
 }
 
-extension on MerchantEntryController {
+extension MerchantEntryDraft on MerchantEntryController {
   fetchCity() async {
     final res = await get(
       ApiUrl.cityList,
@@ -554,10 +561,11 @@ extension on MerchantEntryController {
   void _scheduleDraftSave() {
     if (isReadOnly || _submitted || _restoring) return;
     _draftTimer?.cancel();
-    _draftTimer = Timer(const Duration(milliseconds: 400), _saveDraft);
+    _draftTimer = Timer(const Duration(milliseconds: 400), saveDraft);
   }
 
-  Future<void> _saveDraft() async {
+  @visibleForTesting
+  Future<void> saveDraft() async {
     if (isReadOnly || _submitted) return;
     final map = _buildDraftJson();
     if (!_hasDraftContent(map)) return;

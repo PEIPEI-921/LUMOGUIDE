@@ -2,7 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, visibleForTesting;
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../index.dart';
@@ -76,6 +76,16 @@ class ConfigService extends GetxService with ApiMixin {
 
   Future<SystemConfig>? _systemConfigFuture;
   Future<List<Category>>? _guideCategoriesFuture;
+
+  /// 解析导游分类响应数据：裸数组或 {'list': [...]} 包装
+  @visibleForTesting
+  static List<Category> parseGuideTypeData(dynamic data) {
+    if (data is! List) return [];
+    return data
+        .whereType<Map>()
+        .map((e) => Category.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
 
   /// 确保系统配置已加载：已有缓存直接返回；否则拉取（并发去重）。
   /// 认证页等场景在 enterApp 的 fire-and-forget 加载未完成/失败时兜底，
@@ -384,11 +394,7 @@ extension TypeCategory on ConfigService {
     }
     // 兼容两种后端格式：裸数组（新）与 {'list': [...]} 包装（旧）
     final data = res.dataJson['list'] ?? res.dataList;
-    if (data is! List) {
-      guideCategories = [];
-      return;
-    }
-    guideCategories = data.map((e) => Category.fromJson(e)).toList();
+    guideCategories = ConfigService.parseGuideTypeData(data);
   }
 
   /// 确保导游分类已加载：缓存为空时拉取（并发去重）。
