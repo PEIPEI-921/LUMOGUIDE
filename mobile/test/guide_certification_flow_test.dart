@@ -256,6 +256,30 @@ void main() {
     });
   });
 
+  group('选项加载失败重试', () {
+    testWidgets('选项为空时 retryLoadOptions 恢复从业类型', (tester) async {
+      final config = FakeConfigService(categories: []);
+      await registerTestEnv(config: config);
+      await tester.pumpWidget(buildTestApp());
+      final c = GuideCertificationController();
+      Get.put(c);
+      await tester.pumpAndSettle();
+
+      expect(c.guideTypes, isEmpty);
+
+      // 模拟网络恢复后重试
+      config.categoriesValue.addAll([
+        Category(id: 1, name: '導遊'),
+        Category(id: 2, name: '司機導遊'),
+      ]);
+      await c.retryLoadOptions();
+      await tester.pump();
+
+      expect(c.guideTypes, hasLength(2));
+      expect(c.guideTypes.first.name, '導遊');
+    });
+  });
+
   group('表单校验门禁', () {
     testWidgets('基础信息缺失 → 校验失败且不翻页', (tester) async {
       await registerTestEnv();

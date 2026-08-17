@@ -146,6 +146,19 @@ class GuideCertificationController extends GetxController
     syncSelectedGuideTypes();
   }
 
+  /// 选项加载失败时的点击重试入口（语言 + 从业类型/身份类型）
+  Future<void> retryLoadOptions() async {
+    final config = ConfigService.to;
+    await Future.wait([
+      config.ensureSystemConfig(),
+      config.ensureGuideCategories(),
+    ]);
+    guideTypes.value = config.guideCategories;
+    syncSelectedGuideTypes();
+    // languages 读取的是非响应式配置，强制刷新一次让“加载失败”提示消失
+    guideTypes.refresh();
+  }
+
   /// 根据 certification.industryType 重建选中的类型（列表异步补齐后调用）
   @visibleForTesting
   void syncSelectedGuideTypes() {

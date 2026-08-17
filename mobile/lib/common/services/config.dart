@@ -387,7 +387,7 @@ extension DeviceInfo on ConfigService {
 }
 
 extension TypeCategory on ConfigService {
-  loadGuideCategories() async {
+  Future<void> loadGuideCategories() async {
     final res = await get(ApiUrl.guideType);
     if (!res.isSuccess) {
       return;
@@ -403,7 +403,10 @@ extension TypeCategory on ConfigService {
     if (guideCategories.isNotEmpty) return guideCategories;
     final pending = _guideCategoriesFuture;
     if (pending != null) return pending;
-    final future = loadGuideCategories().then((_) => guideCategories);
+    // 显式标注 Future<List<Category>>：loadGuideCategories 未标注返回类型时
+    // .then 推断为 Future<dynamic>，赋值到 Future<List<Category>>? 字段会抛运行时类型错误
+    final Future<List<Category>> future =
+        loadGuideCategories().then((_) => guideCategories);
     _guideCategoriesFuture = future;
     try {
       return await future;

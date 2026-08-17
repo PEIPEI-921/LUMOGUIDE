@@ -16,21 +16,42 @@ class ProfessionalInfoWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('專業信息'.tr).fontSize(14.sp).textColor(AppColors.primaryText),
-          if (controller.languages.isEmpty || controller.guideTypes.isEmpty)
-            Column(
+          // 响应式判断：语言或从业类型未加载时显示重试入口
+          Obx(() {
+            final langsEmpty = controller.languages.isEmpty;
+            final typesEmpty = controller.guideTypes.isEmpty;
+            if (!langsEmpty && !typesEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 8.w.verticalSpace,
-                Text(
-                  '選項加載失敗，請完全關閉App後重新打開再試'
-                      .tr,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: AppColors.red,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '選項加載失敗'.tr,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.red,
+                      ),
+                    ),
+                    4.w.horizontalSpace,
+                    Text(
+                      '點擊重試'.tr,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ).gestures(
+                  onTap: () => controller.retryLoadOptions(),
                 ),
               ],
-            ),
+            );
+          }),
           10.w.verticalSpace,
           Column(
             children: [
