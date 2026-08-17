@@ -442,8 +442,10 @@ class UserService
         foreach ($data['data'] as $v) {
             if (isset($v['invitees'])) {
                 $res[] = [
+                    'id' => $v['id'],
                     'invitees_nickname' => $v['invitees']['nickname'],
                     'invitees_avatar' => $v['invitees']['avatar'],
+                    'invitees_number' => $v['invitees']['number'] ?? '',
                     'created_at' => substr($v['created_at'], 0, 10),
                 ];
             }
@@ -539,11 +541,11 @@ class UserService
                 'id' => $v['id'],
                 'guide' => [
                     'id' => $v['guide_id'],
-                    'photo' => $v['guide']['photo'],
-                    'name' => $v['guide']['name'],
-                    'city_name' => $v['guide']['city_name'],
-                    'language' => json_decode($v['guide']['language'], true),
-                    'identity_type' => $guide_type[$v['guide']['identity_type']],
+                    'photo' => $v['guide']['photo'] ?? '',
+                    'name' => $v['guide']['name'] ?? '',
+                    'city_name' => $v['guide']['city_name'] ?? '',
+                    'language' => json_decode($v['guide']['language'] ?? '', true),
+                    'identity_type' => isset($v['guide']) ? ($guide_type[$v['guide']['identity_type']] ?? '') : '',
                 ],
                 'status' => $status,
                 'reason' => $v['reason'],
@@ -596,13 +598,13 @@ class UserService
             'reason' => $data['reason'],
             'created_at' => $data['created_at'],
             'guide' => [
-                'id' => $data['guide']['id'],
-                'photo' => $data['guide']['photo'],
-                'name' => $data['guide']['name'],
+                'id' => $data['guide']['id'] ?? 0,
+                'photo' => $data['guide']['photo'] ?? '',
+                'name' => $data['guide']['name'] ?? '',
                 'city_id' => $data['city_id'],
-                'city_name' => $data['guide']['city_name'],
-                'language' => json_decode($data['guide']['language'], true),
-                'identity_type' => $guide_type[$data['guide']['identity_type']],
+                'city_name' => $data['guide']['city_name'] ?? '',
+                'language' => json_decode($data['guide']['language'] ?? '', true),
+                'identity_type' => isset($data['guide']) ? ($guide_type[$data['guide']['identity_type']] ?? '') : '',
             ],
         ];
     }

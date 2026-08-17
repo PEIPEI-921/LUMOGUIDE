@@ -74,12 +74,14 @@ class AuditCityForm extends Form implements LazyRenderable
             }
 
             if ($input['audit_status'] == 2) {
-                SystemMessage::saveData($res->user_id, '發布城市', '發布城市失败', "很抱歉,您提交的城市沒有通過,原因是:{$input['audit_feedback']},請重新填寫資料");
+                $cityName = $res->name_en ? "{$res->name} {$res->name_en}" : $res->name;
+                SystemMessage::saveDataWithType($res->user_id, '發布城市', "發布城市（{$cityName}）失败", "很抱歉,您提交的城市（{$cityName}）沒有通過,原因是:{$input['audit_feedback']},請重新填寫資料", 'city', $res->id);
             }
 
             // 发布城市给用户增加积分
             if ($is_finish == 1 && $res->user_id > 0) {
-                SystemMessage::saveData($res->user_id, '發布城市', '發布城市通過審核', "恭喜您,發布的城市{$res->name}已通過審核,快去看看吧");
+                $cityName = $res->name_en ? "{$res->name} {$res->name_en}" : $res->name;
+                SystemMessage::saveDataWithType($res->user_id, '發布城市', "發布城市（{$cityName}）通過審核", "恭喜您,發布的城市（{$cityName}）已通過審核,快去看看吧", 'city', $res->id);
                 SystemIntegralConfig::saveData($res->user_id, 'add_city');
             }
 

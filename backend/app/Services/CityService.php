@@ -192,7 +192,7 @@ class CityService
             }
         }
 
-        $res = $query->where('audit_status', 1)->orderBy('id', 'desc')->paginate($limit, ['id', 'photo', 'name', 'language'])->toArray();
+        $res = $query->where('audit_status', 1)->orderBy('order', 'desc')->orderBy('id', 'desc')->paginate($limit, ['id', 'photo', 'name', 'language'])->toArray();
 
         $data = $res['data'];
         foreach ($data as $k => &$v) {
@@ -508,8 +508,8 @@ class CityService
 
         return [
             'id' => $id,
-            'user_number' => $data['user']['number'],
-            'city_name' => $data['city']['name'],
+            'user_number' => $data['user']['number'] ?? '',
+            'city_name' => $data['city']['name'] ?? '',
             'name' => $data['name'],
             'class_name' => CityTypeClass::query()->where('id', $data['type_class_id'])->value('name') ?? '',
             'start_time' => $data['start_time'],

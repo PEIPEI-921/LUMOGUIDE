@@ -60,7 +60,7 @@ class CityContent extends EloquentRepository
         $attributes = $form->updates();
         unset($attributes['type_id'], $attributes['publisher_type']);
 
-        $res = Model::find($form->getKey());
+        $res = Model::with(['city', 'type_class'])->find($form->getKey());
 
         foreach ($attributes as $key => $value) {
             if ($key != 'pictures') {
@@ -103,13 +103,18 @@ class CityContent extends EloquentRepository
 
             $res->save();
 
+            // 构建城市+内容名称
+            $cityName = $res->city ? ($res->city->name_en ? "{$res->city->name} {$res->city->name_en}" : $res->city->name) : '';
+            $typeName = $res->type_class->name ?? '';
+            $contentName = $res->name_en ? "{$res->name} {$res->name_en}" : $res->name;
+
             if (isset($attributes['audit_status']) && $attributes['audit_status'] == 2) {
-                SystemMessage::saveData($res->user_id, '城市內容發布', '城市內容發布失败', "很抱歉,您提交的城市内容沒有通過发布,原因是:{$attributes['audit_feedback']},請重新填寫資料");
+                SystemMessage::saveDataWithType($res->user_id, '城市內容發布', "城市內容（{$cityName}）的（{$typeName}）的（{$contentName}）失败", "很抱歉,您提交的城市內容（{$cityName}）的（{$typeName}）的（{$contentName}）沒有通過发布,原因是:{$attributes['audit_feedback']},請重新填寫資料", 'city_content', $res->city_id, $res->id, $res->type_id);
             }
 
             // 发布内容给用户增加积分
             if ($is_finish == 1 && $res->user_id > 0) {
-                SystemMessage::saveData($res->user_id, '城市內容發布', '城市內容發布通過審核', "恭喜您,已成功發布城市內容");
+                SystemMessage::saveDataWithType($res->user_id, '城市內容發布', "城市內容（{$cityName}）的（{$typeName}）的（{$contentName}）通過審核", "恭喜您,發布的城市內容（{$cityName}）的（{$typeName}）的（{$contentName}）已通過審核,快去看看吧", 'city_content', $res->city_id, $res->id, $res->type_id);
 
                 SystemIntegralConfig::saveData($res->user_id, 'city_content');
             }

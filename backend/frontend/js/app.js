@@ -81,7 +81,10 @@ const AppShell = {
       </header>
 
       <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
+        <!-- mode="out-in" + explicit duration: guarantees the enter phase starts even if
+             transitionend never fires (WebKit/Safari quirk that left the view stuck on
+             the previous page after navigation) -->
+        <transition name="fade" mode="out-in" :duration="{ enter: 250, leave: 250 }">
           <component :is="Component" />
         </transition>
       </router-view>

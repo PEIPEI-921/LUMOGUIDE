@@ -23,4 +23,10 @@ class Company extends Model
             ->where('audit_status', 0)->select(['id', 'company_id']);
     }
 
+    public function shops()
+    {
+        return $this->hasMany(CityContent::class, 'publisher_id', 'id')
+            ->where('publisher_type', 'company');
+    }
+
 }

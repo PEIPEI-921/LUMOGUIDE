@@ -975,7 +975,7 @@ class GuideService
                 }
             }
 
-            $v['city_name'] = $v['city']['name'];
+            $v['city_name'] = $v['city']['name'] ?? '';
             $data[] = [
                 'id' => $v['id'],
                 'arrival_time' => $v['arrival_time'],
@@ -1023,7 +1023,7 @@ class GuideService
             'status' => $status,
             'created_at' => $data['created_at'],
             'user' => $data['user'],
-            'city_name' => $data['city']['name'],
+            'city_name' => $data['city']['name'] ?? '',
             'remark' => $data['remark'],
             'contact' => $data['contact'],
             'email' => $data['email'],

@@ -443,9 +443,9 @@ class CompanyService
                 'user' => $v['user'],
                 'content' => [
                     'id' => $v['content_id'],
-                    'name' => $v['content']['name'],
-                    'type_id' => $v['content']['type_id'],
-                    'first_picture' => $v['content']['first_picture'],
+                    'name' => $v['content']['name'] ?? '',
+                    'type_id' => $v['content']['type_id'] ?? 0,
+                    'first_picture' => $v['content']['first_picture'] ?? '',
                 ],
             ];
         }
@@ -497,9 +497,9 @@ class CompanyService
             'user' => $data['user'],
             'content' => [
                 'id' => $data['content_id'],
-                'name' => $data['content']['name'],
-                'type_id' => $data['content']['type_id'],
-                'first_picture' => $data['content']['first_picture'],
+                'name' => $data['content']['name'] ?? '',
+                'type_id' => $data['content']['type_id'] ?? 0,
+                'first_picture' => $data['content']['first_picture'] ?? '',
             ],
         ];
     }

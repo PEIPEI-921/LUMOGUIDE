@@ -175,9 +175,9 @@ class MessageService
         $list = [];
         foreach ($data['data'] as $v) {
             $content_info = $v['content_type'] == City::ContentTypeCity ? [
-                'id' => $v['contents']['id'],
-                'city_id' => $v['contents']['city_id'],
-                'type_id' => $v['contents']['type_id'],
+                'id' => $v['contents']['id'] ?? 0,
+                'city_id' => $v['contents']['city_id'] ?? 0,
+                'type_id' => $v['contents']['type_id'] ?? 0,
             ] : (object)[];
 
             $list[] = [
@@ -188,7 +188,7 @@ class MessageService
                 'content_id' => $v['content_id'],
                 'title' => $v['content_name'],
                 'content_type' => $v['content_type'],
-                'content_picture' => $v['content_type'] == City::ContentTypeCity ? $v['contents']['first_picture'] : '',
+                'content_picture' => $v['content_type'] == City::ContentTypeCity ? ($v['contents']['first_picture'] ?? '') : '',
                 'content_user' => $v['content_user']['nickname'] ?? '',
                 'content_info' => $content_info,
                 'time' => $v['created_at'],
@@ -220,20 +220,20 @@ class MessageService
             $title = $v['content_type'] == City::ContentTypeCity ? '發布內容' : '資訊';
 
             $content_info = $v['content_type'] == City::ContentTypeCity ? [
-                'id' => $v['contents']['id'],
-                'city_id' => $v['contents']['city_id'],
-                'type_id' => $v['contents']['type_id'],
+                'id' => $v['contents']['id'] ?? 0,
+                'city_id' => $v['contents']['city_id'] ?? 0,
+                'type_id' => $v['contents']['type_id'] ?? 0,
             ] : (object)[];
 
             $list[] = [
                 'id' => $v['id'],
-                'user_avatar' => $v['user']['avatar'],
-                'user_nickname' => $v['user']['nickname'],
+                'user_avatar' => $v['user']['avatar'] ?? '',
+                'user_nickname' => $v['user']['nickname'] ?? '',
                 'title' => "评论您的$title",
                 'content' => $v['content'],
                 'content_id' => $v['content_id'],
                 'content_type' => $v['content_type'],
-                'content_picture' => $v['content_type'] == City::ContentTypeCity ? $v['contents']['first_picture'] : '',
+                'content_picture' => $v['content_type'] == City::ContentTypeCity ? ($v['contents']['first_picture'] ?? '') : '',
                 'content_info' => $content_info,
                 'time' => $v['created_at'],
             ];
@@ -277,8 +277,8 @@ class MessageService
             $list[] = [
                 'id' => $v['id'],
                 'user_id' => $v['user_id'],
-                'user_nickname' => $v['user']['nickname'],
-                'user_avatar' => $v['user']['avatar'],
+                'user_nickname' => $v['user']['nickname'] ?? '',
+                'user_avatar' => $v['user']['avatar'] ?? '',
                 'user_identity' => $v['followed_identity'],
                 'user_identity_id' => $v['followed_identity_id'],
                 'user_identity_tag' => $v['followed_identity_tag'],
@@ -294,15 +294,15 @@ class MessageService
                 'id' => $v['id'],
                 'user_id' => $v['followed_user_id'],
                 'user_nickname' => $v['followed_name'],
-                'user_avatar' => $v['content']['first_picture'],
+                'user_avatar' => $v['content']['first_picture'] ?? '',
                 'user_identity' => 4,
                 'user_identity_id' => $v['followed_id'],
-                'user_identity_tag' => $city_type[$v['content']['type_id']],
+                'user_identity_tag' => isset($v['content']) ? ($city_type[$v['content']['type_id']] ?? '') : '',
                 'user_city_name' => $v['followed_city_name'],
                 'shop_info' => [
-                    'id' => $v['content']['id'],
-                    'city_id' => $v['content']['city_id'],
-                    'type_id' => $v['content']['type_id'],
+                    'id' => $v['content']['id'] ?? 0,
+                    'city_id' => $v['content']['city_id'] ?? 0,
+                    'type_id' => $v['content']['type_id'] ?? 0,
                 ],
                 'is_follow' => 1,
             ];
@@ -343,9 +343,9 @@ class MessageService
             $list[] = [
                 'id' => $v['id'],
                 'user_id' => $v['user_id'],
-                'user_number' => $v['user']['number'],
-                'user_nickname' => $v['user']['nickname'],
-                'user_avatar' => $v['user']['avatar'],
+                'user_number' => $v['user']['number'] ?? '',
+                'user_nickname' => $v['user']['nickname'] ?? '',
+                'user_avatar' => $v['user']['avatar'] ?? '',
                 'user_identity' => $v['user_identity'],
                 'user_identity_id' => $v['user_identity_id'],
                 'user_identity_tag' => $v['user_identity_tag'],
@@ -401,9 +401,9 @@ class MessageService
             $list[] = [
                 'id' => $v['id'],
                 'user_id' => $v['user_id'],
-                'user_number' => $v['user']['number'],
-                'user_avatar' => $v['user']['avatar'],
-                'user_name' => $v['user']['nickname'],
+                'user_number' => $v['user']['number'] ?? '',
+                'user_avatar' => $v['user']['avatar'] ?? '',
+                'user_name' => $v['user']['nickname'] ?? '',
                 'user_identity' => $v['user_identity'],
                 'user_identity_id' => $v['user_identity_id'],
                 'user_identity_tag' => $v['user_identity_tag'],
@@ -411,8 +411,8 @@ class MessageService
                 'shops_name' => $shops_name,
                 'shop_info' => [
                     'id' => $v['followed_id'],
-                    'name' => $v['content']['name'],
-                    'first_picture' => $v['content']['first_picture'],
+                    'name' => $v['content']['name'] ?? '',
+                    'first_picture' => $v['content']['first_picture'] ?? '',
                 ],
                 'is_follow' => $is_follow ? 1 : 0,
             ];

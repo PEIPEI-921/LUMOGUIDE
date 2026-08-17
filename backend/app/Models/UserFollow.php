@@ -14,7 +14,7 @@ class UserFollow extends Model
 
     public function user()
     {
-        return $this->hasOne(User::class, 'id', 'user_id')->select(['id', 'nickname', 'avatar']);
+        return $this->hasOne(User::class, 'id', 'user_id')->select(['id', 'nickname', 'avatar', 'number', 'identity']);
     }
 
     public function guide()

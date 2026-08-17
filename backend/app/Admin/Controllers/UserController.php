@@ -181,7 +181,7 @@ class UserController extends AdminController
 
     protected function companyGrid()
     {
-        return Grid::make(new \App\Admin\Repositories\Company(['user', 'edit_data']), function (Grid $grid) {
+        return Grid::make(new \App\Admin\Repositories\Company(['user', 'edit_data', 'shops']), function (Grid $grid) {
             $grid->setResource('company');
             $grid->model()->orderBy('id', 'desc');
             $grid->column('id')->sortable();
@@ -210,6 +210,16 @@ class UserController extends AdminController
 
             $grid->column('reserve', '預約')->display('查看')->link(function () {
                 return admin_url('reserve?company_id=' . $this->id);
+            });
+
+            $grid->column('shopRecommend', '推薦設置')->display(function () {
+                if ($this->audit_status != 1) return '';
+                $shop = $this->shops->first();
+                return $shop ? "設置「{$shop->name}」" : '';
+            })->modal(function (Grid\Displayers\Modal $modal) {
+                $modal->icon('');
+                $modal->title('推薦設置');
+                return \App\Admin\Forms\CompanyRecommendSet::make();
             });
 
             $grid->column('created_at')->sortable();

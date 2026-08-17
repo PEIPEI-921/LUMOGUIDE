@@ -39,7 +39,7 @@ class SystemMessage extends Model
     /**
      * 添加系统消息（含 content_type，用于会员到期等特定类型消息）
      */
-    static public function saveDataWithType(int $user_id, string $title, string $desc, string $content, string $content_type)
+    static public function saveDataWithType(int $user_id, string $title, string $desc, string $content, string $content_type, int $city_id = 0, int $content_id = 0, int $city_content_type = 0)
     {
         $model = new self();
         $model->user_id = $user_id;
@@ -47,6 +47,9 @@ class SystemMessage extends Model
         $model->desc = $desc;
         $model->content = $content;
         $model->content_type = $content_type;
+        if ($city_id > 0) $model->city_id = $city_id;
+        if ($content_id > 0) $model->content_id = $content_id;
+        if ($city_content_type > 0) $model->city_content_type = $city_content_type;
         $model->save();
 
         $count = Redis::hGet("message_list:$user_id", 'system') ?? 0;

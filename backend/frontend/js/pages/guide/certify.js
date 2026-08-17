@@ -293,12 +293,14 @@ const GuideCertifyPage = {
         // Load languages from config
         const configRes = await ApiProvider.get(ApiUrl.config);
         if (configRes.success && configRes.data && configRes.data.languages) {
-          this.languages = configRes.data.languages.split(',').map(s => s.trim()).filter(Boolean);
+          const langs = configRes.data.languages;
+          this.languages = Array.isArray(langs) ? langs : langs.split(',').map(s => s.trim()).filter(Boolean);
         }
         // Load industry types
-        const typeRes = await ApiProvider.get(ApiUrl.getType);
-        if (typeRes.success && typeRes.data && Array.isArray(typeRes.data.list)) {
-          this.industryTypes = typeRes.data.list;
+        const typeRes = await ApiProvider.get(ApiUrl.guideType);
+        if (typeRes.success && typeRes.data) {
+          const list = Array.isArray(typeRes.data) ? typeRes.data : (typeRes.data.list || []);
+          this.industryTypes = list;
         }
       } catch (e) { /* silent */ }
       this.loading = false;

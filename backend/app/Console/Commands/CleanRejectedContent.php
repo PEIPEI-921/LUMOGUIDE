@@ -26,19 +26,22 @@ class CleanRejectedContent extends Command
         // ========== City Content ==========
 
         // Step 1: Notify users for content approaching deletion (4 days after rejection)
-        $notifyContent = CityContent::where('audit_status', 2)
+        $notifyContent = CityContent::with(['city', 'type_class'])->where('audit_status', 2)
             ->where('updated_at', '<', $notifyCutoff)
             ->whereNull('reject_notified_at')
             ->get();
 
         foreach ($notifyContent as $c) {
-            $name = $c->name ?: '未命名內容';
-            SystemMessage::saveData(
-                $c->user_id,
-                '內容即將刪除',
-                "「{$name}」將於3天後自動刪除",
-                "您提交的內容「{$name}」因審核未通過，將於3天後自動刪除。如需保留，請及時修改並重新提交審核。"
-            );
+            $cityName = $c->city ? ($c->city->name_en ? "{$c->city->name} {$c->city->name_en}" : $c->city->name) : '';
+            $typeName = $c->type_class->name ?? '';
+            $contentName = $c->name ? ($c->name_en ? "{$c->name} {$c->name_en}" : $c->name) : '未命名內容';
+            $desc = $cityName
+                ? "內容（{$cityName}）的（{$typeName}）的（{$contentName}）將於3天後自動刪除"
+                : "「{$contentName}」將於3天後自動刪除";
+            $content = $cityName
+                ? "您提交的內容（{$cityName}）的（{$typeName}）的（{$contentName}）因審核未通過，將於3天後自動刪除。如需保留，請及時修改並重新提交審核。"
+                : "您提交的內容「{$contentName}」因審核未通過，將於3天後自動刪除。如需保留，請及時修改並重新提交審核。";
+            SystemMessage::saveDataWithType($c->user_id, '內容即將刪除', $desc, $content, 'city_content', $c->city_id, $c->id, $c->type_id);
             CityContent::where('id', $c->id)->update(['reject_notified_at' => now()]);
             $totalNotified++;
         }
@@ -63,13 +66,10 @@ class CleanRejectedContent extends Command
             ->get();
 
         foreach ($notifyCities as $c) {
-            $name = $c->name ?: '未命名城市';
-            SystemMessage::saveData(
-                $c->user_id,
-                '城市即將刪除',
-                "「{$name}」將於3天後自動刪除",
-                "您提交的城市「{$name}」因審核未通過，將於3天後自動刪除。如需保留，請及時修改並重新提交審核。"
-            );
+            $cityName = $c->name ? ($c->name_en ? "{$c->name} {$c->name_en}" : $c->name) : '未命名城市';
+            $desc = "城市（{$cityName}）將於3天後自動刪除";
+            $content = "您提交的城市（{$cityName}）因審核未通過，將於3天後自動刪除。如需保留，請及時修改並重新提交審核。";
+            SystemMessage::saveDataWithType($c->user_id, '城市即將刪除', $desc, $content, 'city', $c->id);
             City::where('id', $c->id)->update(['reject_notified_at' => now()]);
             $totalNotified++;
         }

@@ -771,6 +771,24 @@ Deploy order on new server: `schema.sql` → `seed.sql` → `data.sql`.
 
 - **`Company::AuditStatusArr`**: `Company` enum had `AuditStatus` but other enums (City, Guide) use `AuditStatusArr`. Added `const AuditStatusArr = self::AuditStatus` alias. Without this, admin page `/manage/users?tab=company` crashes with "Undefined constant".
 
+- **JWT 過期 → 手機 App「我的」全分類空白（2026-08-14 排查）**: 「我的」頁面所有分類（城市/預約/發布/商城/邀請/歷程/認證/會員中心）空白、所有帳號皆中招時，**先檢查 token 過期**，不要急著深挖代碼。`JWT_TTL=10080` 分鐘（7 天）在 `.env`；過期 token 走 `AuthenticationException` 路徑 → `Handler::render()` 返回 401「未認證或登錄狀態已失效」→ Flutter App 把 401 錯誤當空內容顯示。診斷三步：(1) 確認空白接口是否 `auth:api`（公開接口如首頁正常 = 登錄層問題）(2) 從手機請求（nginx 日誌 UA 含 Dart）抓 Authorization 頭，base64url 解 JWT payload 看 `exp` (3) `exp < now` → 讓用戶在 App 登出重登即可，後端無需修。改進方向（未實施）：Flutter app 收到 401 應自動跳轉登入頁（`lumotrip/` 項目）。
+
+- **Dcat 網格內聯編輯被 `prepareUpdate()` 過濾丟棄（2026-08-15）**: 網格內聯編輯（`->switch()` 開關、`->editable()` 排序）發 PUT 到資源 update 路由 → `Form::update()` → **`prepareUpdate()` 只保留表單（form()）裡定義的字段**，非表單字段（如審核表單沒有的 `recommend`/`home_recommend`/`order`）被**靜默丟棄**——後台怎麼改都不生效且無報錯。**在 Repository::update() 裡加循環沒用**（過濾發生在 repository 之前，`$form->updates()` 已是空）。校驗不是問題：`getValidator()` 對不在輸入中的字段直接跳過（required 不會攔截內聯請求）。**正確修法**：在 Controller 覆寫 `update()`，攔截內聯字段直接寫庫（`GuideController::update()`，2026-08-15）：
+  ```php
+  public function update($id) {
+      foreach (['recommend', 'home_recommend', 'order'] as $field) {
+          if (request()->exists($field)) {
+              $res = \App\Models\Guide::find($id);
+              $res->{$field} = (int) request()->input($field);
+              $res->save();
+              return response()->json(['status' => true, 'data' => ['message' => '設置成功']]);
+          }
+      }
+      return parent::update($id);
+  }
+  ```
+  switch 發 `{recommend: 0|1}`、editable 發 `{order: N, _inline_edit_: 1}`（注意此版本 dcat 的標記是 `_inline_edit_` 不是 `_editable`）。響應格式需 `{status, data:{message}}` 以兼容兩者 JS。同案新增 `CompanyRecommendSet`（企業 tab 設置其首個商鋪 city_content 的 recommend/home_recommend/banner_recommend/order，`Company::shops()` 關係 + `UserController` 企業 tab「推薦設置」列）。排序規則統一：首頁/城市頁/guideList 均 `orderBy('order','desc')`（後台提示「從大至小」；原首頁導遊是 `asc` 為 bug，城市頁導遊列表此前完全忽略 order，均已修正）。
+
 ### Frontend — Hard Pitfalls (will silently break with no errors)
 - **白字在淺色背景上消失（v4 設計切換後）**: 舊版設計（2026-08-07 前）多個頁面頂部用白色文字，靠舊的 indigo 頂部漸層 `#666FFF` 提供深底。v4 改淺色背景後這些白字全部不可見（標題、搜尋列、tab、pill）。**2026-08-07 已修復 7 個檔案**：`city/index.js`、`guide/list.js`、`merchant/list.js`、`search/index.js`、`misc/download.js`、`city/extra.js`（攻略頁頭部）、`news/detail.js`（日期/瀏覽數）+ CSS `.sketch-search-input::placeholder`。修改後主題色時，必須全站掃描白字元素（可參考 Playwright 腳本：對每個路由找 computed color 為白色、且背景鏈（含祖先 background-image 漸層）為淺色的文字元素）。city 詳情頁標題雖是白字但下方有 `linear-gradient(to top, rgba(0,0,0,.6), transparent)` 暗色 overlay（sibling，非祖先），屬正常。見 [[v4-design-palette]] 記憶。
 - **Vue 3 CDN component pitfall**: NEVER create separate component files. Components registered via `components: {}` silently render blank in child templates. ALWAYS inline templates in the parent component.
@@ -803,6 +821,7 @@ When a detail page shows blank content (empty body, missing images), the most co
 - **Activity API**: Uses `category_id` param (not `type_class_id` like other types).
 - **UserStore identity**: Use `Number(this.userInfo?.identity)` — API returns identity as string.
 - **Guide images**: Guides return `photo`, others return `first_picture`. Use `item.photo || item.first_picture`.
+- **API 形状契约（2026-08-17）**: `config.languages` = 逗号分隔**字符串**；`getGuideType.data` = **`{list: [...]}`** 包裹。两者是 Flutter App 认证页的解析契约，勿改回数组/扁平数组（Web certify.js 已双形状兼容，后端改动不影响 Web）。`applyGuideInfo` 的 `language`/`industry_type` 仍是数组。
 
 ### System Messages (`#/message/system`)
 

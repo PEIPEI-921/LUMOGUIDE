@@ -225,27 +225,36 @@ const InvitePage = {
       <div style="padding:24px;border-radius:var(--radius-lg);background:linear-gradient(135deg,var(--color-primary),#4A52E0);color:#fff;text-align:center;margin-bottom:20px">
         <p style="font-size:13px;opacity:.8;margin-bottom:8px">{{ $t('我的邀請碼') }}</p>
         <p style="font-size:36px;font-weight:800;letter-spacing:4px">{{ inviteCode }}</p>
-        <button @click="copyCode" style="margin-top:12px;padding:8px 24px;border-radius:20px;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
-          {{ copied ? $t('已複製') : $t('複製邀請碼') }}
-        </button>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button @click="copyCode" style="padding:8px 20px;border-radius:20px;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+            {{ copied ? $t('已複製') : $t('複製邀請碼') }}
+          </button>
+          <button @click="shareInvite" style="padding:8px 20px;border-radius:20px;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+            {{ shared ? $t('已分享') : $t('分享邀請') }}
+          </button>
+        </div>
       </div>
 
       <!-- QR Code -->
-      <div v-if="inviteImg" style="text-align:center;margin-bottom:20px;padding:20px;background:var(--color-card);border-radius:var(--radius-lg)">
+      <div v-if="inviteImg" style="text-align:center;margin-bottom:20px;padding:20px;background:var(--color-card);border-radius:var(--radius-lg);border:1px solid var(--color-border)">
         <p style="font-size:13px;color:var(--color-assistant-text);margin-bottom:12px">{{ $t('掃碼邀請好友') }}</p>
         <img :src="inviteImg" alt="QR Code" style="width:200px;height:200px;border-radius:8px">
       </div>
 
       <!-- Invite Records -->
-      <h3 style="font-weight:600;margin-bottom:12px">{{ $t('邀請記錄') }}</h3>
+      <h3 style="font-weight:600;margin-bottom:12px">{{ $t('邀請記錄') }}<span v-if="totalCount" style="font-weight:400;font-size:13px;color:var(--color-assistant-text);margin-left:8px">{{ totalCount }}</span></h3>
       <div v-if="loading" class="loading-container"><div class="spinner"></div></div>
       <div v-else-if="records.length === 0" class="ds-empty">{{ $t('暫無邀請記錄') }}</div>
       <div v-else>
         <div v-for="r in records" :key="r.id" class="ds-list-item">
-          <div class="ds-list-avatar" style="display:flex;align-items:center;justify-content:center;color:var(--color-assistant-text)"><span v-html="I.user" style="font-size:20px"></span></div>
+          <div class="ds-list-avatar">
+            <img v-if="r.invitees_avatar" :src="r.invitees_avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover" @error="$event.target.style.display='none'">
+            <span v-else style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--color-assistant-text)" v-html="I.user"></span>
+          </div>
           <div class="ds-list-body">
-            <div class="ds-list-title">{{ r.name || r.nickname || '用戶' }}</div>
-            <div class="ds-list-sub">{{ formatDate(r.created_at) }}</div>
+            <div class="ds-list-title">{{ r.invitees_nickname || '用戶' }}</div>
+            <div class="ds-list-sub">{{ r.invitees_number || '' }}<span v-if="r.invitees_number && r.created_at"> · </span>{{ r.created_at || '' }}</div>
           </div>
         </div>
       </div>
@@ -254,20 +263,23 @@ const InvitePage = {
   `,
   data() {
     return {
-      inviteCode: '', inviteImg: '', copied: false,
-      records: [], loading: false
+      inviteCode: '', inviteImg: '', inviteUrl: '', copied: false, shared: false,
+      records: [], totalCount: 0, loading: false
     };
   },
   methods: {
     async load() {
+      await UserStore.getProfile();
       const user = UserStore.profile || UserStore.userInfo || {};
       this.inviteCode = user.inviter_code || '';
       this.inviteImg = user.invite_img || '';
+      this.inviteUrl = user.invite_url || '';
       this.loading = true;
       const res = await ApiProvider.get(ApiUrl.inviteLog, { limit: 1000 });
       if (res.success) {
         const list = res.data?.list || res.data || [];
         this.records = Array.isArray(list) ? list : [];
+        this.totalCount = res.data?.total || 0;
       }
       this.loading = false;
     },
@@ -275,6 +287,26 @@ const InvitePage = {
       navigator.clipboard?.writeText(this.inviteCode);
       this.copied = true;
       setTimeout(() => { this.copied = false; }, 2000);
+    },
+    async shareInvite() {
+      const url = this.inviteUrl || (this.inviteCode ? ('https://lumoguide.com/invite.html?code=' + this.inviteCode) : '');
+      if (!url) return;
+      const text = this.$t('快來加入LUMOGUIDE！用我的邀請碼') + ' ' + this.inviteCode;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'LUMOGUIDE', text, url });
+          this.shared = true;
+          setTimeout(() => { this.shared = false; }, 2000);
+        } catch (_) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(text + ' ' + url);
+          this.shared = true;
+          setTimeout(() => { this.shared = false; }, 2000);
+        } catch (_) {
+          window.prompt(this.$t('複製連結分享'), url);
+        }
+      }
     },
     formatDate(d) { return d ? (d + '').slice(0, 10) : ''; }
   },

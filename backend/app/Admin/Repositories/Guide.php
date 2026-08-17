@@ -50,12 +50,6 @@ class Guide extends EloquentRepository
 
         $res = Model::find($form->getKey());
 
-//        foreach ($attributes as $key => $value) {
-//            if (in_array($key, ['recommend', 'home_recommend', 'order'])) {
-//                $res->{$key} = $value;
-//            }
-//        }
-
         // 首次通过不会二次处理 (即第一次申请并且通过 不会下发二次奖励)
         $is_finish = 0;
         if ($res->is_finish == 0 && isset($attributes['audit_status']) && $attributes['audit_status'] == 1) {

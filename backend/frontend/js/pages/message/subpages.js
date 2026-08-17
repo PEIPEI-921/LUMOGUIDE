@@ -88,6 +88,12 @@ const MessageSystemPage = {
     renderContent(msg) {
       const text = msg.content || msg.desc || '';
       if (!text) return '';
+      // For city messages with city_id, make bracketed city name clickable
+      if (msg.content_type === 'city' && msg.city_id > 0) {
+        return String(text).replace(/（([^）]+)）/, function(match, name) {
+          return '<a href=\"#/city/detail?id=' + msg.city_id + '\" style=\"color:#8B5CF6;font-weight:600;text-decoration:none\">' + name + '</a>';
+        });
+      }
       // For city_content messages with IDs, make bracketed names clickable
       if (msg.content_type === 'city_content' && msg.city_id > 0 && msg.content_id > 0) {
         let idx = 0;

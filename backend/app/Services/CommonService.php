@@ -42,7 +42,7 @@ class CommonService
             'contact_us' => systemConfig('contact_us'),
             'integral_rule' => systemConfig('integral_rule'),
             'business_type' => json_decode(systemConfig('business_type'), true),
-            'languages' => json_decode(systemConfig('languages'), true),
+            'languages' => implode(',', json_decode(systemConfig('languages'), true) ?: []),
             'invite_rule' => systemConfig('invite_rule'),
             'stripe_key' => env('STRIPE_KEY'),
             'transport_type' => json_decode(systemConfig('transport_type'), true),
@@ -217,7 +217,7 @@ class CommonService
      */
     public function getGuideType()
     {
-        return GuideType::query()->orderBy('order', 'asc')->get(['id', 'name'])->toArray();
+        return ['list' => GuideType::query()->orderBy('order', 'asc')->get(['id', 'name'])->toArray()];
     }
 
 
@@ -291,7 +291,7 @@ class CommonService
             $data = Guide::query()->where('identity_type', $value['id'])
                 ->where('home_recommend', 1)
                 ->where('audit_status', 1)
-                ->orderBy('order', 'asc')
+                ->orderBy('order', 'desc')
                 ->get(['id', 'name', 'city_name', 'city_id', 'photo', 'language'])
                 ->toArray();
             if (!empty($data)) {
@@ -492,7 +492,7 @@ class CommonService
                 'name' => $value['name'],
                 'name_en' => '',
                 'city_id' => $value['city_id'],
-                'city_name' => $value['city']['name'],
+                'city_name' => $value['city']['name'] ?? '',
                 'type_id' => $value['type_id'],
                 'type_class_id' => $value['type_class_id'],
                 'first_picture' => $value['first_picture'],

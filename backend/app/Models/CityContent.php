@@ -15,7 +15,7 @@ class CityContent extends Model
 
     public function city()
     {
-        return $this->hasOne(City::class, 'id', 'city_id')->select(['id', 'continents_id', 'area_id', 'name']);
+        return $this->hasOne(City::class, 'id', 'city_id')->select(['id', 'continents_id', 'area_id', 'name', 'name_en']);
     }
 
     public function type_class()

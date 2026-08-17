@@ -11,6 +11,30 @@ use Dcat\Admin\Http\Controllers\AdminController;
 class GuideController extends AdminController
 {
     /**
+     * 网格内联修改（推荐开关/排序数字）请求仅携带单个字段，
+     * 不经过审核表单的字段过滤（prepareUpdate 会丢弃非表单字段），直接保存。
+     */
+    public function update($id)
+    {
+        $request = request();
+
+        foreach (['recommend', 'home_recommend', 'order'] as $field) {
+            if ($request->exists($field)) {
+                $res = \App\Models\Guide::find($id);
+                if (!$res) {
+                    return response()->json(['status' => false, 'data' => ['message' => '記錄不存在']]);
+                }
+                $res->{$field} = (int) $request->input($field);
+                $res->save();
+
+                return response()->json(['status' => true, 'data' => ['message' => '設置成功']]);
+            }
+        }
+
+        return parent::update($id);
+    }
+
+    /**
      * Make a grid builder.
      *
      * @return Grid
