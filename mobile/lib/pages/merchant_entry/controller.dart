@@ -68,7 +68,13 @@ class MerchantEntryController extends GetxController
     super.onInit();
     _setupDraftListeners();
     fetchCity();
-    _fetchMerchantEntry();
+    // 延迟到首帧之后执行：Get.put 在页面 build() 中同步触发 onInit，
+    // 若此时直接弹草稿确认框（Get.dialog）会命中“visitChildElements called during build”，
+    // 且控制器会被误挂到对话框路由上，对话框关闭后被 SmartManagement 删除，
+    // 导致页面重建时报 “MerchantEntryController not found”。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMerchantEntry();
+    });
   }
 
   @override
