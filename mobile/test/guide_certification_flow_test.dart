@@ -255,4 +255,86 @@ void main() {
       expect(c.selectedGuideTypes.map((e) => e.name), ['導遊']);
     });
   });
+
+  group('表单校验门禁', () {
+    testWidgets('基础信息缺失 → 校验失败且不翻页', (tester) async {
+      await registerTestEnv();
+      await tester.pumpWidget(buildTestApp());
+      final c = GuideCertificationController();
+      Get.put(c);
+      await tester.pump();
+
+      // 第 1 页缺失照片与姓名 → validateBasicInfo false
+      expect(c.validateBasicInfo(), isFalse);
+
+      // nextPage 被校验拦截，页码不变
+      c.nextPage();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(c.currentPageIndex.value, 0);
+      await tester.pump(const Duration(seconds: 2)); // 冲刷草稿与 toast 定时器
+    });
+
+    testWidgets('填齐基础信息（有常驻城市）→ 校验通过并可翻页', (tester) async {
+      await registerTestEnv();
+      await tester.pumpWidget(buildTestApp());
+      final c = GuideCertificationController();
+      Get.put(c);
+      await tester.pump();
+
+      c.certification.photo = 'https://cdn.test/photo.jpg';
+      c.nameController.text = '張三';
+      c.nameEnController.text = 'Zhang San';
+      c.phoneController.text = '+8613800000000';
+      c.emailController.text = 'a@b.com';
+      c.billAddressController.text = 'Vienna';
+      c.certification.residentCityId = 1;
+      c.certification.isNewCity = 0;
+
+      expect(c.validateBasicInfo(), isTrue);
+      c.nextPage();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(c.currentPageIndex.value, 1);
+      await tester.pump(const Duration(milliseconds: 450)); // 冲刷草稿定时器
+    });
+
+    testWidgets('专业信息缺失语言 → 校验失败', (tester) async {
+      await registerTestEnv();
+      await tester.pumpWidget(buildTestApp());
+      final c = GuideCertificationController();
+      Get.put(c);
+      await tester.pump();
+
+      // 跳到第 2 页并填空
+      c.currentPageIndex.value = 1;
+      expect(c.validateProfessionalInfo(), isFalse);
+
+      c.certification.language = ['中文'];
+      c.certification.year = '2020';
+      c.certification.industryType = ['導遊'];
+      c.certification.identityType = '導遊';
+      c.introductionController.text = '簡介';
+      c.businessContactController.text = '張三';
+      expect(c.validateProfessionalInfo(), isTrue);
+      // toast 定时器在动画完成的 whenComplete 里才创建：
+      // 先 settle 让动画完成，再 dismiss 取消挂起定时器，最后冲刷草稿定时器
+      await tester.pumpAndSettle();
+      Loading.dismiss();
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('只读状态（审核中）→ 校验恒通过', (tester) async {
+      await registerTestEnv();
+      await tester.pumpWidget(buildTestApp());
+      final c = GuideCertificationController();
+      Get.put(c);
+      await tester.pump();
+
+      c.certification.auditStatus = 0;
+      expect(c.isReadOnly, isTrue);
+      expect(c.validateCurrentPage(), isTrue);
+      await tester.pump(const Duration(milliseconds: 450)); // 冲刷草稿定时器
+      Loading.dismiss();
+    });
+  });
 }

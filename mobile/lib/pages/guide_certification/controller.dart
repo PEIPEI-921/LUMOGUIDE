@@ -162,7 +162,9 @@ class GuideCertificationController extends GetxController
     if (currentPageIndex.value < 2) {
       updateCertification();
       currentPageIndex.value++;
-      pageController.jumpToPage(currentPageIndex.value);
+      if (pageController.hasClients) {
+        pageController.jumpToPage(currentPageIndex.value);
+      }
     } else {
       submitCertification();
     }
@@ -171,7 +173,9 @@ class GuideCertificationController extends GetxController
   void previousPage() {
     if (currentPageIndex.value > 0) {
       currentPageIndex.value--;
-      pageController.jumpToPage(currentPageIndex.value);
+      if (pageController.hasClients) {
+        pageController.jumpToPage(currentPageIndex.value);
+      }
     } else {
       Get.back();
     }
@@ -180,7 +184,9 @@ class GuideCertificationController extends GetxController
   void goToPage(int index) {
     if (index <= currentPageIndex.value) {
       currentPageIndex.value = index;
-      pageController.jumpToPage(index);
+      if (pageController.hasClients) {
+        pageController.jumpToPage(index);
+      }
     }
   }
 

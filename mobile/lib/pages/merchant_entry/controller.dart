@@ -115,11 +115,13 @@ class MerchantEntryController extends GetxController
     if (currentPageIndex.value < 3) {
       updateMerchantEntry();
       currentPageIndex.value++;
-      pageController.animateToPage(
-        currentPageIndex.value,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          currentPageIndex.value,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     } else {
       submitMerchantEntry();
     }
@@ -129,11 +131,13 @@ class MerchantEntryController extends GetxController
     FocusManager.instance.primaryFocus?.unfocus();
     if (currentPageIndex.value > 0) {
       currentPageIndex.value--;
-      pageController.animateToPage(
-        currentPageIndex.value,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          currentPageIndex.value,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     } else {
       Get.back();
     }
@@ -142,11 +146,13 @@ class MerchantEntryController extends GetxController
   void goToPage(int index) {
     if (index <= currentPageIndex.value) {
       currentPageIndex.value = index;
-      pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     }
   }
 
