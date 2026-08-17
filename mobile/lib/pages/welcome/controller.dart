@@ -39,10 +39,16 @@ class WelcomeController extends GetxController {
   }
 
   checkNetworking() async {
-    final results = await Connectivity().checkConnectivity();
-    if (results.contains(ConnectivityResult.none)) {
-      _netless.value = true;
-      return;
+    // connectivity 插件在部分环境（iOS 26 模拟器等）会抛异常，
+    // 一旦异常整段导航流程会被吞掉、App 停在欢迎页 —— 异常时视为有网继续。
+    try {
+      final results = await Connectivity().checkConnectivity();
+      if (results.contains(ConnectivityResult.none)) {
+        _netless.value = true;
+        return;
+      }
+    } catch (e) {
+      log('connectivity check failed, proceeding anyway: $e');
     }
     log('start preload dateTime: ${DateTime.now()}');
     await _loadConfig();

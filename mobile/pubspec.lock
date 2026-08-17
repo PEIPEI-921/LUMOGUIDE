@@ -1940,10 +1940,10 @@ packages:
     dependency: "direct main"
     description:
       name: tencent_cloud_chat_push
-      sha256: "0e949ccc583717fae95f004dc2339138702febf8f6dd3eac572a5ddcb257c3d1"
+      sha256: d1f9bb180067527962ea0184ea8eca6d4644695947828817662283f3798dfeaf
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "8.9.7538"
+    version: "8.8.7375"
   tencent_cloud_chat_sdk:
     dependency: "direct main"
     description:

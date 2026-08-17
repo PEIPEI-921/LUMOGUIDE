@@ -60,7 +60,8 @@ dependencies:
   tencent_cloud_chat_uikit: 5.0.1+4
   flutter_slidable: ^4.0.3
   mobile_scanner: ^7.1.4
-  tencent_cloud_chat_push: ^8.8.7375
+  # 与 sdk 8.8.7373+4 配对固定：8.9.7538 依赖 TXIMSDK 9.x，iOS pods 与 sdk 冲突
+  tencent_cloud_chat_push: 8.8.7375
   tencent_cloud_chat_sdk: 8.8.7373+4
   tencent_chat_i18n_tool: ^2.3.8
   flutter_markdown: ^0.6.23

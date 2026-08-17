@@ -62,3 +62,6 @@ local.properties
 
 # Flutter SPM 集成生成的解析快照（每台机器重新生成，无需提交）
 ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# Flutter SPM 生成快照
+ios/Runner.xcworkspace/xcshareddata/swiftpm/
