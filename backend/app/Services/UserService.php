@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Mail\AuditMail;
 use App\Models\City;
 use App\Models\CityContent;
+use App\Models\CityTypeClass;
 use App\Models\Company;
 use App\Models\CompanyEdit;
 use App\Models\Guide;
@@ -979,7 +980,7 @@ class UserService
                 }
                 $old_data[$k] = $value;
             }
-            if (arrayEqual($old_data, $data)) {
+            if (arrayEqual($this->normalizeCertData($old_data), $this->normalizeCertData($data))) {
                 throw new ApiException(__('res.updated_no'));
             }
         }
@@ -1073,10 +1074,12 @@ class UserService
             $model->business_contact = $data['business_contact'];
             $model->have_vehicle = $data['have_vehicle'];
             if ($data['have_vehicle'] == 1) {
-                $model->vehicle_info = $data['vehicle_info'];
+                $model->vehicle_info = $data['vehicle_info'] ?? null;
             }
             $model->vehicle_rent = $data['vehicle_rent'];
-            $model->certificate_picture = $data['certificate_picture'];
+            if (isset($data['certificate_picture'])) {
+                $model->certificate_picture = $data['certificate_picture'];
+            }
             if (isset($data['passport_picture'])) {
                 $model->passport_picture = $data['passport_picture'];
             }
@@ -1137,6 +1140,19 @@ class UserService
 
 
     /**
+     * 修改导游认证（与 applyGuide 同一套审核逻辑：
+     * 已通过 → 生成 GuideEdit 审核记录；被拒且未完成 → 直接覆盖原记录重新提交）
+     * @param array $data
+     * @return void
+     * @throws ApiException
+     */
+    public function editApplyGuide(array $data)
+    {
+        $this->applyGuide($data);
+    }
+
+
+    /**
      * 导游认证资料
      * @return array
      * @throws ApiException
@@ -1162,8 +1178,8 @@ class UserService
 //
 //        }
         // 处理语言选择问题
-        $system_languages = json_decode(systemConfig('languages'), true);
-        $guide_language = json_decode($guide->language, true);
+        $system_languages = json_decode(systemConfig('languages'), true) ?: [];
+        $guide_language = json_decode((string)$guide->language, true) ?: [];
 
         foreach ($guide_language as $k => $v) {
             if (!in_array($v, $system_languages)) {
@@ -1243,7 +1259,7 @@ class UserService
                 $old_data[$k] = $value;
             }
 
-            if (arrayEqual($old_data, $data)) {
+            if (arrayEqual($this->normalizeCertData($old_data), $this->normalizeCertData($data))) {
                 throw new ApiException(__('res.updated_no'));
             }
         }
@@ -1291,7 +1307,9 @@ class UserService
             if (isset($data['phone'])) {
                 $model->phone = $data['phone'];
             }
-            $model->website = $data['website'];
+            if (isset($data['website'])) {
+                $model->website = $data['website'];
+            }
             if (isset($data['other_contact'])) {
                 $model->other_contact = $data['other_contact'];
             }
@@ -1309,6 +1327,13 @@ class UserService
             }
             if (isset($data['picture'])) {
                 $model->picture = json_encode($data['picture']);
+            }
+            // 经营类型 ID + 二级分类 ID（与 business_type 标题一并持久化，审核建店时使用）
+            if (isset($data['type_id'])) {
+                $model->type_id = (int)$data['type_id'];
+            }
+            if (isset($data['type_class_id'])) {
+                $model->type_class_id = (int)$data['type_class_id'];
             }
 
 //            // 处理审核驳回
@@ -1340,6 +1365,18 @@ class UserService
 
 
     /**
+     * 修改企业认证（与 applyCompany 同一套审核逻辑）
+     * @param array $data
+     * @return void
+     * @throws ApiException
+     */
+    public function editApplyCompany(array $data)
+    {
+        $this->applyCompany($data);
+    }
+
+
+    /**
      * 商家认证资料
      * @return array
      * @throws ApiException
@@ -1365,10 +1402,40 @@ class UserService
 //
 //        }
 
-        $company->picture = json_decode($company->picture, true);
+        $company->picture = json_decode($company->picture, true) ?: [];
+        $company->type_class_name = $company->type_class_id
+            ? (CityTypeClass::query()->where('id', $company->type_class_id)->value('name') ?? '')
+            : '';
 
         unset($company->created_at, $company->updated_at, $company->recommend);
         return $company->toArray();
+    }
+
+    /**
+     * 归一化认证数据用于「资料是否变化」比对：
+     * 整数字段统一转 int（避免 DB int 与请求 string 差异导致误判），
+     * JSON 数组字段排序后比较（语言/类型选择顺序变化不算资料修改）。
+     */
+    private function normalizeCertData(array $data): array
+    {
+        $intFields = [
+            'have_vehicle', 'vehicle_rent', 'resident_city_id', 'is_new_city',
+            'new_city_continents_id', 'new_city_area_id', 'new_city_country_id',
+            'city_id', 'type_id', 'type_class_id',
+        ];
+        $arrayFields = ['language', 'industry_type', 'car_pictures', 'picture'];
+
+        foreach ($data as $k => $v) {
+            if (in_array($k, $intFields, true) && $v !== null && $v !== '') {
+                $data[$k] = (int)$v;
+            }
+            if (in_array($k, $arrayFields, true) && is_array($v)) {
+                $v = array_values(array_filter($v, fn($x) => $x !== null && $x !== ''));
+                sort($v);
+                $data[$k] = $v;
+            }
+        }
+        return $data;
     }
 
 }

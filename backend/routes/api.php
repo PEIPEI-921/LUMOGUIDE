@@ -101,11 +101,11 @@ Route::middleware('auth:api')->prefix('user')->group(function () {
 
     Route::post('applyGuide', [UserController::class, 'applyGuide']);
     Route::get('applyGuideInfo', [UserController::class, 'applyGuideInfo']);
-//    Route::post('editApplyGuide', [UserController::class, 'editApplyGuide']);
+    Route::post('editApplyGuide', [UserController::class, 'editApplyGuide']);
 
     Route::post('applyCompany', [UserController::class, 'applyCompany']);
     Route::get('applyCompanyInfo', [UserController::class, 'applyCompanyInfo']);
-//    Route::post('editApplyCompany', [UserController::class, 'editApplyCompany']);
+    Route::post('editApplyCompany', [UserController::class, 'editApplyCompany']);
 
     // JourneyWork — 我的历程
     Route::get('journeyList', [UserController::class, 'journeyList']);

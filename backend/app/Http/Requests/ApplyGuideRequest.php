@@ -37,7 +37,7 @@ class ApplyGuideRequest extends FormRequest
             'have_vehicle' => 'required',
             'vehicle_info' => 'sometimes',
             'vehicle_rent' => 'required',
-            'certificate_picture' => 'required',
+            'certificate_picture' => 'sometimes',
             'passport_picture' => 'sometimes',
             'driver_license_front' => 'sometimes',
             'driver_license_back' => 'sometimes',

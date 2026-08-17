@@ -85,15 +85,15 @@ if (!function_exists('systemConfig')) {
             if (Redis::hExists('system_config', $mark)) {
                 return Redis::hGet('system_config', $mark);
             }
-        } catch (\Exception $e) {
-            // Redis unavailable, fall through to database
+        } catch (\Throwable $e) {
+            // Redis unavailable（连接失败/扩展缺失/类型错误等），fall through to database
         }
 
         $config = SystemConfig::where('mark', $mark)->first(['value']);
         if ($config) {
             try {
                 Redis::hSet('system_config', $mark, $config->value);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // Silent — cache write failure should not block reads
             }
             return $config->value;

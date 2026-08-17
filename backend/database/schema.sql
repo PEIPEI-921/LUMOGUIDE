@@ -382,6 +382,8 @@ CREATE TABLE `company` (
   `is_finish` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否完成',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `type_id` int(11) NOT NULL DEFAULT '0' COMMENT '经营类型ID',
+  `type_class_id` int(11) NOT NULL DEFAULT '0' COMMENT '经营类型二级分类ID',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
@@ -412,6 +414,8 @@ CREATE TABLE `company_edit` (
   `audit_feedback` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '审核驳回原因',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `type_id` int(11) NOT NULL DEFAULT '0' COMMENT '经营类型ID',
+  `type_class_id` int(11) NOT NULL DEFAULT '0' COMMENT '经营类型二级分类ID',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 

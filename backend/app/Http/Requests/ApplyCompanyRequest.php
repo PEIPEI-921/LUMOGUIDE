@@ -38,7 +38,7 @@ class ApplyCompanyRequest extends FormRequest
             'introduction' => 'required|max:255',
             'email' => 'required|email',
             'phone' => ['required', 'max:50', new PhoneWithCountryCode],
-            'website' => 'required|max:50',
+            'website' => 'nullable|max:50',
             'other_contact' => 'nullable|max:255',
             'wechat' => 'nullable|max:255',
             'whats_app' => 'nullable|max:255',

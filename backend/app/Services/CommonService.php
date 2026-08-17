@@ -42,7 +42,7 @@ class CommonService
             'contact_us' => systemConfig('contact_us'),
             'integral_rule' => systemConfig('integral_rule'),
             'business_type' => json_decode(systemConfig('business_type'), true),
-            'languages' => implode(',', json_decode(systemConfig('languages'), true) ?: []),
+            'languages' => json_decode(systemConfig('languages'), true) ?: [],
             'invite_rule' => systemConfig('invite_rule'),
             'stripe_key' => env('STRIPE_KEY'),
             'transport_type' => json_decode(systemConfig('transport_type'), true),
@@ -217,7 +217,8 @@ class CommonService
      */
     public function getGuideType()
     {
-        return ['list' => GuideType::query()->orderBy('order', 'asc')->get(['id', 'name'])->toArray()];
+        // 返回裸数组 — Flutter 端 res.dataList 直接消费；Web 端 certify.js 已兼容两种形状
+        return GuideType::query()->orderBy('order', 'asc')->get(['id', 'name'])->toArray();
     }
 
 

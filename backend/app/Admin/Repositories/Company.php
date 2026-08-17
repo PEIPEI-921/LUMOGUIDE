@@ -169,19 +169,28 @@ class Company extends EloquentRepository
     private function autoCreateFirstShop($company): void
     {
         $businessTypeMap = [
-            '景點' => 1, '景点' => 1,
-            '餐廳' => 2, '餐厅' => 2,
-            '購物' => 3, '购物' => 3,
-            '住宿' => 4,
-            '票務' => 8, '票务' => 8,
+            '景點' => 1, '景点' => 1, 'Attractions' => 1, 'Scenic' => 1,
+            '餐廳' => 2, '餐厅' => 2, 'Restaurants' => 2, 'Restaurant' => 2,
+            '購物' => 3, '购物' => 3, 'Shopping' => 3,
+            '住宿' => 4, 'Accommodation' => 4, 'Hotel' => 4,
+            '票務' => 8, '票务' => 8, 'Tickets' => 8, 'Ticket' => 8,
         ];
 
-        $typeId = $businessTypeMap[$company->business_type] ?? null;
+        $typeId = $businessTypeMap[trim((string)$company->business_type)] ?? null;
         if (!$typeId) {
             return;
         }
 
-        $typeClassId = CityTypeClass::where('type_id', $typeId)->min('id');
+        // 优先使用用户在认证时实际选择的二级分类；缺失或与类型不匹配时回退到该类型下第一个分类
+        $typeClassId = null;
+        if (!empty($company->type_class_id)) {
+            $typeClassId = CityTypeClass::where('id', $company->type_class_id)
+                ->where('type_id', $typeId)
+                ->value('id');
+        }
+        if (!$typeClassId) {
+            $typeClassId = CityTypeClass::where('type_id', $typeId)->min('id');
+        }
         if (!$typeClassId) {
             return;
         }
