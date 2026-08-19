@@ -38,17 +38,48 @@ class ApiResult<T> {
         return;
       }
 
-      Map<String, dynamic> json;
-      if (response.data is Map) {
-        json = response.data;
-      } else {
-        json = jsonDecode(response.data);
+      dynamic body = response.data;
+      if (body is! Map) {
+        // 響應體可能是頂層數組/純文字/JSON 字符串：
+        // 嘗試解析，失敗時保留原始數據但視為成功（HTTP 200）。
+        if (body is String) {
+          try {
+            final decoded = jsonDecode(body);
+            if (decoded is Map) {
+              body = decoded;
+            } else {
+              data = decoded;
+              code = 200;
+              rawValue = {'data': decoded};
+              return;
+            }
+          } catch (_) {
+            // 非 JSON 純文字響應
+            data = body;
+            code = 200;
+            rawValue = {'data': body};
+            return;
+          }
+        } else {
+          // 非 Map 對象（數組等）
+          data = body;
+          code = 200;
+          rawValue = {'data': body};
+          return;
+        }
       }
 
-      if (json["code"] is String) {
-        code = int.parse(json["code"]);
+      final json = body as Map<String, dynamic>;
+      // 安全解析 code：兼容數字(double/int)/字符串，異常時不誤判整批響應失敗
+      final rawCode = json["code"];
+      if (rawCode is int) {
+        code = rawCode;
+      } else if (rawCode is double) {
+        code = rawCode.toInt();
+      } else if (rawCode is String) {
+        code = int.tryParse(rawCode) ?? -1;
       } else {
-        code = json["code"] ?? -1;
+        code = -1;
       }
       message = json["msg"] ?? json["message"];
       data = json["data"];

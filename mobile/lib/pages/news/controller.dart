@@ -47,6 +47,7 @@ extension on NewsController {
     if (!res.isSuccess) return;
     final data = res.dataList;
     final categories = data
+        .whereType<Map<String, dynamic>>()
         .map((e) => Category.fromJson(e))
         .where((e) => e.count != 0)
         .toList();

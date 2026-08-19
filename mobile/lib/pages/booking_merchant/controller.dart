@@ -54,9 +54,15 @@ class BookingMerchantController extends GetxController
   onInit() {
     super.onInit();
     if (Get.arguments != null) {
-      merchantInfo = Get.arguments['info'] as MerchantInfo? ?? MerchantInfo();
-      shopType = Get.arguments['type'] as MerchantShopType;
-      bookInfo = Get.arguments['bookInfo'] as UserReservationMerchant?;
+      final infoArg = Get.arguments['info'];
+      merchantInfo = infoArg is MerchantInfo ? infoArg : MerchantInfo();
+      final typeArg = Get.arguments['type'];
+      // 缺 'type' key 或類型不匹配時給默認值，避免強轉崩潰
+      shopType = typeArg is MerchantShopType
+          ? typeArg
+          : MerchantShopType.scenic;
+      final bookArg = Get.arguments['bookInfo'];
+      bookInfo = bookArg is UserReservationMerchant ? bookArg : null;
       if (bookInfo != null) {
         merchantInfo = bookInfo!.content ?? MerchantInfo();
       }
@@ -68,15 +74,10 @@ class BookingMerchantController extends GetxController
       contactEmailController.text = bookInfo!.email ?? '';
       contactPhoneController.text = bookInfo!.phone ?? '';
       otherContactController.text = bookInfo!.other ?? '';
-      _arriveTime.value = bookInfo!.arrivalTime != null
-          ? DateTime.parse(bookInfo!.arrivalTime!)
-          : null;
-      _checkInTime.value = bookInfo!.arrivalTime != null
-          ? DateTime.parse(bookInfo!.arrivalTime!)
-          : null;
-      _checkOutTime.value = bookInfo!.leaveTime != null
-          ? DateTime.parse(bookInfo!.leaveTime!)
-          : null;
+      // 用 tryParse 避免後端時間格式異常導致打開編輯頁即崩潰
+      _arriveTime.value = DateTime.tryParse(bookInfo!.arrivalTime ?? '');
+      _checkInTime.value = DateTime.tryParse(bookInfo!.arrivalTime ?? '');
+      _checkOutTime.value = DateTime.tryParse(bookInfo!.leaveTime ?? '');
     } else {
       contactEmailController.text = userInfo.email ?? '';
       contactPhoneController.text = userInfo.phone ?? '';
@@ -162,7 +163,20 @@ class BookingMerchantController extends GetxController
     _file.value = res.files.single;
   }
 
+  bool _submitting = false;
+
   onSubmit() async {
+    // 防重複提交
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      await _doSubmit();
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _doSubmit() async {
     // 通用验证
     if (peopleCountController.text.trim().isEmpty) {
       Loading.toast('請輸入人數'.tr);
@@ -216,30 +230,42 @@ class BookingMerchantController extends GetxController
 
     Loading.show();
 
+    // 合併備註與其他要求，避免同 key 重複覆蓋
+    final mergedRemark = [
+      if (remarksController.text.trim().isNotEmpty)
+        remarksController.text.trim(),
+      if (otherRequirementsController.text.trim().isNotEmpty)
+        otherRequirementsController.text.trim(),
+    ].join('\n');
+
     final fileUrl = await _uploadFile();
     final url = isEdit
         ? ApiUrl.userReserveCompanyEdit
         : ApiUrl.addContentReserve;
 
+    // 酒店場景用 checkIn/checkOut 作 arrival/leave，其他類型用到達時間，
+    // 避免 payload 中同 key 重複（後者覆蓋前者導致數據丟失）。
+    final isHotel = shopType == MerchantShopType.hotel;
+    final arrival = isHotel ? checkInTime : arriveTime;
+    final leave = isHotel ? checkOutTime : null;
+
     final res = await post(
       url,
       data: {
         'content_id': merchantInfo.id,
-        if (arriveTime != null) 'arrival_time': arriveTime,
-        if (checkInTime != null) 'arrival_time': checkInTime,
-        if (checkOutTime != null) 'leave_time': checkOutTime,
+        if (arrival != null) 'arrival_time': arrival,
+        if (leave != null) 'leave_time': leave,
         'number': peopleCountController.text.trim(),
         'room_number': roomCountController.text.trim(),
         'tickets_type': ticketTypeController.text.trim(),
-        if (remarksController.text.trim().isNotEmpty)
-          'remark': remarksController.text.trim(),
-        if (otherRequirementsController.text.trim().isNotEmpty)
-          'remark': otherRequirementsController.text.trim(),
+        if (mergedRemark.isNotEmpty) 'remark': mergedRemark,
         'contact': contactNameController.text.trim(),
         'email': contactEmailController.text.trim(),
         'phone': contactPhoneController.text.trim(),
         'other': otherContactController.text.trim(),
+        // 編輯模式未重新選文件時回傳原附件，避免後端清空
         if (fileUrl.isNotEmpty) 'file': fileUrl,
+        if (isEdit && fileUrl.isEmpty) 'file': bookInfo?.file ?? '',
         if (isEdit) 'id': bookInfo!.id,
       },
     );

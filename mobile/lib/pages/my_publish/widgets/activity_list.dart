@@ -25,7 +25,10 @@ class ActivityListController extends GetxController
       return;
     }
     final data = res.dataJson['data'] as List<dynamic>? ?? [];
-    final list = data.map((e) => GuidePublishActivity.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => GuidePublishActivity.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

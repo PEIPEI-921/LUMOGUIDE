@@ -235,7 +235,10 @@ extension on PublishInformationController {
     final res = await get(ApiUrl.informationClass);
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final categories = data.map((e) => Category.fromJson(e)).toList();
+    final categories = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     _categories.value = categories;
     if (editor == GuidePublishEditor.edit) {
       fillData();

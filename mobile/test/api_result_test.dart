@@ -48,6 +48,29 @@ void main() {
       expect(rList.dataList, [1, 2]);
       expect(rList.dataJson, isEmpty);
     });
+    test('頂層裸數組 200 響應 → 視為成功且 dataList 可讀', () {
+      final r = ApiResult.success(_resp(200, [
+        {'id': 1},
+        {'id': 2},
+      ]));
+      expect(r.isSuccess, isTrue);
+      expect(r.dataList.length, 2);
+    });
+    test('純文字 200 響應 → 視為成功且 data 保留原文', () {
+      final r = ApiResult.success(_resp(200, 'plain text body'));
+      expect(r.isSuccess, isTrue);
+      expect(r.data, 'plain text body');
+    });
+    test('code 為 double 200.0 → 正常解析為成功', () {
+      final r = ApiResult.success(_resp(200, {'code': 200.0, 'data': {'id': 1}}));
+      expect(r.isSuccess, isTrue);
+      expect(r.code, 200);
+    });
+    test('code 為不可解析字符串 → 不拋異常', () {
+      final r = ApiResult.success(_resp(200, {'code': 'abc', 'data': 1}));
+      expect(r.code, -1);
+      expect(r.isSuccess, isFalse);
+    });
   });
 
   group('ApiResult.failure', () {

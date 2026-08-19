@@ -328,7 +328,10 @@ extension on PublishCityController {
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final continents = data.map((e) => Category.fromJson(e)).toList();
+    final continents = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     if (id == 0) {
       this.continents.value = continents;
       subContinents.value = [];
@@ -344,7 +347,10 @@ extension on PublishCityController {
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final countries = data.map((e) => Category.fromJson(e)).toList();
+    final countries = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     this.countries.value = countries;
   }
 

@@ -45,8 +45,11 @@ extension on EvaluateListController {
       endLoad([]);
       return;
     }
-    final data = res.dataJson['list'] as List<dynamic>;
-    final list = data.map((e) => EvaluateList.fromJson(e)).toList();
+    final data = res.dataJson['list'] as List<dynamic>? ?? [];
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => EvaluateList.fromJson(e))
+        .toList();
     endLoad(list);
   }
 
@@ -61,8 +64,11 @@ extension on EvaluateListController {
       endLoad([]);
       return;
     }
-    final data = res.dataJson['list'] as List<dynamic>;
-    final list = data.map((e) => EvaluateList.fromJson(e)).toList();
+    final data = res.dataJson['list'] as List<dynamic>? ?? [];
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => EvaluateList.fromJson(e))
+        .toList();
     endLoad(list);
   }
 }

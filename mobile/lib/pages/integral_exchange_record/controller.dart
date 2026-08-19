@@ -18,8 +18,11 @@ class IntegralExchangeRecordController extends GetxController
     if (!res.isSuccess) {
       return;
     }
-    final list = res.dataJson['list'] as List<dynamic>;
-    final data = list.map((e) => IntegralOrderList.fromJson(e)).toList();
+    final list = res.dataJson['list'] as List<dynamic>? ?? [];
+    final data = list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => IntegralOrderList.fromJson(e))
+        .toList();
     endLoad(data);
   }
 

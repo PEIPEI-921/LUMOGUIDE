@@ -27,8 +27,10 @@ class CityHistoryStore extends GetxController {
       cityHistories.removeWhere((e) => e.id == id);
     }
     cityHistories.insert(0, city);
+    // 寫入失敗不應影響內存狀態（await 由調用方無需感知）
     StorageStone.setCityHistory(
-        jsonEncode(cityHistories.map((e) => e.toJson()).toList()));
+      jsonEncode(cityHistories.map((e) => e.toJson()).toList()),
+    );
   }
 }
 
@@ -40,8 +42,8 @@ class CityHistory {
 
   factory CityHistory.fromJson(Map<String, dynamic> json) {
     return CityHistory(
-      id: json['id'] as int,
-      name: json['name'] as String,
+      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      name: json['name'] as String? ?? '',
     );
   }
 

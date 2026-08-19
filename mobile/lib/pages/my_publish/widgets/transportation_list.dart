@@ -26,6 +26,7 @@ class TransportationListController extends GetxController
     }
     final data = res.dataJson['data'] as List<dynamic>? ?? [];
     final list = data
+        .whereType<Map<String, dynamic>>()
         .map((e) => GuidePublishTransportation.fromJson(e))
         .toList();
     endLoad(list);

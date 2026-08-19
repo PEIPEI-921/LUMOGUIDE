@@ -87,16 +87,20 @@ class LoginController extends GetxController with ApiMixin {
       AlertUtils.error(res.message);
       return;
     }
+    // 僅記住帳號，不存明文密碼（安全）：
+    // 密碼僅存在內存中，退出登錄後不殘留設備。
     if (rememberPassword.value) {
-      StorageStone.setPassword(password.value);
       StorageStone.setAccount(email.value);
       StorageStone.setRememberMe(true);
     } else {
-      StorageStone.setPassword('');
       StorageStone.setAccount('');
       StorageStone.setRememberMe(false);
     }
-    await UserStore.to.login(res.data);
+    final loggedIn = await UserStore.to.login(res.data);
+    if (!loggedIn) {
+      AlertUtils.error('登錄失敗，請重試');
+      return;
+    }
     Loading.success('登錄成功'.tr);
     await Future.delayed(const Duration(seconds: 1));
     await Get.offAllNamed(AppRoutes.ROOT);

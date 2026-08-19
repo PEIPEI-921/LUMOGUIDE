@@ -40,9 +40,8 @@ class BookingGuideController extends GetxController
       contactEmailController.text = bookInfo!.email ?? '';
       contactPhoneController.text = bookInfo!.phone ?? '';
       otherContactController.text = bookInfo!.other ?? '';
-      _arriveTime.value = bookInfo!.arrivalTime != null
-          ? DateTime.parse(bookInfo!.arrivalTime!)
-          : null;
+      // 用 tryParse 避免後端時間格式異常導致打開編輯頁即崩潰
+      _arriveTime.value = DateTime.tryParse(bookInfo!.arrivalTime ?? '');
     } else {
       contactEmailController.text = userInfo.email ?? '';
       contactPhoneController.text = userInfo.phone ?? '';

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LUMOGUIDE (`lumotrip`) — a Flutter travel guide app for iOS and Android. App name in code: **LUMOGUIDE**, version 1.0.6+21. Backend API at `https://api.lumoguide.com/api/`.
+LUMOGUIDE (`lumotrip`) — a Flutter travel guide app for iOS and Android. App name in code: **LUMOGUIDE**, version 1.0.7+28 (2026-08-17). Backend API at `https://api.lumoguide.com/api/`.
 
 ## Environment
 
@@ -475,7 +475,15 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 **Play 上傳密鑰重置（2026-08-05 已生效）：** 原 Play 上傳密鑰遺失（SHA1 `c9bc...`，Play Console 記錄），Play 拒絕舊密鑰簽名的 AAB。已生成新 `upload-keystore.jks`（alias=upload, storepass/keypass=txK957qd3pc6W22j，SHA256 `5F130901D952F4E8C665AA26C78BF84A43E86086ED6D97E7F9F28A47DB9E9850`）並導出 `upload_certificate.pem`。**2026-08-06 審核通過，已用新密鑰重建 AAB**（`LUMOGUIDE-v1.0.6+26-googleplay.aab`，簽名 `5F:13:09:01:...:98:50`）供上傳 Play；同時用原 release 密鑰重建 `/dl` APK（`LUMOGUIDE-v1.0.6+26.apk`，簽名 `5bacab02...` 不變，用戶可原地升級）。**待辦：上傳 Play + 替換 /dl APK 後，通知後端把冒號格式指紋 `5F:13:09:01:...:98:50` 追加到 assetlinks.json**（保留舊 `5BACAB02...`，兩個共存）。⚠️ Play 路徑新舊簽名不一致是**上傳密鑰重置的正常流程**（Google 仍用 app signing 證書簽發，Play 用戶不受影響）；/dl APK 簽名保持 key.jks 連續。
 
+**Android 1.0.7+28 構建與部署（2026-08-17）：** 版本 bump `1.0.6+27 → 1.0.7+28`（`pubspec.yaml`；versionCode 27 已被 Play Console 佔用，必須 +1）。本次含大規模修復（語言切換、401 死鎖、圖片分享、強轉加固等 82 文件）。產物與部署狀態：
+- **Google Play AAB**：`LUMOGUIDE-v1.0.7+28-googleplay.aab`（139.4MB，upload-keystore.jks 簽名 `5F130901...`，SHA256 `e7b27193...`）— ⏳ 待上傳 Play Console
+- **`/dl` APK**：`LUMOGUIDE-v1.0.7+28.apk`（162.2MB，key.jks 簽名 `5bacab02...`，SHA256 `a0c556a3...`）— ✅ **已部署**至 `47.76.27.105:/www/wwwroot/luomoguide/dl/app-release.apk`（`https://lumoguide.com/dl/app-release.apk`，HTTP 200 + 正確 MIME + version.txt=`1.0.7`；舊版備份 `app-release-1.0.6.bak.apk`、`app-release-20260818.bak.apk`）
+- **構建流程**：AAB 需先切換 `android/keystore.properties` 指向 upload-keystore.jks，構建後**必須還原**（`android/keystore.properties.keyjks.bak` 備份）；APK 直接用 key.jks。⚠️ 構建後務必確認 `android/keystore.properties` 已還原為 key.jks，否則下次 /dl APK 會誤用 Play 密鑰。
+- **服務器**：Ubuntu 22.04，網站根目錄 `/www/wwwroot/luomoguide`，Nginx 已配置 `/dl` location（正確 MIME + `Content-Disposition: attachment`），SSH root 免密登入（`~/.ssh/id_ed25519`）。
+
 **iOS 正式版上傳（2026-08-07）：** `MARKETING_VERSION=1.0.8`，`CFBundleVersion` 硬寫在 `Info.plist`（不用 `$(CURRENT_PROJECT_VERSION)`）。⚠️ 構建號在 TestFlight 和 App Store 間**共享**，測試版已用 `1.0.8 (2)~(14)`，正式版用 `1.0.8 (15)`（已上傳）。下次上傳需 `Info.plist` 構建號再 +1。`flutter build ipa` 後 `open build/ios/archive/Runner.xcarchive` → Distribute App → Upload。
+
+**iOS 版本演進（2026-08-17）：** `MARKETING_VERSION=1.0.9`（`project.pbxproj`），`CFBundleVersion` 已用到 **18**（`Info.plist` 硬寫）。歷史：git `a0c4f6c` 把 build 2→15，`4e15bcc` 把 15→16（1.0.9 (16)），後續經 Xcode/altool 上傳消耗至 17，**2026-08-17 TestFlight 上傳 1.0.9 (18)**（UUID `8255e6a5-ac87-4a3a-85b7-ef505136eb46`，altool 命令行上傳成功）。下次上傳 `CFBundleVersion` 需 ≥19。⚠️ 上傳帳號為 `zgp19820921@hotmail.com`（非 `zhouguanpei@hotmail.com`），App 專用密碼每次上傳後應在 appleid.apple.com 刪除重生成。
 
 詳見 [[share-system-overhaul]]、[[deep-link-https-universal-links]]、[[deep-link-cold-start-race]]、[[deep-link-deferred-cold-start]]。
 

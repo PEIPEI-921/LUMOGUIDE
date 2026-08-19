@@ -71,6 +71,8 @@ class ConfigService extends GetxService with ApiMixin {
     }
     final data = res.dataJson;
     _systemConfig = SystemConfig.fromJson(data);
+    // 歡迎圖緩存不阻塞配置加載：圖床慢/掛時 ensureSystemConfig 不能被卡住
+    // ignore: unawaited_futures
     _cacheWelcomeImages();
   }
 
@@ -417,16 +419,25 @@ extension TypeCategory on ConfigService {
 
   loadTypeCategories() async {
     // 1:景點 2:餐廳 3:購物 4:住宿 5:交通 6:設施 7:活動 8:票務
+    // 並行拉取，避免 8 個請求串行拖慢進入 App
     final ids = CommonDetailType.values.map((e) => e.id).toList();
-    for (var id in ids) {
-      final res = await get(ApiUrl.typeClass, parameters: {'type_id': id});
-      if (!res.isSuccess) {
+    await Future.wait(ids.map((id) async {
+      try {
+        final res = await get(ApiUrl.typeClass, parameters: {'type_id': id});
+        if (!res.isSuccess) {
+          typeCategories[id] = [];
+          return;
+        }
+        final data = res.dataList;
+        typeCategories[id] = data
+            .whereType<Map<String, dynamic>>()
+            .map((e) => Category.fromJson(e))
+            .toList();
+      } catch (e) {
+        log('loadTypeCategories id=$id error: $e', name: 'Config');
         typeCategories[id] = [];
-        continue;
       }
-      final data = res.dataList;
-      typeCategories[id] = data.map((e) => Category.fromJson(e)).toList();
-    }
+    }));
   }
 
   /// 景點

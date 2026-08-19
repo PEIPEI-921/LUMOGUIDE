@@ -78,8 +78,11 @@ extension on IntegralGoodsExchangeController {
     if (!res.isSuccess) {
       return;
     }
-    final list = res.dataJson['list'] as List<dynamic>;
-    final data = list.map((e) => ShippingAddress.fromJson(e)).toList();
+    final list = res.dataJson['list'] as List<dynamic>? ?? [];
+    final data = list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => ShippingAddress.fromJson(e))
+        .toList();
     _address.value =
         data.firstWhereOrNull((e) => e.isDefault == 1) ?? data.firstOrNull;
   }

@@ -29,7 +29,10 @@ class CityListController extends GetxController
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final continents = data.map((e) => Category.fromJson(e)).toList();
+    final continents = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     categories.value = continents;
     selectedCategoryId.value = categories.firstOrNull?.id ?? continentId;
   }
@@ -54,7 +57,10 @@ class CityListController extends GetxController
       return;
     }
     final lists = res.dataJson['list'] as List<dynamic>? ?? [];
-    final cities = lists.map((e) => CityList.fromJson(e)).toList();
+    final cities = lists
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
     endLoad(cities);
   }
 }

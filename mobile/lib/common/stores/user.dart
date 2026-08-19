@@ -30,7 +30,14 @@ class UserStore extends GetxController with ApiMixin {
     _isLogin.value = token.isNotEmpty;
     var profileOffline = StorageStone.userInfo;
     if (profileOffline.isNotEmpty) {
-      _profile(UserInfo.fromJson(jsonDecode(profileOffline)));
+      try {
+        _profile(UserInfo.fromJson(jsonDecode(profileOffline)));
+      } catch (e) {
+        // 本地緩存損壞時不能阻塞啟動，重置並清理壞緩存
+        log('UserStore: 解析本地 user_info 失敗: $e', name: 'UserStore');
+        _profile(UserInfo());
+        StorageStone.setUserInfo('');
+      }
     }
     if (_isLogin.value) {
       getProfile();
@@ -55,28 +62,47 @@ class UserStore extends GetxController with ApiMixin {
     return true;
   }
 
-  Future login(Map<String, dynamic> value) async {
+  /// 登錄。返回是否成功（token 有效）。
+  Future<bool> login(Map<String, dynamic> value) async {
     try {
-      token = value['token'];
+      final newToken = value['token'];
+      if (newToken is! String || newToken.isEmpty) {
+        // 後端未返回 token：不能誤報登錄成功
+        log('UserStore: 登錄響應缺少 token', name: 'UserStore');
+        return false;
+      }
+      token = newToken;
       StorageStone.setToken(token);
-      StorageStone.setUserNumber(value['user_number']);
-      StorageStone.setUserSig(value['user_sig']);
-      TIMStore.to.login(StorageStone.userNumber, StorageStone.userSig);
+      final userNumber = value['user_number'] as String? ?? '';
+      final userSig = value['user_sig'] as String? ?? '';
+      StorageStone.setUserNumber(userNumber);
+      StorageStone.setUserSig(userSig);
+      if (userNumber.isNotEmpty && userSig.isNotEmpty) {
+        TIMStore.to.login(userNumber, userSig);
+      }
       _isLogin.value = true;
       await getProfile();
 
       // 登錄後恢復未處理的深鏈（綁定邀請 + 跳轉內容頁）
       DeepLinkService.checkPendingDeepLink();
       _uploadUserRecord();
+      return true;
     } catch (e) {
       Loading.dismiss();
       log(e.toString(), name: 'UserStore');
+      return false;
     }
   }
 
-  deleteAccount() async {
-    await post(ApiUrl.deleteUser, data: {});
+  /// 註銷帳號。僅在 API 成功時登出；失敗時保留登錄態並提示。
+  Future<bool> deleteAccount() async {
+    final res = await post(ApiUrl.deleteUser, data: {});
+    if (!res.isSuccess) {
+      Loading.toast(res.message ?? '註銷失敗');
+      return false;
+    }
     await StorageStone.logout();
+    return true;
   }
 
   Future logout() async {
@@ -84,7 +110,11 @@ class UserStore extends GetxController with ApiMixin {
     _isLogin.value = false;
     _profile.value = UserInfo();
     token = '';
-    TIMStore.to.logout();
+    try {
+      await TIMStore.to.logout();
+    } catch (e) {
+      log('UserStore: IM 登出失敗: $e', name: 'UserStore');
+    }
     // Get.offAllNamed(AppRoutes.ROOT);
 
     // Get.until((route) => route.isFirst);

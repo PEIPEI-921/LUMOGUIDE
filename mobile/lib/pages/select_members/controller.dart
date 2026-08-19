@@ -112,7 +112,10 @@ class SelectMembersController extends GetxController
       return;
     }
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    final users = data.map((e) => FollowUser.fromJson(e)).toList();
+    final users = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => FollowUser.fromJson(e))
+        .toList();
     endLoad(users);
   }
 

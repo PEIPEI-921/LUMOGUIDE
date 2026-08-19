@@ -138,7 +138,10 @@ class JourneyEditorController extends GetxController with ApiMixin {
       final res = await get(ApiUrl.cityList, parameters: {'limit': 1000, 'page': 1});
       if (res.isSuccess) {
         final data = res.dataJson['list'] as List<dynamic>? ?? [];
-        cityList.value = data.map((e) => CityList.fromJson(e)).toList();
+        cityList.value = data
+            .whereType<Map<String, dynamic>>()
+            .map((e) => CityList.fromJson(e))
+            .toList();
       }
     } catch (e) {
       log('load city list error: $e', name: 'JourneyEditor');
@@ -387,18 +390,42 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (start == null || end == null) return;
     final days = end.difference(start).inDays + 1;
     if (days <= 0 || days > 90) return;
-    // 已有内容则不覆盖
-    if (itineraryDays.isNotEmpty &&
-        itineraryDays.length == days &&
-        itineraryDays.any((d) => d.cityBlocks.any((b) => b.items.isNotEmpty))) {
+    // 天數未變且已有內容 → 不覆蓋
+    if (itineraryDays.isNotEmpty && itineraryDays.length == days) {
       return;
     }
-
+    // 天數變化：按 dayNumber 保留重疊天數的已填內容（cityBlocks/theme/hotel 等），
+    // 只增刪差額天數，避免修改日期區間靜默清空全部行程。
+    final existingByNumber = {
+      for (final d in itineraryDays) d.dayNumber: d,
+    };
     itineraryDays.value = List.generate(days, (i) {
       final d = start.add(Duration(days: i));
+      final date =
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final existing = existingByNumber[i + 1];
+      if (existing != null) {
+        // 複用已填內容，僅更新日期
+        return ItineraryDay(
+          id: existing.id,
+          dayNumber: i + 1,
+          date: date,
+          theme: existing.theme,
+          cityBlocks: existing.cityBlocks,
+          hotelName: existing.hotelName,
+          hotelAddress: existing.hotelAddress,
+          hotelPhone: existing.hotelPhone,
+          meals: existing.meals,
+          weatherTip: existing.weatherTip,
+          transportTip: existing.transportTip,
+          drivingHours: existing.drivingHours,
+          optionalItems: existing.optionalItems,
+          dayNote: existing.dayNote,
+        );
+      }
       return ItineraryDay(
         dayNumber: i + 1,
-        date: '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+        date: date,
       );
     });
     showItinerary.value = days > 0;
@@ -888,10 +915,14 @@ class JourneyEditorController extends GetxController with ApiMixin {
     usedResourceKeys.add(_resourceKey(r));
   }
 
-  /// 从行程项中提取资源 key（用于还原草稿/移除时重新计算）
+  /// 从行程项中提取资源 key（用于还原草稿/移除时重新计算）。
+  /// 與 _resourceKey 規則一致：有 id 用 id，無 id（兜底通用推薦）回退到 title。
   String? _itemResourceKey(ItineraryItem item) {
-    if (item.resourceType == null || item.resourceId == null) return null;
-    return '${item.resourceType}:${item.resourceId}';
+    if (item.resourceType == null) return null;
+    final id = item.resourceId;
+    final name = item.title;
+    if (id == null && (name == null || name.isEmpty)) return null;
+    return '${item.resourceType}:${id ?? name}';
   }
 
   // ====== 草稿自动保存 & 恢复 ======
@@ -902,10 +933,21 @@ class JourneyEditorController extends GetxController with ApiMixin {
     if (draftJson.isEmpty) return;
     try {
       final json = jsonDecode(draftJson) as Map<String, dynamic>;
-      // 验证草稿中至少有一些内容
+      // 與 _hasContent() 一致：只要有任何可填字段有值（含每日行程/交通/費用等），
+      // 就不誤判為空草稿而清除。
       final hasContent = (json['title'] as String?)?.isNotEmpty == true ||
           (json['startDate'] as String?)?.isNotEmpty == true ||
-          (json['startCityName'] as String?)?.isNotEmpty == true;
+          (json['endDate'] as String?)?.isNotEmpty == true ||
+          (json['startCityName'] as String?)?.isNotEmpty == true ||
+          (json['endCityName'] as String?)?.isNotEmpty == true ||
+          (json['adultCount'] as String?)?.isNotEmpty == true ||
+          (json['childCount'] as String?)?.isNotEmpty == true ||
+          (json['description'] as String?)?.isNotEmpty == true ||
+          (json['arrFlight'] as String?)?.isNotEmpty == true ||
+          (json['depFlight'] as String?)?.isNotEmpty == true ||
+          (json['leaderName'] as String?)?.isNotEmpty == true ||
+          (json['driverName'] as String?)?.isNotEmpty == true ||
+          (json['itineraryDays'] as List?)?.isNotEmpty == true;
       if (hasContent) {
         _hasDraft = true;
       } else {
@@ -1157,9 +1199,33 @@ class JourneyEditorController extends GetxController with ApiMixin {
   }
 
   // ====== 提交 ======
+  bool _submitting = false;
+
   Future<void> onSubmit() async {
+    // 防重複提交
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      await _doSubmit();
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _doSubmit() async {
     if (titleCtrl.text.trim().isEmpty) { Loading.error('请输入团名'); return; }
     if (startDateCtrl.text.trim().isEmpty) { Loading.error('请选择出发日期'); return; }
+    if (endDateCtrl.text.trim().isEmpty) { Loading.error('请选择结束日期'); return; }
+    final s = DateTime.tryParse(startDateCtrl.text.trim());
+    final e = DateTime.tryParse(endDateCtrl.text.trim());
+    if (s == null || e == null || e.isBefore(s)) {
+      Loading.error('结束日期不能早于出发日期');
+      return;
+    }
+    if (e.difference(s).inDays + 1 > 90) {
+      Loading.error('行程天数不能超过 90 天');
+      return;
+    }
 
     Loading.show();
     try {
@@ -1355,8 +1421,16 @@ class JourneyEditorController extends GetxController with ApiMixin {
         // 保存到本地 SharedPreferences
         final storage = StorageService.to;
         final existingJson = storage.getString(STORAGE_JOURNEY_TEMPLATES_KEY);
-        final List<dynamic> list =
-            existingJson.isNotEmpty ? jsonDecode(existingJson) : [];
+        List<dynamic> list = <dynamic>[];
+        if (existingJson.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(existingJson);
+            if (decoded is List) list = decoded;
+          } catch (_) {
+            // 存儲損壞（非 JSON / 非數組）時以空列表重新開始，避免崩潰
+            list = <dynamic>[];
+          }
+        }
         list.add(template.toJson());
         await storage.setString(STORAGE_JOURNEY_TEMPLATES_KEY, jsonEncode(list));
 
@@ -1506,7 +1580,40 @@ class JourneyEditorController extends GetxController with ApiMixin {
     endDateCtrl.removeListener(_syncDays);
     adultCountCtrl.removeListener(_updateTotalPeople);
     childCountCtrl.removeListener(_updateTotalPeople);
+    // 釋放所有 TextEditingController，避免資源洩漏
+    _disposeControllers();
     super.onClose();
+  }
+
+  void _disposeControllers() {
+    for (final c in [
+      titleCtrl,
+      adultCountCtrl,
+      childCountCtrl,
+      startDateCtrl,
+      endDateCtrl,
+      arrDateCtrl,
+      arrTimeCtrl,
+      arrAirportCtrl,
+      depDateCtrl,
+      depTimeCtrl,
+      depAirportCtrl,
+      arrFlightCtrl,
+      depFlightCtrl,
+      leaderNameCtrl,
+      leaderPhoneCtrl,
+      driverNameCtrl,
+      driverPhoneCtrl,
+      vehicleCtrl,
+      totalPriceCtrl,
+      cashAdvanceCtrl,
+      agencyContactCtrl,
+      agencyPhoneCtrl,
+      emergencyPhoneCtrl,
+      descriptionCtrl,
+    ]) {
+      c.dispose();
+    }
   }
 }
 

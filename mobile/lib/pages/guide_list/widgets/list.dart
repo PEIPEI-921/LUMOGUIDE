@@ -27,7 +27,7 @@ class GuideChildListController extends GetxController
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => GuideList.fromJson(e as Map<String, dynamic>))
         .toList();
     endLoad(list);

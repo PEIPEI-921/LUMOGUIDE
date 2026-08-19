@@ -26,7 +26,10 @@ class IntegralMallListController extends GetxController
       return;
     }
     final lists = res.dataJson['list'] as List<dynamic>? ?? [];
-    final goods = lists.map((e) => IntegralGoods.fromJson(e)).toList();
+    final goods = lists
+        .whereType<Map<String, dynamic>>()
+        .map((e) => IntegralGoods.fromJson(e))
+        .toList();
     endLoad(goods);
   }
 

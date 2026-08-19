@@ -74,6 +74,13 @@ class StorageStone {
     await setToken('');
     await setUserInfo('');
     await setExpireTime('');
+    // 清除 IM 憑證，防止冷啟動時以舊用戶自動登入 IM
+    await setUserNumber('');
+    await setUserSig('');
+    // 清除記住的帳號/密碼，避免退出登錄後敏感信息殘留設備
+    await setAccount('');
+    await setPassword('');
+    await setRememberMe(false);
   }
 
   /// 首页数据

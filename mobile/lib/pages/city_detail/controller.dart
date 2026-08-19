@@ -177,8 +177,19 @@ class CityDetailController extends GetxController
     _bannerIndex.value = index;
   }
 
-  onChangeTab(int index) {
+  /// 校驗普通用戶是否可訪問該 tab（付費牆）。
+  /// 返回 true 表示可訪問。
+  bool _canAccessTab(int index) {
+    if (index < 0 || index >= tabs.length) return false;
+    // 普通用戶僅可看 overview，其餘需付費/會員（與 onChangeTab 一致，防滑動繞過）
     if (userInfo.isUser && tabs[index] != CityDetailTab.overview) {
+      return false;
+    }
+    return true;
+  }
+
+  onChangeTab(int index) {
+    if (!_canAccessTab(index)) {
       AlertUtils.show(
         title: '提示'.tr,
         content: '升級成為 LuMo Guide 或合作商家，即可查看更多城市詳情內容'.tr,
@@ -199,6 +210,22 @@ class CityDetailController extends GetxController
   }
 
   onPageChanged(int index) {
+    // 滑動到達受限 tab 時彈回可訪問的最近 tab，阻止付費牆被滑動繞過
+    if (!_canAccessTab(index)) {
+      if (userInfo.isUser) {
+        AlertUtils.show(
+          title: '提示'.tr,
+          content: '升級成為 LuMo Guide 或合作商家，即可查看更多城市詳情內容'.tr,
+        );
+        final allowedIndex = tabs.indexWhere(
+          (t) => t == CityDetailTab.overview,
+        );
+        final target = allowedIndex >= 0 ? allowedIndex : 0;
+        _tabIndex.value = target;
+        pageController.jumpToPage(target);
+        return;
+      }
+    }
     _tabIndex.value = index;
   }
 
@@ -719,7 +746,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => GuideList.fromJson(e as Map<String, dynamic>))
         .toList();
     guideList.value = list;
@@ -739,7 +766,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     scenicList.value = list;
@@ -759,7 +786,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     restaurantList.value = list;
@@ -779,7 +806,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     shoppingList.value = list;
@@ -799,7 +826,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     hotelList.value = list;
@@ -819,7 +846,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     trafficList.value = list;
@@ -839,7 +866,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     facilityList.value = list;
@@ -859,7 +886,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     activityList.value = list;
@@ -879,7 +906,7 @@ extension CityDetailApiExt on CityDetailController {
       return;
     }
     final data = res.dataJson;
-    final list = (data['list'] as List<dynamic>)
+    final list = (data['list'] as List<dynamic>? ?? [])
         .map((e) => MerchantList.fromJson(e as Map<String, dynamic>))
         .toList();
     ticketList.value = list;

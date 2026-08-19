@@ -50,7 +50,7 @@ class ImagePickerUtil {
       imageQuality: 50,
     );
     if (file == null) return '';
-    if (!canEdit) return file.path;
+    if (!canEdit || !_supportsCrop) return file.path;
     final cropperFile = await ImageCropper().cropImage(
       sourcePath: file.path,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),

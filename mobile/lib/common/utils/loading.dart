@@ -26,7 +26,9 @@ class Loading {
       ..contentPadding = const EdgeInsets.symmetric(
         vertical: 15.0,
         horizontal: 20.0,
-      );
+      )
+      // 還原交互，避免 showW 設置的 userInteractions=false 永久生效
+      ..userInteractions = true;
   }
 
   static void show([String? text]) {

@@ -37,7 +37,13 @@ class _TemplatePickerSheetState extends State<TemplatePickerSheet> {
         _templates = [];
         return;
       }
-      final list = jsonDecode(json) as List<dynamic>;
+      List<dynamic> list;
+      try {
+        final decoded = jsonDecode(json);
+        list = decoded is List ? decoded : <dynamic>[];
+      } catch (_) {
+        list = <dynamic>[];
+      }
       _templates = list.map((e) => JourneyTemplate.fromJson(e)).toList();
     } catch (_) {
       _templates = [];
@@ -59,7 +65,13 @@ class _TemplatePickerSheetState extends State<TemplatePickerSheet> {
           final storage = StorageService.to;
           final json = storage.getString(STORAGE_JOURNEY_TEMPLATES_KEY);
           if (json.isEmpty) return;
-          final list = jsonDecode(json) as List<dynamic>;
+          List<dynamic> list;
+          try {
+            final decoded = jsonDecode(json);
+            list = decoded is List ? decoded : <dynamic>[];
+          } catch (_) {
+            list = <dynamic>[];
+          }
           list.removeAt(index);
           storage.setString(STORAGE_JOURNEY_TEMPLATES_KEY, jsonEncode(list));
           Loading.success('已删除');

@@ -55,7 +55,10 @@ class UserBookingMerchantController extends GetxController
       return;
     }
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    final list = data.map((e) => UserReservationMerchant.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => UserReservationMerchant.fromJson(e))
+        .toList();
     // 按到达时间排序
     list.sort((a, b) {
       final aTime = a.arrivalTime ?? '';

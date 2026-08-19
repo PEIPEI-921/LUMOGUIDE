@@ -72,8 +72,11 @@ extension NewsDetailApiExt on NewsDetailController {
     if (!res.isSuccess) {
       return;
     }
-    final list = res.dataJson['list'] as List<dynamic>;
+    final list = res.dataJson['list'] as List<dynamic>? ?? [];
     _evaluateCount.value = res.dataJson['total'] as int? ?? 0;
-    evaluateList.value = list.map((e) => EvaluateList.fromJson(e)).toList();
+    evaluateList.value = list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => EvaluateList.fromJson(e))
+        .toList();
   }
 }

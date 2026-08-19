@@ -24,7 +24,10 @@ class AttractionListController extends GetxController
       return;
     }
     final data = res.dataJson['data'] as List<dynamic>? ?? [];
-    final list = data.map((e) => GuidePublishAttraction.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => GuidePublishAttraction.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

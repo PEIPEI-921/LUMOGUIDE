@@ -123,6 +123,9 @@ extension on ShippingAddressEditorController {
     if (!res.isSuccess) {
       return;
     }
-    countries.value = res.dataList.map((e) => Category.fromJson(e)).toList();
+    countries.value = res.dataList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
   }
 }

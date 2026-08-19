@@ -224,7 +224,10 @@ class SearchPageController extends GetxController with ApiMixin {
       return;
     }
 
-    final data = res.dataList.map((e) => SearchHomeList.fromJson(e)).toList();
+    final data = res.dataList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SearchHomeList.fromJson(e))
+        .toList();
     searchResults.value = data;
 
     final RenderBox? renderBox =

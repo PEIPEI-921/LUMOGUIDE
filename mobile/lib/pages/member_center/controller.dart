@@ -84,6 +84,7 @@ extension on MemberCenterController {
       return;
     }
     products.value = res.dataList
+        .whereType<Map<String, dynamic>>()
         .map((e) => MemberProduct.fromJson(e))
         .toList();
     selectedProductId.value = products.firstOrNull?.id ?? 0;
@@ -96,6 +97,7 @@ extension on MemberCenterController {
       return;
     }
     products.value = res.dataList
+        .whereType<Map<String, dynamic>>()
         .map((e) => MemberProduct.fromJson(e))
         .toList();
     selectedProductId.value = products.firstOrNull?.id ?? 0;

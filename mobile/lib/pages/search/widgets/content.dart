@@ -34,7 +34,10 @@ class SearchContentController extends GetxController
       return;
     }
     final data = res.dataList;
-    final list = data.map((e) => SearchSectionModel.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SearchSectionModel.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

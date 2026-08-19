@@ -23,7 +23,10 @@ class InformationListController extends GetxController
       return;
     }
     final data = res.dataJson['data'] as List<dynamic>? ?? [];
-    final list = data.map((e) => GuidePublishInformation.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => GuidePublishInformation.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

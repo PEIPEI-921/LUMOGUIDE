@@ -300,7 +300,10 @@ class MessageController extends GetxController
     final result = await Get.toNamed(AppRoutes.SCAN);
     if (result == null || result.trim().isEmpty) return;
     final payload = AppQRCode.parse(result.trim());
-    if (payload == null) return;
+    if (payload == null) {
+      Loading.error('未識別到有效的 LUMOGUIDE 二維碼'.tr);
+      return;
+    }
     await _handleQRCodePayload(payload);
   }
 

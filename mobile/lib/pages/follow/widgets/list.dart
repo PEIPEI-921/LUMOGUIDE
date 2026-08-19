@@ -28,7 +28,10 @@ class FollowListController extends GetxController
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final temps = data.map((e) => Category.fromJson(e)).toList();
+    final temps = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     categories.value = temps;
     selectedCategoryId.value = temps.firstOrNull?.id ?? categoryId;
   }
@@ -58,7 +61,10 @@ class FollowListController extends GetxController
       return;
     }
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    final users = data.map((e) => FollowUser.fromJson(e)).toList();
+    final users = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => FollowUser.fromJson(e))
+        .toList();
     endLoad(users);
   }
 

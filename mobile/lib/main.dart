@@ -30,10 +30,20 @@ void _reportAppError(String error, String stack) {
 void main() async {
   await Global.init();
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    _reportAppError(details.exceptionAsString(), details.toString());
-  };
+  // 集成測試（flutter test integration_test/...）環境下由測試框架接管錯誤處理，
+  // 覆蓋 FlutterError.onError 會觸發 binding 的 _pendingExceptionDetails 斷言。
+  const isTestEnv = bool.fromEnvironment('FLUTTER_TEST');
+  if (!isTestEnv) {
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      _reportAppError(details.exceptionAsString(), details.toString());
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _reportAppError(error.toString(), stack.toString());
+      return true;
+    };
+  }
 
   ErrorWidget.builder = (details) {
     return Material(
@@ -46,11 +56,6 @@ void main() async {
         ),
       ),
     );
-  };
-
-  PlatformDispatcher.instance.onError = (error, stack) {
-    _reportAppError(error.toString(), stack.toString());
-    return true;
   };
 
   runApp(const MyApp());

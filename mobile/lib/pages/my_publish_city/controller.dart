@@ -34,7 +34,10 @@ class MyPublishCityController extends GetxController
       return;
     }
     final data = res.dataJson['data'] as List<dynamic>? ?? [];
-    final list = data.map((e) => GuidePublishCity.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => GuidePublishCity.fromJson(e))
+        .toList();
     endLoad(list);
   }
 
@@ -120,6 +123,9 @@ class MyPublishCityController extends GetxController
     final res = await get(ApiUrl.cityOptions);
     if (!res.isSuccess) return;
     final data = res.dataList as List<dynamic>? ?? [];
-    cities.value = data.map((e) => CityList.fromJson(e)).toList();
+    cities.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
   }
 }

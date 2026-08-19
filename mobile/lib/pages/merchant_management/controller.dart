@@ -76,8 +76,11 @@ class MerchantManagementController extends GetxController
       endLoad([]);
       return;
     }
-    final data = res.dataJson['list'] as List<dynamic>;
-    final list = data.map((e) => MerchantShop.fromJson(e)).toList();
+    final data = res.dataJson['list'] as List<dynamic>? ?? [];
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => MerchantShop.fromJson(e))
+        .toList();
     endLoad(list);
   }
 }

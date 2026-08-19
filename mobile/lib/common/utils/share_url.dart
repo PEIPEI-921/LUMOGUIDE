@@ -12,5 +12,7 @@ import '../stores/user.dart';
 /// - 服務端 share.html 負責：檢測 OS + 中國 IP，分流 App Store / Google Play / APK 下載
 String buildContentShareUrl(String type, int id) {
   final code = UserStore.to.profile.inviterCode ?? '';
-  return 'https://lumoguide.com/share?c=$code&t=$type&i=$id';
+  // 邀請碼 URL 編碼，防止含特殊字元時分享鏈接損壞
+  final encoded = Uri.encodeQueryComponent(code);
+  return 'https://lumoguide.com/share?c=$encoded&t=$type&i=$id';
 }

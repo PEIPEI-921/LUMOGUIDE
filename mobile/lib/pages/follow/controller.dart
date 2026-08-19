@@ -48,7 +48,10 @@ extension on FollowController {
     });
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final categories = data.map((e) => Category.fromJson(e)).toList();
+    final categories = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     tabController = TabController(length: categories.length, vsync: this);
     pageController = PageController();
     titles.value = categories.map((e) => e.name ?? '').toList();

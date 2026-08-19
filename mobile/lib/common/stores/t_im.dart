@@ -62,8 +62,19 @@ class TIMStore extends GetxController {
   void onInit() async {
     super.onInit();
 
-    await _initIMSDK();
-    _addLifecycleListener();
+    try {
+      await _initIMSDK();
+    } catch (e) {
+      // IM SDK 初始化/登录异常（如桌面端插件无实现）不能阻塞启动，
+      // 且必须保证 _isIMLoginReady 有值，否则 UI 永久显示 IM 未就绪。
+      log('TIMStore: onInit error: $e');
+      _isIMLoginReady.value = true;
+    }
+    try {
+      _addLifecycleListener();
+    } catch (e) {
+      log('TIMStore: lifecycle listener error: $e');
+    }
   }
 
   static LanguageEnum _timLanguageFromApp() {
@@ -132,18 +143,32 @@ class TIMStore extends GetxController {
 extension TIMStoreExt on TIMStore {
   /// 登录
   Future login(String account, String userSig) async {
-    final res = await coreInstance.login(userID: account, userSig: userSig);
+    V2TimCallback res;
+    try {
+      res = await coreInstance.login(userID: account, userSig: userSig);
+    } catch (e) {
+      log('TIMStore: login error: $e');
+      _isIMLoginReady.value = true;
+      return V2TimCallback(code: -1, desc: e.toString());
+    }
     if (res.code == 0) {
-      final pushRes = await TencentCloudChatPush().registerPush(
-        onNotificationClicked: _onNotificationClicked,
-        // apnsCertificateID: kDebugMode ? 47933 : 37932,
-        apnsCertificateID: defaultTargetPlatform == TargetPlatform.iOS
-            ? 47932
-            : 46135,
-      );
-      log('TIMStore: registerPush: ${pushRes.toString()}');
-      _addPushListener();
-      TencentCloudChatPush().disablePostNotificationInForeground(disable: true);
+      try {
+        final pushRes = await TencentCloudChatPush().registerPush(
+          onNotificationClicked: _onNotificationClicked,
+          // apnsCertificateID: kDebugMode ? 47933 : 37932,
+          apnsCertificateID: defaultTargetPlatform == TargetPlatform.iOS
+              ? 47932
+              : 46135,
+        );
+        log('TIMStore: registerPush: ${pushRes.toString()}');
+        await _addPushListener();
+        // 異常在 Future 中異步拋出，必須 await 才能被此處 try-catch 捕獲
+        await TencentCloudChatPush()
+            .disablePostNotificationInForeground(disable: true);
+      } catch (e) {
+        // 推送注册失败（如桌面端插件无实现）不应阻塞 IM 登录就绪状态。
+        log('TIMStore: push register error: $e');
+      }
       _isIMLoginReady.value = true;
       await refreshFriendList();
       await refreshConversationList();
@@ -157,9 +182,19 @@ extension TIMStoreExt on TIMStore {
 
   /// 登出
   Future logout() async {
-    _removePushListener();
-    friendList.clear();
-    return await coreInstance.logout();
+    try {
+      await _removePushListener();
+      friendList.clear();
+      conversationList.clear();
+      totalUnreadCount.value = 0;
+      _isIMLoginReady.value = false;
+      _isInitIMSDK = false;
+      _removeConversationListener();
+      return await coreInstance.logout();
+    } catch (e) {
+      log('TIMStore: logout error: $e');
+      return V2TimCallback(code: -1, desc: e.toString());
+    }
   }
 
   /// 添加黑名单
@@ -424,15 +459,21 @@ extension on TIMStore {
   }
 
   Future<void> _checkIfConnected() async {
-    final res = await TencentImSDKPlugin.v2TIMManager.getLoginUser();
-    if (res.data != null && res.data!.isNotEmpty) {
-      return;
-    }
-    if (res.data == null) {
-      return;
-    }
-    if (res.data!.isEmpty) {
-      return;
+    // App 恢復前台時檢查 IM 登錄狀態；若 IM 未登錄但業務已登錄（如被踢後重新登錄），
+    // 嘗試用當前憑證補登。
+    if (!UserStore.to.isLogin) return;
+    try {
+      final res = await TencentImSDKPlugin.v2TIMManager.getLoginUser();
+      final loggedInUser = res.data;
+      if (loggedInUser == null || loggedInUser.isEmpty) {
+        final account = StorageStone.userNumber;
+        final userSig = StorageStone.userSig;
+        if (account.isNotEmpty && userSig.isNotEmpty) {
+          await login(account, userSig);
+        }
+      }
+    } catch (e) {
+      log('TIMStore: _checkIfConnected error: $e');
     }
   }
 
@@ -471,24 +512,37 @@ extension on TIMStore {
 }
 
 extension on TIMStore {
-  _addPushListener() {
-    _timPushListener = TIMPushListener(
-      onRecvPushMessage: (TimPushMessage message) {
-        String messageLog = message.toLogString();
-        log("message: $messageLog");
-      },
-      onRevokePushMessage: (String messageId) {
-        log("message: $messageId");
-      },
-      onNotificationClicked: (String ext) {
-        log("ext: $ext");
-      },
-    );
-    TencentCloudChatPush().addPushListener(listener: _timPushListener!);
+  Future<void> _addPushListener() async {
+    try {
+      _timPushListener = TIMPushListener(
+        onRecvPushMessage: (TimPushMessage message) {
+          String messageLog = message.toLogString();
+          log("message: $messageLog");
+        },
+        onRevokePushMessage: (String messageId) {
+          log("message: $messageId");
+        },
+        onNotificationClicked: (String ext) {
+          log("ext: $ext");
+        },
+      );
+      // 異常在 Future 中異步拋出，必須 await 才能被 try-catch 捕獲
+      await TencentCloudChatPush().addPushListener(listener: _timPushListener!);
+    } catch (e) {
+      log('TIMStore: addPushListener error: $e');
+      _timPushListener = null;
+    }
   }
 
-  _removePushListener() {
+  Future<void> _removePushListener() async {
     if (_timPushListener == null) return;
-    TencentCloudChatPush().removePushListener(listener: _timPushListener!);
+    try {
+      await TencentCloudChatPush().removePushListener(
+        listener: _timPushListener!,
+      );
+    } catch (e) {
+      log('TIMStore: removePushListener error: $e');
+    }
+    _timPushListener = null;
   }
 }

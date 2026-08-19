@@ -22,15 +22,16 @@ class AppQRCode {
       final after = trimmed.substring(prefix.length);
       final colon = after.indexOf(':');
       final typeStr = colon >= 0 ? after.substring(0, colon) : after;
-      final payload =
-          colon >= 0 && colon < after.length - 1
-              ? after.substring(colon + 1).trim()
-              : (colon < 0 ? '' : '');
+      final payload = colon >= 0 && colon < after.length - 1
+          ? after.substring(colon + 1).trim()
+          : '';
       final t = _typeFromString(typeStr);
       if (t == AppQRCodeType.unknown) return null;
+      if (payload.isEmpty) return null; // 無內容的碼無意義
       return AppQRCodePayload(type: t, payload: payload);
     }
-    return AppQRCodePayload(type: AppQRCodeType.group, payload: trimmed);
+    // 非本 App 前綴的裸文字：不應當成 group 碼，返回 null 由調用方提示無效碼
+    return null;
   }
 
   static AppQRCodeType _typeFromString(String s) {

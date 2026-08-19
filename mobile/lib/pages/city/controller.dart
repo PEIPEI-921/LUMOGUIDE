@@ -174,7 +174,10 @@ extension on CityController {
     final res = await get(ApiUrl.getContinents, parameters: {'parent_id': 0});
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final continents = data.map((e) => Category.fromJson(e)).toList();
+    final continents = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     tabController = TabController(length: continents.length, vsync: this);
     pageController = PageController();
     titles.value = continents.map((e) => e.name ?? '').toList();

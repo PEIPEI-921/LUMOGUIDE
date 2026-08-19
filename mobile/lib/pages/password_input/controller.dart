@@ -89,7 +89,11 @@ class PasswordInputController extends GetxController with ApiMixin {
         AlertUtils.error(res.message ?? '註冊失敗'.tr);
         return;
       }
-      await UserStore.to.login(res.data);
+      final loggedIn = await UserStore.to.login(res.data);
+      if (!loggedIn) {
+        AlertUtils.error('註冊成功，請重新登錄');
+        return;
+      }
       Loading.success('註冊成功'.tr);
       await Future.delayed(const Duration(seconds: 1));
       await Get.offAllNamed(AppRoutes.ROOT);

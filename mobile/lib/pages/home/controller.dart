@@ -69,7 +69,11 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     // 商家分类切换时，处理单 banner 或无 banner 的分类
     ever(merchantCategoryIndex, (_) {
       if (!_merchantAutoRotateEnabled) return;
-      final banners = _home.value?.shop[merchantCategoryIndex.value].banner ?? [];
+      final shop = _home.value?.shop;
+      final idx = merchantCategoryIndex.value;
+      // 邊界保護：後端刷新後分類數可能變少，越界訪問會 RangeError 崩潰
+      if (shop == null || idx < 0 || idx >= shop.length) return;
+      final banners = shop[idx].banner;
       if (banners.length <= 1) {
         _startMerchantSingleBannerTimer();
       }
@@ -83,6 +87,8 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     _stopGuideAutoScroll();
     _stopInfoAutoScroll();
     _resetMerchantBannerState();
+    // 移除懸掛的搜索 Overlay，避免引用已銷毀的樹
+    hideSearchOverlay();
     super.onClose();
   }
 
@@ -209,22 +215,31 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     }
 
     final res = await get(ApiUrl.homeSearch, parameters: {'name': trimmed});
+    // 防抖回調可能在控制器銷毀後執行（異步期間離開首頁）
+    if (isClosed) {
+      isSearching.value = false;
+      return;
+    }
     isSearching.value = false;
     if (!res.isSuccess) {
       return;
     }
 
-    final data = res.dataList.map((e) => SearchHomeList.fromJson(e)).toList();
+    // 過濾非 Map 元素，避免後端髒數據導致 fromJson 強轉崩潰
+    final data = res.dataList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SearchHomeList.fromJson(e))
+        .toList();
     searchResults.value = data;
 
     final RenderBox? renderBox =
         searchBoxKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null && renderBox.hasSize) {
-      showSearchOverlay(
-        Get.context!,
-        renderBox,
-        () => SearchResultsOverlay(controller: this),
-      );
+    if (renderBox != null && renderBox.hasSize && !isClosed) {
+      final ctx = Get.context;
+      if (ctx == null) return;
+      // ignore: use_build_context_synchronously — 已用 isClosed 防護，且 Get.context 為全局
+      showSearchOverlay(ctx, renderBox,
+          () => SearchResultsOverlay(controller: this));
     }
   }
 
@@ -394,7 +409,10 @@ extension HomeControllerExt on HomeController {
       return;
     }
 
-    final data = res.dataList.map((e) => SearchHomeList.fromJson(e)).toList();
+    final data = res.dataList
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SearchHomeList.fromJson(e))
+        .toList();
     searchResults.value = data;
 
     if (_searchOverlayEntry != null) {
@@ -424,11 +442,13 @@ extension HomeControllerExt on HomeController {
         Get.toNamed(AppRoutes.SEARCH, arguments: {'type': CityDetailTab.guide});
         break;
       case HomeSection.merchant:
-        final shop = home?.shop[merchantCategoryIndex.value];
-        if (shop != null) {
-          final tab = CityDetailTabExt.fromId(shop.typeId ?? 0);
-          Get.toNamed(AppRoutes.SEARCH, arguments: {'type': tab});
-        }
+        final shopList = home?.shop;
+        final idx = merchantCategoryIndex.value;
+        // 邊界保護：避免後端分類數變化導致越界崩潰
+        if (shopList == null || idx < 0 || idx >= shopList.length) break;
+        final shop = shopList[idx];
+        final tab = CityDetailTabExt.fromId(shop.typeId ?? 0);
+        Get.toNamed(AppRoutes.SEARCH, arguments: {'type': tab});
         break;
     }
   }

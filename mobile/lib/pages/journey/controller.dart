@@ -64,7 +64,10 @@ class JourneyController extends GetxController with ApiMixin, RefreshableMixin {
     final res = await get(ApiUrl.userJourneyList);
     if (res.isSuccess) {
       final data = res.dataJson['list'] as List<dynamic>? ?? [];
-      final list = data.map((e) => JourneyWork.fromJson(e)).toList();
+      final list = data
+          .whereType<Map<String, dynamic>>()
+          .map((e) => JourneyWork.fromJson(e))
+          .toList();
       allWorks.value = list;
       _extractRegions();
       _applyFilters();

@@ -24,6 +24,9 @@ class GuideCertificationController extends GetxController
   /// 提交成功標記（防止 onClose 重複保存草稿）
   bool _submitted = false;
 
+  /// 提交進行中標記（防重複提交）
+  bool _submitting = false;
+
   /// 草稿恢復標記（防止恢復時觸發保存）
   bool _restoring = false;
 
@@ -387,36 +390,51 @@ class GuideCertificationController extends GetxController
 
   // 提交认证信息
   void submitCertification() async {
-    // 在提交前同步所有 TextEditingController 的值到 model
-    _syncAllFields();
-    Loading.show();
-    if (!await _uploadImages()) {
+    // 防重複提交
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      // 在提交前同步所有 TextEditingController 的值到 model
+      _syncAllFields();
+      Loading.show();
+      if (!await _uploadImages()) {
+        Loading.dismiss();
+        final serverError = ConfigService.to.lastUploadError;
+        final msg = serverError.isNotEmpty
+            ? '${'圖片上傳失敗'.tr}：$serverError'
+            : '圖片上傳失敗，請稍後重試'.tr;
+        AlertUtils.error(msg);
+        return;
+      }
+      // 只記錄提交結果，不記錄含 PII(姓名/電話/證件)的完整數據
+      log('submitCertification: post applyGuide', name: 'GuideCert');
+      final result = await post(
+        ApiUrl.applyGuide,
+        data: certification.toJson(),
+      );
       Loading.dismiss();
-      final serverError = ConfigService.to.lastUploadError;
-      final msg = serverError.isNotEmpty
-          ? '${'圖片上傳失敗'.tr}：$serverError'
-          : '圖片上傳失敗，請稍後重試'.tr;
-      AlertUtils.error(msg);
-      return;
+      if (!result.isSuccess) {
+        AlertUtils.error(result.message);
+        return;
+      }
+      reloadUserInfo();
+      await _clearDraft();
+      _submitted = true;
+      await AlertUtils.customAlert(
+        assets: Assets.iconReview,
+        imageSize: Size(50.w, 50.w),
+        title: '導遊認證資料提交成功 '.tr,
+        content: '请等待管理员审核~'.tr,
+        confirmText: '關閉'.tr,
+      );
+      Get.back();
+    } catch (e) {
+      Loading.dismiss();
+      log('submitCertification error: $e', name: 'GuideCert');
+      AlertUtils.error('提交失敗，請稍後重試');
+    } finally {
+      _submitting = false;
     }
-    log(certification.toJson().toString());
-    final result = await post(ApiUrl.applyGuide, data: certification.toJson());
-    Loading.dismiss();
-    if (!result.isSuccess) {
-      AlertUtils.error(result.message);
-      return;
-    }
-    reloadUserInfo();
-    await _clearDraft();
-    _submitted = true;
-    await AlertUtils.customAlert(
-      assets: Assets.iconReview,
-      imageSize: Size(50.w, 50.w),
-      title: '導遊認證資料提交成功 '.tr,
-      content: '请等待管理员审核~'.tr,
-      confirmText: '關閉'.tr,
-    );
-    Get.back();
   }
 
   Future<bool> _uploadImages() async {
@@ -512,7 +530,10 @@ class GuideCertificationController extends GetxController
     });
     if (!res.isSuccess) return;
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    cities.value = data.map((e) => CityList.fromJson(e)).toList();
+    cities.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
   }
 
   /// 選擇常駐城市（現有城市）
@@ -812,8 +833,9 @@ class GuideCertificationController extends GetxController
       val?.passportPicture = form['passport_picture'] as String? ?? '';
       val?.driverLicenseFront = form['driver_license_front'] as String? ?? '';
       val?.driverLicenseBack = form['driver_license_back'] as String? ?? '';
-      val?.language = (draft['selectedLangs'] as List?)?.cast<String>() ?? [];
-      val?.industryType = (draft['selectedTypes'] as List?)?.cast<String>() ?? [];
+      // whereType<String> 防護：草稿中元素非 String（舊版本/手改）時不致崩潰
+      val?.language = (draft['selectedLangs'] as List?)?.whereType<String>().toList() ?? [];
+      val?.industryType = (draft['selectedTypes'] as List?)?.whereType<String>().toList() ?? [];
       // 常駐城市
       val?.residentCityId = form['resident_city_id'] as int?;
       val?.residentCityName = form['resident_city_name'] as String?;
@@ -857,9 +879,9 @@ class GuideCertificationController extends GetxController
       }
     }
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _restoring = false;
-    });
+    // 恢復完成：同步復位（TextEditingController 賦值監聽是同步的，
+    // _scheduleDraftSave 內已有 _restoring 判斷，無需延遲）
+    _restoring = false;
   }
 
   _fetchGuideApplyInfo() async {
@@ -921,7 +943,10 @@ extension GuideCertificationCityCascade on GuideCertificationController {
     if (!res.isSuccess) return;
     final data = res.dataList;
     if (parentId == 0) {
-      continents.value = data.map((e) => Category.fromJson(e)).toList();
+      continents.value = data
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Category.fromJson(e))
+          .toList();
       subContinents.value = [];
       countries.value = [];
     }
@@ -935,7 +960,10 @@ extension GuideCertificationCityCascade on GuideCertificationController {
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    subContinents.value = data.map((e) => Category.fromJson(e)).toList();
+    subContinents.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     countries.value = [];
   }
 
@@ -947,7 +975,10 @@ extension GuideCertificationCityCascade on GuideCertificationController {
     );
     if (!res.isSuccess) return;
     final data = res.dataList;
-    countries.value = data.map((e) => Category.fromJson(e)).toList();
+    countries.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
   }
 }
 
@@ -1123,6 +1154,26 @@ extension GuideCertificationSelection on GuideCertificationController {
             break;
         }
       });
+      // 上傳成功後清除本地文件引用，提交時 _uploadImages 不會對同一文件再次上傳
+      switch (type) {
+        case GuidePhotoType.photo:
+          photo.value = null;
+          break;
+        case GuidePhotoType.certificate:
+          certificatePicture.value = null;
+          break;
+        case GuidePhotoType.passport:
+          passportPicture.value = null;
+          break;
+        case GuidePhotoType.driverLicenseFront:
+          driverLicenseFront.value = null;
+          break;
+        case GuidePhotoType.driverLicenseBack:
+          driverLicenseBack.value = null;
+          break;
+        case GuidePhotoType.carPictures:
+          break;
+      }
       _scheduleDraftSave();
     } catch (_) {
       // 上传失败保持本地预览，提交时重试

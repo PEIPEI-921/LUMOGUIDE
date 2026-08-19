@@ -21,6 +21,9 @@ class MerchantEntryController extends GetxController
   /// 提交成功標記（防止 onClose 重複保存草稿）
   bool _submitted = false;
 
+  /// 提交進行中標記（防重複提交）
+  bool _submitting = false;
+
   /// 草稿恢復標記
   bool _restoring = false;
 
@@ -296,30 +299,44 @@ class MerchantEntryController extends GetxController
 
   // 提交商家入驻信息
   void submitMerchantEntry() async {
-    // 在提交前同步所有 TextEditingController 的值到 model
-    _syncAllFields();
-    Loading.show();
-    if (!await _uploadImages()) {
+    // 防重複提交
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      // 在提交前同步所有 TextEditingController 的值到 model
+      _syncAllFields();
+      Loading.show();
+      if (!await _uploadImages()) {
+        Loading.dismiss();
+        return;
+      }
+      final res = await post(
+        ApiUrl.applyCompany,
+        data: merchantEntry.toJson(),
+      );
       Loading.dismiss();
-      return;
+      if (!res.isSuccess) {
+        AlertUtils.error(res.message);
+        return;
+      }
+      reloadUserInfo();
+      await _clearDraft();
+      _submitted = true;
+      await AlertUtils.customAlert(
+        assets: Assets.iconReview,
+        imageSize: Size(50.w, 50.w),
+        title: '企業入駐資料提交成功'.tr,
+        content: '请等待管理员审核~'.tr,
+        confirmText: '關閉'.tr,
+      );
+      Get.back();
+    } catch (e) {
+      Loading.dismiss();
+      log('submitMerchantEntry error: $e', name: 'MerchantEntry');
+      AlertUtils.error('提交失敗，請稍後重試');
+    } finally {
+      _submitting = false;
     }
-    final res = await post(ApiUrl.applyCompany, data: merchantEntry.toJson());
-    Loading.dismiss();
-    if (!res.isSuccess) {
-      AlertUtils.error(res.message);
-      return;
-    }
-    reloadUserInfo();
-    await _clearDraft();
-    _submitted = true;
-    await AlertUtils.customAlert(
-      assets: Assets.iconReview,
-      imageSize: Size(50.w, 50.w),
-      title: '企業入駐資料提交成功'.tr,
-      content: '请等待管理员审核~'.tr,
-      confirmText: '關閉'.tr,
-    );
-    Get.back();
   }
 
   Future<bool> _uploadImages() async {
@@ -380,7 +397,7 @@ class MerchantEntryController extends GetxController
     _merchantEntry.update((val) {
       val?.picture = uploadedPics;
     });
-    log(merchantEntry.toJson().toString());
+    log('submitMerchantEntry: post applyCompany', name: 'MerchantEntry');
     return true;
   }
 }
@@ -499,6 +516,8 @@ extension MerchantEntrySelection on MerchantEntryController {
       _merchantEntry.update((val) {
         val?.documentsPicture = url;
       });
+      // 上傳成功後清除本地引用，提交時不重複上傳
+      documentsPicture.value = null;
       _scheduleDraftSave();
     } catch (_) {
       // 上传失败保持本地预览，提交时重试
@@ -553,7 +572,10 @@ extension MerchantEntryDraft on MerchantEntryController {
     );
     if (!res.isSuccess) return;
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    cities.value = data.map((e) => CityList.fromJson(e)).toList();
+    cities.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
   }
 
   // ========== 草稿系統 ==========
@@ -683,9 +705,11 @@ extension MerchantEntryDraft on MerchantEntryController {
       val?.auditStatus = null;
       val?.auditFeedback = null;
       val?.documentsPicture = form['photo'] as String? ?? '';
-      val?.businessType = ((draft['selectedTypes'] as List?)?.isNotEmpty == true)
-          ? (draft['selectedTypes'] as List).first as String?
-          : null;
+      val?.businessType =
+          ((draft['selectedTypes'] as List?)?.whereType<String>().isNotEmpty ==
+                  true)
+              ? (draft['selectedTypes'] as List).whereType<String>().first
+              : null;
       // 恢復經營類型分類
       val?.typeId = draft['typeId'] as int?;
       val?.typeClassId = draft['typeClassId'] as int?;
@@ -697,11 +721,11 @@ extension MerchantEntryDraft on MerchantEntryController {
       }
     });
 
-    merchantPictures.value = (draft['storePics'] as List?)?.cast<String>() ?? [];
+    merchantPictures.value =
+        (draft['storePics'] as List?)?.whereType<String>().toList() ?? [];
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _restoring = false;
-    });
+    // 恢復完成：同步復位（賦值監聽是同步的，無需延遲）
+    _restoring = false;
   }
 
   _fetchMerchantEntry() async {

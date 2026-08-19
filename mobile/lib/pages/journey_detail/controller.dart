@@ -57,7 +57,14 @@ class JourneyDetailController extends GetxController with ApiMixin {
   void onEdit() {
     Get.toNamed(AppRoutes.JOURNEY_EDITOR, arguments: {
       'work': work.value,
-    })?.then((_) => _loadDetail(work.value?.id));
+    })?.then((_) {
+      // 編輯返回後必須從 API 重新拉取最新數據：
+      // Get.arguments 中的 work 是編輯前的快照，直接復用會顯示舊數據。
+      final id = workId != 0 ? workId : work.value?.id;
+      if (id != null) {
+        _fetchFromApi(id);
+      }
+    });
   }
 
   // ================================================================
@@ -271,8 +278,16 @@ class JourneyDetailController extends GetxController with ApiMixin {
     // 从本地读取已有模板列表
     final storage = StorageService.to;
     final existingJson = storage.getString(STORAGE_JOURNEY_TEMPLATES_KEY);
-    final List<dynamic> list =
-        existingJson.isNotEmpty ? jsonDecode(existingJson) : [];
+    List<dynamic> list = <dynamic>[];
+    if (existingJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(existingJson);
+        if (decoded is List) list = decoded;
+      } catch (_) {
+        // 存儲損壞（非 JSON / 非數組）時以空列表重新開始，避免崩潰
+        list = <dynamic>[];
+      }
+    }
 
     // 追加并写回
     list.add(template.toJson());
@@ -304,6 +319,29 @@ class JourneyDetailController extends GetxController with ApiMixin {
       repaintKey: previewKey,
     );
 
+    // 圖片格式必須在彈窗關閉前捕獲渲染結果：
+    // 彈窗關閉後 previewWidget 所在 widget 樹已銷毀，previewKey.currentContext 為 null。
+    if (format == ClientItineraryFormat.image) {
+      final bytes = await Get.dialog<Uint8List?>(
+        _PreviewDialog(
+          previewWidget: previewWidget,
+          format: format,
+          captureOnShare: () async {
+            final boundary = previewKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+            if (boundary == null) return null;
+            final image = await boundary.toImage(pixelRatio: 3.0);
+            final byteData =
+                await image.toByteData(format: ui.ImageByteFormat.png);
+            return byteData?.buffer.asUint8List();
+          },
+        ),
+      );
+      if (bytes == null) return;
+      await _shareImageBytes(bytes);
+      return;
+    }
+
     final confirmed = await Get.dialog<bool>(
       _PreviewDialog(
         previewWidget: previewWidget,
@@ -315,8 +353,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
 
     switch (format) {
       case ClientItineraryFormat.image:
-        await _shareAsImage(previewKey);
-        break;
+        break; // 已在上面處理
       case ClientItineraryFormat.pdf:
         await _shareAsPdf(w);
         break;
@@ -327,22 +364,8 @@ class JourneyDetailController extends GetxController with ApiMixin {
   }
 
   // --- 图片分享 ---
-  Future<void> _shareAsImage(GlobalKey key) async {
+  Future<void> _shareImageBytes(Uint8List bytes) async {
     try {
-      final boundary =
-          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        Loading.error('生成失败');
-        return;
-      }
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData?.buffer.asUint8List();
-      if (bytes == null) {
-        Loading.error('生成失败');
-        return;
-      }
-
       final dir = await getTemporaryDirectory();
       final path =
           '${dir.path}/client_itinerary_${DateTime.now().millisecondsSinceEpoch}.png';
@@ -565,19 +588,30 @@ class JourneyDetailController extends GetxController with ApiMixin {
     }
   }
 
+  /// HTML 轉義：防止用戶輸入（標題/描述/城市名等）注入 HTML 破壞排版或執行活動內容。
+  static String _htmlEscape(String? value) {
+    if (value == null || value.isEmpty) return '';
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+  }
+
   String _buildHtmlDocument(JourneyWork w, String logoBase64) {
     final daysHtml = w.itineraryDays.map((day) {
       final blocksHtml = day.cityBlocks.map((block) {
         final cityHeader = block.cityName?.isNotEmpty == true
-            ? '<div class="city-block-header">📍 ${block.cityName}</div>'
+            ? '<div class="city-block-header">📍 ${_htmlEscape(block.cityName)}</div>'
             : '';
         final itemsHtml = block.items.map((item) => '''
         <div class="item-row">
-          <div class="item-time">${item.time ?? ''}</div>
+          <div class="item-time">${_htmlEscape(item.time)}</div>
           <div class="item-line"></div>
           <div class="item-content">
-            <div class="item-title">${item.title ?? ''}</div>
-            ${item.description?.isNotEmpty == true ? '<div class="item-desc">${item.description}</div>' : ''}
+            <div class="item-title">${_htmlEscape(item.title)}</div>
+            ${item.description?.isNotEmpty == true ? '<div class="item-desc">${_htmlEscape(item.description)}</div>' : ''}
           </div>
         </div>
       ''').join();
@@ -585,15 +619,15 @@ class JourneyDetailController extends GetxController with ApiMixin {
       }).join();
 
       final hotelHtml = day.hotelName?.isNotEmpty == true
-          ? '<div class="hotel">🏨 ${day.hotelName}</div>'
+          ? '<div class="hotel">🏨 ${_htmlEscape(day.hotelName)}</div>'
           : '';
 
       return '''
         <div class="day-header">
           <span class="day-num">第${day.dayNumber}天</span>
-          <span class="day-date">${day.date ?? ''}</span>
+          <span class="day-date">${_htmlEscape(day.date)}</span>
         </div>
-        ${day.theme?.isNotEmpty == true ? '<div class="day-theme">${day.theme}</div>' : ''}
+        ${day.theme?.isNotEmpty == true ? '<div class="day-theme">${_htmlEscape(day.theme)}</div>' : ''}
         $blocksHtml
         $hotelHtml
       ''';
@@ -604,7 +638,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${w.title ?? ''} - LUMOGUIDE</title>
+  <title>${_htmlEscape(w.title)} - LUMOGUIDE</title>
   <style>
     body { font-family: 'PingFang SC', -apple-system, sans-serif; padding: 20px; color: #162539; }
     .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -636,7 +670,7 @@ class JourneyDetailController extends GetxController with ApiMixin {
 
   <div class="header">
     <img src="data:image/png;base64,$logoBase64">
-    <div class="title">${w.title ?? ''}</div>
+    <div class="title">${_htmlEscape(w.title)}</div>
   </div>
 
   <div class="divider"></div>
@@ -660,7 +694,16 @@ class JourneyDetailController extends GetxController with ApiMixin {
   }
 
   void onViewCity(String city) {
-    Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'city': city});
+    // CityDetailController 需要城市 id，按名稱匹配 CityListStore；
+    // 匹配不到時跳城市列表，避免 city_id=0 請求失敗後把整個詳情頁彈掉。
+    final match = CityListStore.to.cityList.firstWhereOrNull(
+      (c) => c.name == city || c.nameEn == city,
+    );
+    if (match?.id != null && match!.id! > 0) {
+      Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': match.id});
+    } else {
+      Get.toNamed(AppRoutes.PUBLISH_CITY);
+    }
   }
 }
 
@@ -669,7 +712,15 @@ class _PreviewDialog extends StatelessWidget {
   final Widget previewWidget;
   final ClientItineraryFormat format;
 
-  const _PreviewDialog({required this.previewWidget, required this.format});
+  /// 圖片格式專用：在彈窗關閉前捕獲渲染結果，返回圖片 bytes。
+  /// 為 null 時點「分享」僅關閉彈窗（PDF/Word 走外部生成）。
+  final Future<Uint8List?> Function()? captureOnShare;
+
+  const _PreviewDialog({
+    required this.previewWidget,
+    required this.format,
+    this.captureOnShare,
+  });
 
   String get formatLabel {
     switch (format) {
@@ -744,7 +795,23 @@ class _PreviewDialog extends StatelessWidget {
               SizedBox(width: 12.w),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => Get.back(result: true),
+                  onPressed: captureOnShare == null
+                      ? () => Get.back(result: true)
+                      : () async {
+                          Loading.show();
+                          try {
+                            final bytes = await captureOnShare!();
+                            if (bytes == null) {
+                              Loading.error('生成失败');
+                              return;
+                            }
+                            Get.back(result: bytes);
+                          } catch (e) {
+                            Loading.error('生成失败: $e');
+                          } finally {
+                            Loading.dismiss();
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(

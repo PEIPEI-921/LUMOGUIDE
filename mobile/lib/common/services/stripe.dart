@@ -109,19 +109,31 @@ class StripeService extends GetxService with ApiMixin {
 
   Future<PaymentResult> _verifyOrderSn(String orderSn) async {
     Loading.show();
-    final res = await get(
-      ApiUrl.vipPayStatus,
-      parameters: {'order_sn': orderSn},
-    );
-    Loading.dismiss();
-    if (!res.isSuccess) {
-      return PaymentResult(status: PaymentStatus.failed, message: res.message);
-    }
-    final status = res.dataJson['pay_status'] as int? ?? 0;
-    if (status == 1) {
-      return PaymentResult(status: PaymentStatus.success, message: '訂閱成功'.tr);
-    } else {
-      return PaymentResult(status: PaymentStatus.failed, message: '訂閱失敗'.tr);
+    try {
+      final res = await get(
+        ApiUrl.vipPayStatus,
+        parameters: {'order_sn': orderSn},
+      );
+      if (!res.isSuccess) {
+        // Stripe 已確認扣款但訂單查詢失敗（網絡/後端延遲）：
+        // 不應誤報「訂閱失敗」，提示稍後查詢。
+        return PaymentResult(
+          status: PaymentStatus.processing,
+          message: '支付已成功，訂單確認中，請稍後在會員中心查看'.tr,
+        );
+      }
+      final status = res.dataJson['pay_status'] as int? ?? 0;
+      if (status == 1) {
+        return PaymentResult(status: PaymentStatus.success, message: '訂閱成功'.tr);
+      } else {
+        // webhook 可能尚未處理完成：提示確認中而非直接失敗
+        return PaymentResult(
+          status: PaymentStatus.processing,
+          message: '支付已成功，訂單確認中，請稍後在會員中心查看'.tr,
+        );
+      }
+    } finally {
+      Loading.dismiss();
     }
   }
 

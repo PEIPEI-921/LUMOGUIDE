@@ -53,7 +53,10 @@ class GuideBookingManagerController extends GetxController
       return;
     }
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    final list = data.map((e) => GuideReservation.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => GuideReservation.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

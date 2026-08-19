@@ -46,7 +46,10 @@ extension on IntegralMallController {
     final res = await get(ApiUrl.integralGoodsClass);
     if (!res.isSuccess) return;
     final data = res.dataList;
-    final categories = data.map((e) => Category.fromJson(e)).toList();
+    final categories = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Category.fromJson(e))
+        .toList();
     titles.value = categories.map((e) => e.name ?? '').toList();
     pages.value = categories
         .map((e) => IntegralMallListWidget(id: e.id ?? 0))

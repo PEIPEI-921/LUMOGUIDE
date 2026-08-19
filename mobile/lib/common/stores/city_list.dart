@@ -13,6 +13,10 @@ class CityListStore extends GetxController with ApiMixin {
     });
     if (!res.isSuccess) return;
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    cityList.value = data.map((e) => CityList.fromJson(e)).toList();
+    // 過濾非 Map 元素，避免後端髒數據導致 fromJson 強轉崩潰
+    cityList.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
   }
 }

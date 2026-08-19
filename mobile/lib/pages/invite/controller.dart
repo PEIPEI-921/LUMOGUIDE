@@ -373,8 +373,11 @@ extension on InviteController {
     if (!res.isSuccess) {
       return;
     }
-    final list = res.dataJson['list'] as List<dynamic>;
-    inviteList.value = list.map((e) => Invite.fromJson(e)).toList();
+    final list = res.dataJson['list'] as List<dynamic>? ?? [];
+    inviteList.value = list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Invite.fromJson(e))
+        .toList();
   }
 
   Future<void> _loadGuideInfo() async {

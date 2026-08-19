@@ -31,6 +31,7 @@ class MyIntegralController extends GetxController
     final data = res.dataJson;
     final records = data['list'] as List<dynamic>? ?? [];
     final integralRecords = records
+        .whereType<Map<String, dynamic>>()
         .map((e) => IntegralRecord.fromJson(e))
         .toList();
     endLoad(integralRecords);

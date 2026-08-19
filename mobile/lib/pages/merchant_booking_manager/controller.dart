@@ -52,7 +52,10 @@ class MerchantBookingManagerController extends GetxController
       return;
     }
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    final list = data.map((e) => MerchantReservation.fromJson(e)).toList();
+    final list = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => MerchantReservation.fromJson(e))
+        .toList();
     endLoad(list);
   }
 

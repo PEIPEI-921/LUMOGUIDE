@@ -257,7 +257,10 @@ extension on PublishTransportationController {
     });
     if (!res.isSuccess) return;
     final data = res.dataJson['list'] as List<dynamic>? ?? [];
-    cities.value = data.map((e) => CityList.fromJson(e)).toList();
+    cities.value = data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => CityList.fromJson(e))
+        .toList();
     if (editor == GuidePublishEditor.edit) {
       fillData();
     }

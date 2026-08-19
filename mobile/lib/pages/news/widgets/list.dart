@@ -25,7 +25,10 @@ class NewsListController extends GetxController
       return;
     }
     final lists = res.dataJson['list'] as List<dynamic>? ?? [];
-    final news = lists.map((e) => News.fromJson(e)).toList();
+    final news = lists
+        .whereType<Map<String, dynamic>>()
+        .map((e) => News.fromJson(e))
+        .toList();
     endLoad(news);
   }
 
