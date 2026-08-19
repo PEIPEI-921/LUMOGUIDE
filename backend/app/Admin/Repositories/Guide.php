@@ -101,6 +101,23 @@ class Guide extends EloquentRepository
                 }
             }
 
+            // --- 审核通过：常駐城市同步到导游主表（否则导游不会出现在所选城市的导游列表） ---
+            if (isset($attributes['audit_status']) && $attributes['audit_status'] == 1
+                && !empty($res->resident_city_id)
+                && (int)$res->city_id !== (int)$res->resident_city_id) {
+                $residentCity = City::query()->find($res->resident_city_id);
+                if ($residentCity) {
+                    $res->city_id = $residentCity->id;
+                    $res->city_name = $residentCity->name;
+                    $res->continents_id = $residentCity->continents_id ?? 0;
+                    $res->area_id = $residentCity->area_id ?? 0;
+                    // 常駐城市与导游建立归属（城市管理/推荐联动）
+                    if (empty($residentCity->guide_id)) {
+                        City::query()->where('id', $residentCity->id)->update(['guide_id' => $res->id]);
+                    }
+                }
+            }
+
             $res->save();
 
             // --- 常駐城市審核聯動 ---

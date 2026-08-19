@@ -52,7 +52,16 @@ class UserController extends AdminController
             $grid->column('inviter_code')->copyable();
             $grid->column('integral');
             $grid->column('identity')->using(\App\Enums\User::IdentityArr)->sortable();
-            $grid->column('city_name');
+            // 所在城市：用户表本身不收集城市，展示认证后的导游/企业所属城市
+            $grid->column('city_name', '所在城市')->display(function () {
+                if (!empty($this->guide) && !empty($this->guide->city_name)) {
+                    return $this->guide->city_name;
+                }
+                if (!empty($this->company) && !empty($this->company->city_name)) {
+                    return $this->company->city_name;
+                }
+                return $this->city_name ?: '';
+            });
 
             // 导游/企业认证状态快捷列
             $grid->column('guide_status', '導遊認證')->display(function () {
