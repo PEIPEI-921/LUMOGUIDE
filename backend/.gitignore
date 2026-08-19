@@ -23,8 +23,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-/phpunit.xml
-tests
 vite.config.js
 /public/.htaccess
 /public/nginx.htaccess

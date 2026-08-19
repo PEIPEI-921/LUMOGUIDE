@@ -189,9 +189,9 @@ return new class extends Migration {
             $table->integer('user_id')->default(0)->comment('用户ID');
             $table->string('name', 30)->comment('姓名');
             $table->string('phone', 30)->comment('联系电话');
-            $table->string('country', 30)->comment('國家');
+            $table->string('country', 30)->nullable()->comment('國家');
             $table->integer('country_id')->default(0)->comment('國家ID');
-            $table->string('city', 30)->comment('城市');
+            $table->string('city', 30)->nullable()->comment('城市');
             $table->integer('city_id')->default(0)->comment('城市ID');
             $table->string('address', 255)->nullable()->comment('详细地址');
             $table->string('street', 30)->nullable()->comment('街道');
