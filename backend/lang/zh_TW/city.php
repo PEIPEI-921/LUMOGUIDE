@@ -1,0 +1,36 @@
+<?php
+return [
+    'labels' => [
+        'City' => '城市管理',
+        'city' => '城市管理',
+    ],
+    'fields' => [
+        'user_id' => '用戶ID',
+        'guide_id' => '導遊ID',
+        'name' => '城市名稱',
+        'name_en' => '城市英文',
+        'country_id' => '所屬國家',
+        'continents_id' => '所屬大洲',
+        'area_id' => '所屬地區',
+        'location' => '經緯度',
+        'longitude' => '東經',
+        'latitude' => '北緯',
+        'is_capital' => '首都',
+        'currency' => '貨幣',
+        'language' => '官方語言',
+        'population' => '人口數量',
+        'race' => '種族',
+        'overview' => '概覽',
+        'history' => '歷史',
+        'first_picture' => '封面',
+        'pictures' => '封面',
+        'audit_status' => '審覈狀態',
+        'audit_feedback' => '駁回原因',
+        'status' => '狀態',
+        'recommend' => '城市推薦',
+        'home_recommend' => '首页推薦',
+        'order' => '排序',
+    ],
+    'options' => [
+    ],
+];

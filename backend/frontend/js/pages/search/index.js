@@ -1,0 +1,184 @@
+/* ============================================
+   Search Page — 搜索
+   Reference: PPCC search/page.tsx
+   ============================================ */
+
+const SearchPage = {
+  template: `
+    <div class="page-content"><div class="ds-container-960" style="padding-top:16px;padding-bottom:16px">
+      <!-- Search Input — sketch style -->
+      <div style="display:flex;align-items:center;gap:12px;padding:0 4px 12px;border-bottom:2px solid rgba(226,232,240,.8);transition:border-color .2s;margin-bottom:24px;max-width:640px" ref="searchRow">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" v-model="query" :placeholder="$t('搜尋城市、導遊或景點…')"
+          @input="onSearchInput" @keyup.enter="doSearch"
+          @focus="$refs.searchRow.style.borderBottomColor='#666FFF'"
+          @blur="$refs.searchRow.style.borderBottomColor='rgba(226,232,240,.8)'"
+          class="sketch-search-input"
+          style="flex:1;border:none;outline:none;background:transparent;padding:4px 0;font-size:15px;color:#0F172A;caret-color:#666FFF">
+        <button @click="doSearch" style="flex-shrink:0;background:none;border:1.5px solid #666FFF;border-radius:20px;padding:5px 18px;font-size:13px;color:#666FFF;cursor:pointer;transition:all .2s"
+          @mouseenter="$event.target.style.borderColor='#4A52E0';$event.target.style.opacity='1'"
+          @mouseleave="$event.target.style.borderColor='#666FFF';$event.target.style.opacity='.8'">{{ $t('搜尋') }}</button>
+      </div>
+
+      <!-- Result Tabs -->
+      <div v-if="hasSearched" class="ds-tabs" style="margin:0 0 16px">
+        <button v-for="tab in resultTabs" :key="tab.key"
+          @click="activeResultTab = tab.key"
+          :class="['ds-tab', { active: activeResultTab === tab.key }]"
+          :style="{ color: activeResultTab === tab.key ? '#666FFF' : 'rgba(51,65,85,.6)' }">
+          {{ $t(tab.label) }}
+          <span v-if="tab.count > 0" style="font-size:10px;opacity:.5;margin-left:4px">{{ tab.count }}</span>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="searching" class="loading-container">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- Results -->
+      <div v-else-if="hasSearched">
+        <!-- Cities -->
+        <div v-if="activeResultTab === 'city'">
+          <div v-if="results.city.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:12px">
+            <a v-for="c in results.city" :key="c.id" :href="'#/city/detail?id=' + c.id"
+              class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
+              <div style="aspect-ratio:4/3;overflow:hidden;background:var(--color-bg-card)">
+                <img v-if="c.first_picture" :src="c.first_picture" :alt="c.name" style="width:100%;height:100%;object-fit:cover">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="6" x2="11" y2="6"/><line x1="13" y1="6" x2="15" y2="6"/><line x1="9" y1="14" x2="15" y2="14"/><path d="M9 22v-4h6v4"/></svg></div>
+              </div>
+              <div style="padding:14px 16px;color:var(--color-primary-text)">
+                <div style="font-size:14.5px;font-weight:600">{{ c.name }}</div>
+                <div v-if="c.name_en" style="font-size:11.5px;color:var(--color-assistant-text);margin-top:2px">{{ c.name_en }}</div>
+                <div v-if="c.area_name" style="margin-top:6px">
+                  <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(0,0,0,.38);color:#fff;backdrop-filter:blur(6px)">{{ c.area_name }}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
+        </div>
+
+        <!-- Guides -->
+        <div v-if="activeResultTab === 'guide'">
+          <div v-if="results.guide.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:12px">
+            <a v-for="g in results.guide" :key="g.id" :href="'#/guide/' + g.id"
+              class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
+              <div style="aspect-ratio:3/4;overflow:hidden;background:var(--color-bg-card)">
+                <img v-if="g.photo" :src="g.photo" :alt="g.name" style="width:100%;height:100%;object-fit:cover">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M20 22c0-4.4-3.6-8-8-8s-8 3.6-8 8"/></svg></div>
+              </div>
+              <div style="padding:10px;color:var(--color-primary-text)">
+                <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.name }}</div>
+                <div style="font-size:10px;color:var(--color-assistant-text);margin-top:2px">{{ g.city_name || '' }}</div>
+              </div>
+            </a>
+          </div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
+        </div>
+
+        <!-- Content -->
+        <div v-if="activeResultTab === 'content'">
+          <div v-if="results.content.length > 0" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:12px">
+            <a v-for="item in results.content" :key="item.id"
+              :href="item.data_type === 'info' ? '#/news/' + item.id :
+                (item.city_id ? '#/city/detail?id=' + item.city_id : '#')"
+              class="ds-card ds-card-hover" style="text-decoration:none;color:inherit;display:block;overflow:hidden">
+              <div style="aspect-ratio:4/3;overflow:hidden;background:var(--color-bg-card)">
+                <img v-if="item.first_picture" :src="item.first_picture" :alt="item.name" style="width:100%;height:100%;object-fit:cover">
+                <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.3">📷</div>
+              </div>
+              <div style="padding:10px;color:var(--color-primary-text)">
+                <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ item.name }}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                  <span v-if="item.type_name" class="ds-badge-sm ds-badge-primary">{{ item.type_name }}</span>
+                  <span v-if="item.city_name" style="font-size:10px;color:var(--color-assistant-text)">{{ item.city_name }}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+          <div v-else class="ds-empty" style="color:var(--color-assistant-text)">{{ $t('暫無結果') }}</div>
+        </div>
+      </div>
+
+      <!-- Empty (no search yet) -->
+      <div v-else class="ds-empty" style="color:var(--color-assistant-text)"
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round" style="margin-bottom:12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <p style="color:var(--color-assistant-text)">{{ $t('輸入關鍵字開始搜索') }}</p>
+      </div>
+    </div>
+    </div>
+  `,
+
+  data() {
+    return {
+      query: '',
+      results: { city: [], guide: [], content: [] },
+      searching: false,
+      hasSearched: false,
+      activeResultTab: 'city',
+      searchTimer: null,
+      resultTabs: [
+        { key: 'city', label: '城市', count: 0 },
+        { key: 'guide', label: '導遊', count: 0 },
+        { key: 'content', label: '內容', count: 0 }
+      ]
+    };
+  },
+
+  methods: {
+    onSearchInput() {
+      if (this.searchTimer) clearTimeout(this.searchTimer);
+      if (!this.query.trim()) return;
+      this.searchTimer = setTimeout(() => {
+        this.doSearch();
+      }, 500);
+    },
+
+    async doSearch() {
+      const text = this.query.trim();
+      if (!text) return;
+
+      this.searching = true;
+      this.hasSearched = true;
+
+      const res = await ApiProvider.get(ApiUrl.homeSearch, { name: text, limit: 100 });
+
+      // API returns flat array with data_type: 1=city, 2=guide, 3=content
+      if (res.success && res.data) {
+        const list = Array.isArray(res.data) ? res.data : (res.data.list || []);
+        this.results.city = list.filter(item => Number(item.data_type) === 1);
+        this.results.guide = list.filter(item => Number(item.data_type) === 2);
+        this.results.content = list.filter(item => Number(item.data_type) === 3);
+
+        // Update counts
+        this.resultTabs[0].count = this.results.city.length;
+        this.resultTabs[1].count = this.results.guide.length;
+        this.resultTabs[2].count = this.results.content.length;
+
+        // Auto-select first non-empty tab
+        if (this.results.city.length > 0) this.activeResultTab = 'city';
+        else if (this.results.guide.length > 0) this.activeResultTab = 'guide';
+        else this.activeResultTab = 'content';
+      } else {
+        this.results = { city: [], guide: [], content: [] };
+        this.resultTabs.forEach(t => t.count = 0);
+      }
+
+      this.searching = false;
+    }
+  },
+
+  mounted() {
+    // If query param is present, pre-fill search
+    const q = this.$route.query.keyword;
+    if (q) {
+      this.query = q;
+      this.doSearch();
+    }
+  },
+
+  beforeUnmount() {
+    if (this.searchTimer) { clearTimeout(this.searchTimer); this.searchTimer = null; }
+  }
+};

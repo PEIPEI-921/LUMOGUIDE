@@ -1,0 +1,130 @@
+/* ============================================
+   Design Tokens v4 — LuMo Guide "路盟会馆"
+   Anchor: #666FFF (indigo — accent only)
+   v4 (2026-08-07): 極簡高科技風 (bright light mode)
+   mist-white #F8FAFC · glass navbar blur(12px) ·
+   slate text · hairline rgba(226,232,240,.8)
+   #666FFF only for hover / indicator / CTA / tags.
+   ============================================ */
+
+:root {
+  /* ── Brand (accent only — hover, indicator, CTA, tags) ── */
+  --color-primary: #666FFF;
+  --color-primary-dark: #4A52E0;
+  --color-primary-light: rgba(102, 111, 255, 0.08);
+  --color-primary-glow: rgba(102, 111, 255, 0.20);
+  --color-accent-soft: #EEEDFF;          /* primary tint bg */
+
+  /* ── Navbar — glassmorphism (frosted lens over page) ── */
+  --color-topbar-bg: rgba(255, 255, 255, 0.8);
+  --color-topbar-border: rgba(226, 232, 240, 0.8);   /* 1px ultra-fine hairline */
+  --color-topbar-text: #334155;           /* 深石墨灰 (slate-700) */
+  --color-topbar-hover-bg: rgba(102, 111, 255, 0.09);
+  --topbar-blur: saturate(180%) blur(12px);
+
+  /* ── Text (slate scale, high contrast) ── */
+  --color-primary-text: #0F172A;         /* slate-900 — headings/body */
+  --color-secondary-text: #475569;       /* slate-600 — muted */
+  --color-assistant-text: #94A3B8;       /* slate-400 — faint */
+
+  /* ── Surfaces (avoid pure white / pure black) ── */
+  --color-bg-white: #FBFCFE;             /* surface — cool near-white */
+  --color-bg-page: #F8FAFC;             /* 雲霧白 mist-white page bg */
+  --color-bg-card: #F1F5F9;             /* slate-100 wells / input bg */
+  --color-bg-elevated: #FFFFFF;          /* cards */
+
+  /* ── Accent (Tailwind palette) ── */
+  --color-red: #EF4444;
+  --color-orange: #F97316;
+  --color-amber: #F59E0B;
+  --color-green: #10B981;
+  --color-purple: #8B5CF6;
+  --color-teal: #44D7B6;
+  --color-cyan: #45CEE6;
+
+  /* ── Border (ultra-fine low-key hairlines) ── */
+  --color-border: rgba(226, 232, 240, 0.8);
+  --color-border-light: rgba(226, 232, 240, 0.6);
+  --color-card-border: #E2E8F0;          /* slate-200 card outline */
+
+  /* ── Category Colors (keep recognizable from mobile) ── */
+  --cat-guide: #666FFF;
+  --cat-restaurant: #F4B413;
+  --cat-shopping: #FF6C00;
+  --cat-hotel: #A837FF;
+  --cat-scenic: #00EBC2;
+  --cat-traffic: #6695FF;
+  --cat-facility: #00D8D5;
+  --cat-activity: #FFA921;
+  --cat-ticket: #00B4FF;
+  --cat-overview: #FFC466;
+
+  /* ── Spacing ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+
+  /* ── Layout ── */
+  --header-height: 48px;
+  --topbar-height: 52px;
+  --tab-height: 56px;
+  --max-content-width: 860px;
+
+  /* ── Container Widths ── */
+  --container-1280: 1280px;
+  --container-960: 960px;
+  --container-760: 860px;
+  --container-640: 720px;
+  --container-600: 640px;
+
+  /* ── Radius (v2: refined, tighter) ── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 100px;
+
+  /* ── Z-Index ── */
+  --z-topbar: 100;
+  --z-overlay: 1000;
+  --z-toast: 9998;
+  --z-photo-viewer: 9999;
+
+  /* ── Type Scale ── */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 18px;
+  --font-xl: 20px;
+  --font-2xl: 24px;
+  --font-3xl: 32px;
+  --font-4xl: 40px;
+
+  /* ── Font Stack ── */
+  --font-serif: 'Noto Serif TC', 'Georgia', 'Noto Serif SC', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'PingFang SC', 'Microsoft JhengHei', sans-serif;
+
+  /* ── v2 Additions ── */
+  --primary-soft: rgba(102, 111, 255, 0.07);
+  --primary-hover: #5A5FE8;
+
+  /* ── Shadows (v4: ultra-faint slate, layered soft) ── */
+  --shadow-sm: 0 0 0 1px rgba(15,23,42,0.02);
+  --shadow-card:
+    rgba(15,23,42,0.05) 0px 1px 3px,
+    rgba(15,23,42,0.04) 0px 8px 24px;
+  --shadow-elevated:
+    rgba(15,23,42,0.06) 0px 2px 6px,
+    rgba(15,23,42,0.05) 0px 12px 32px;
+  --shadow-popup:
+    rgba(15,23,42,0.08) 0px 2px 8px,
+    rgba(15,23,42,0.07) 0px 16px 48px;
+
+  /* ── Transition ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-card: cubic-bezier(0.4, 0, 0.2, 1);
+}

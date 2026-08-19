@@ -1,0 +1,52 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+// SPA index — use bundled assets in production, individual files in dev.
+// Resolved at request time (not registration time) so route:cache doesn't
+// bake a path to a file that doesn't exist yet.
+$resolveSpaIndex = function () {
+    if (app()->environment('production')) {
+        $dist = base_path('frontend/dist/index.html');
+        if (file_exists($dist)) return $dist;
+    }
+    return base_path('frontend/index.html');
+};
+
+// Root route
+Route::get('/', function () use ($resolveSpaIndex) {
+    return response()->file($resolveSpaIndex());
+});
+
+// Deep link bridge pages — open app or fallback to app store
+Route::get('/share', fn() => response()->file(base_path('frontend/share.html')));
+Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
+Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
+
+// Protocol pages (Blade views) — must be before SPA catch-all
+Route::get('/protocol/{type}', function ($type) {
+    $content = systemConfig($type);
+    if (!$content) abort(404);
+    return view('protocol', [
+        'content' => $content
+    ]);
+});
+
+// SPA catch-all: serve index.html for all non-API, non-admin frontend routes.
+// The Vue SPA handles routing via hash fragments (#/path).
+// /api/* → mobile app endpoints (unchanged)
+// /manage* or /admin* → Dcat Admin panel (unchanged)
+Route::get('/{any}', function () use ($resolveSpaIndex) {
+    return response()->file($resolveSpaIndex());
+})->where('any', '^(?!api|' . config('admin.route.prefix', 'admin') . ')[^.]*$');
