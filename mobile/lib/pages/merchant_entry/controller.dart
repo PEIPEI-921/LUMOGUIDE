@@ -1,0 +1,738 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:developer';
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:lumotrip/pages/index.dart';
+
+import '../../common/index.dart';
+import 'index.dart';
+
+class MerchantEntryController extends GetxController
+    with ApiMixin, UserStoreMixin {
+  final _merchantEntry = MerchantEntry().obs;
+  MerchantEntry get merchantEntry => _merchantEntry.value;
+
+  /// 草稿防抖定時器
+  Timer? _draftTimer;
+
+  /// 提交成功標記（防止 onClose 重複保存草稿）
+  bool _submitted = false;
+
+  /// 草稿恢復標記
+  bool _restoring = false;
+
+  // 页面控制
+  final currentPageIndex = 0.obs;
+  final pageController = PageController();
+
+  // 表单控制器
+  final nameController = TextEditingController();
+  final nameEnController = TextEditingController();
+  final addressController = TextEditingController();
+  final taxIdController = TextEditingController();
+  final introductionController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final websiteController = TextEditingController();
+  final otherContactController = TextEditingController();
+  final wechatController = TextEditingController();
+  final whatsAppController = TextEditingController();
+  final lineController = TextEditingController();
+
+  // 图片控制
+  final documentsPicture = Rxn<File>();
+
+  /// 商家图片（本地路径或网络url）
+  final merchantPictures = <String>[].obs;
+
+  String get selectedCityName =>
+      cities.firstWhereOrNull((e) => e.id == merchantEntry.cityId)?.name ?? '';
+  final cities = <CityList>[].obs;
+
+  /// 當前經營類型顯示名稱
+  String get typeTitle {
+    if (merchantEntry.typeId != null) {
+      return MerchantShopTypeExt.fromId(merchantEntry.typeId!).title;
+    }
+    return merchantEntry.businessType ?? '';
+  }
+
+  bool get isReadOnly =>
+      merchantEntry.auditStatus == 0 || merchantEntry.auditStatus == 1;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _setupDraftListeners();
+    fetchCity();
+    // 延迟到首帧之后执行：Get.put 在页面 build() 中同步触发 onInit，
+    // 若此时直接弹草稿确认框（Get.dialog）会命中“visitChildElements called during build”，
+    // 且控制器会被误挂到对话框路由上，对话框关闭后被 SmartManagement 删除，
+    // 导致页面重建时报 “MerchantEntryController not found”。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMerchantEntry();
+    });
+  }
+
+  @override
+  void onClose() {
+    _draftTimer?.cancel();
+    if (!isReadOnly && !_submitted) saveDraft();
+    nameController.dispose();
+    nameEnController.dispose();
+    addressController.dispose();
+    taxIdController.dispose();
+    introductionController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    websiteController.dispose();
+    otherContactController.dispose();
+    wechatController.dispose();
+    whatsAppController.dispose();
+    lineController.dispose();
+    pageController.dispose();
+    FocusManager.instance.primaryFocus?.unfocus();
+    super.onClose();
+  }
+
+  onEdit() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _merchantEntry.update((val) {
+      val?.auditStatus = null;
+      val?.auditFeedback = null;
+    });
+    currentPageIndex.value = 0;
+    if (pageController.hasClients) {
+      pageController.jumpTo(currentPageIndex.value.toDouble());
+    }
+    // 进入编辑模式后检测未完成草稿（审核中/已通过用户重进时此前不会弹草稿提示）
+    checkDraftAndPrompt();
+  }
+
+  // 页面导航方法
+  void nextPage() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (!validateCurrentPage()) {
+      return;
+    }
+    if (currentPageIndex.value < 3) {
+      updateMerchantEntry();
+      currentPageIndex.value++;
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          currentPageIndex.value,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else {
+      submitMerchantEntry();
+    }
+  }
+
+  void previousPage() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (currentPageIndex.value > 0) {
+      currentPageIndex.value--;
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          currentPageIndex.value,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else {
+      Get.back();
+    }
+  }
+
+  void goToPage(int index) {
+    if (index <= currentPageIndex.value) {
+      currentPageIndex.value = index;
+      if (pageController.hasClients) {
+        pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  // 表单验证方法
+  bool validateCurrentPage() {
+    if (isReadOnly) {
+      return true;
+    }
+    switch (currentPageIndex.value) {
+      case 0:
+        return validateBasicInfo();
+      case 1:
+        return validateBusinessType();
+      case 2:
+        return validateContactInfo();
+      case 3:
+        return validatePhotoUpload();
+      default:
+        return true;
+    }
+  }
+
+  bool validateBasicInfo() {
+    if (nameController.text.isEmpty) {
+      Loading.toast('請輸入公司名稱'.tr);
+      return false;
+    }
+    if (nameEnController.text.isEmpty) {
+      Loading.toast('請輸入英文公司名稱'.tr);
+      return false;
+    }
+    if (merchantEntry.cityId == null) {
+      Loading.toast('請選擇所在城市'.tr);
+      return false;
+    }
+    if (addressController.text.isEmpty) {
+      Loading.toast('請輸入公司地址'.tr);
+      return false;
+    }
+    if (taxIdController.text.isEmpty) {
+      Loading.toast('請輸入公司稅號'.tr);
+      return false;
+    }
+    return true;
+  }
+
+  bool validateBusinessType() {
+    if (merchantEntry.typeId == null) {
+      Loading.toast('請選擇經營類型'.tr);
+      return false;
+    }
+    if (merchantEntry.typeClassId == null) {
+      Loading.toast('請選擇具體分類'.tr);
+      return false;
+    }
+    if (introductionController.text.isEmpty) {
+      Loading.toast('請輸入簡介'.tr);
+      return false;
+    }
+    return true;
+  }
+
+  bool validateContactInfo() {
+    if (emailController.text.isEmpty) {
+      Loading.toast('請輸入郵箱地址'.tr);
+      return false;
+    }
+    if (phoneController.text.isEmpty) {
+      Loading.toast('請輸入聯繫電話'.tr);
+      return false;
+    }
+    if (wechatController.text.isEmpty) {
+      Loading.toast('請輸入微信/Wechat'.tr);
+      return false;
+    }
+    return true;
+  }
+
+  bool validatePhotoUpload() {
+    // if (documentsPicture.value == null &&
+    //     merchantEntry.documentsPicture.isEmpty) {
+    //   Loading.toast('請上傳相關證件圖片'.tr);
+    //   return false;
+    // }
+    return true;
+  }
+
+  // 更新商家入驻信息
+  void updateMerchantEntry() {
+    switch (currentPageIndex.value) {
+      case 0:
+        _merchantEntry.update((val) {
+          val?.name = nameController.text;
+          val?.nameEn = nameEnController.text;
+          val?.address = addressController.text;
+          val?.taxId = taxIdController.text;
+        });
+        break;
+      case 1:
+        _merchantEntry.update((val) {
+          val?.introduction = introductionController.text;
+        });
+        break;
+      case 2:
+        _merchantEntry.update((val) {
+          val?.email = emailController.text;
+          val?.phone = phoneController.text;
+          val?.website = websiteController.text;
+          val?.otherContact = otherContactController.text;
+          val?.wechat = wechatController.text;
+          val?.whatsApp = whatsAppController.text;
+          val?.line = lineController.text;
+        });
+        break;
+    }
+  }
+
+  /// 同步所有 TextEditingController 的值到 model（提交前调用，确保数据完整）
+  void _syncAllFields() {
+    _merchantEntry.update((val) {
+      val?.name = nameController.text;
+      val?.nameEn = nameEnController.text;
+      val?.address = addressController.text;
+      val?.taxId = taxIdController.text;
+      val?.introduction = introductionController.text;
+      val?.email = emailController.text;
+      val?.phone = phoneController.text;
+      val?.website = websiteController.text;
+      val?.otherContact = otherContactController.text;
+      val?.wechat = wechatController.text;
+      val?.whatsApp = whatsAppController.text;
+      val?.line = lineController.text;
+    });
+  }
+
+  // 提交商家入驻信息
+  void submitMerchantEntry() async {
+    // 在提交前同步所有 TextEditingController 的值到 model
+    _syncAllFields();
+    Loading.show();
+    if (!await _uploadImages()) {
+      Loading.dismiss();
+      return;
+    }
+    final res = await post(ApiUrl.applyCompany, data: merchantEntry.toJson());
+    Loading.dismiss();
+    if (!res.isSuccess) {
+      AlertUtils.error(res.message);
+      return;
+    }
+    reloadUserInfo();
+    await _clearDraft();
+    _submitted = true;
+    await AlertUtils.customAlert(
+      assets: Assets.iconReview,
+      imageSize: Size(50.w, 50.w),
+      title: '企業入駐資料提交成功'.tr,
+      content: '请等待管理员审核~'.tr,
+      confirmText: '關閉'.tr,
+    );
+    Get.back();
+  }
+
+  Future<bool> _uploadImages() async {
+    // 上傳證件圖片
+    String? documentsPictureUrl;
+    if (documentsPicture.value != null) {
+      try {
+        final url = await ConfigService.to.uploadFile(documentsPicture.value!.path);
+        if (url.isEmpty) {
+          final serverError = ConfigService.to.lastUploadError;
+          final msg = serverError.isNotEmpty
+              ? '${'證件圖片上傳失敗'.tr}：$serverError'
+              : '證件圖片上傳失敗'.tr;
+          AlertUtils.error(msg);
+          return false;
+        }
+        documentsPictureUrl = url;
+      } catch (_) {
+        final serverError = ConfigService.to.lastUploadError;
+        final msg = serverError.isNotEmpty
+            ? '${'證件圖片上傳失敗'.tr}：$serverError'
+            : '證件圖片上傳失敗'.tr;
+        AlertUtils.error(msg);
+        return false;
+      }
+    } else {
+      documentsPictureUrl = merchantEntry.documentsPicture;
+    }
+    _merchantEntry.update((val) {
+      val?.documentsPicture = documentsPictureUrl;
+    });
+
+    // 並行上傳商家圖片（單文件失敗不影響其他，保持原有順序）
+    final uploadedPics = <String>[];
+    final picResults = await Future.wait(merchantPictures.map((e) async {
+      if (e.startsWith('http://') || e.startsWith('https://')) {
+        return e;
+      }
+      try {
+        final url = await ConfigService.to.uploadFile(e);
+        if (url.isNotEmpty) return url;
+      } catch (_) {
+        // 單文件上傳失敗，跳過繼續
+      }
+      return '';
+    }));
+    for (final url in picResults) {
+      if (url.isNotEmpty) uploadedPics.add(url);
+    }
+    if (merchantPictures.isNotEmpty && uploadedPics.isEmpty) {
+      final serverError = ConfigService.to.lastUploadError;
+      final msg = serverError.isNotEmpty
+          ? '${'商家圖片上傳失敗'.tr}：$serverError'
+          : '商家圖片上傳失敗'.tr;
+      AlertUtils.error(msg);
+      return false;
+    }
+    _merchantEntry.update((val) {
+      val?.picture = uploadedPics;
+    });
+    log(merchantEntry.toJson().toString());
+    return true;
+  }
+}
+
+extension MerchantEntrySelection on MerchantEntryController {
+  // 选择城市
+  void selectCity() async {
+    if (isReadOnly) {
+      return;
+    }
+    final picked = await CityPickerSheet.show(
+      title: '請選擇所在城市'.tr,
+      cities: cities,
+      selectedCityId: merchantEntry.cityId,
+    );
+    if (picked != null) {
+      _merchantEntry.update((val) {
+        val?.cityId = picked.id;
+      });
+    }
+    _scheduleDraftSave();
+  }
+
+  // 选择经营类型（一级：MerchantShopType）
+  void selectBusinessType() async {
+    if (isReadOnly) return;
+    final data = MerchantShopType.values.map((e) => e.title).toList();
+    final currentTitle = typeTitle;
+    final res = await ValuePicker.show(
+      title: '請選擇企業經營類型'.tr,
+      datas: data,
+      selectedDatas: currentTitle.isNotEmpty ? [currentTitle] : [],
+    );
+    if (res != null && res.isNotEmpty) {
+      final selectedType = MerchantShopType.values.firstWhere(
+        (e) => e.title == res.first,
+      );
+      _merchantEntry.update((val) {
+        val?.typeId = selectedType.id;
+        val?.businessType = selectedType.title;
+        // 切換類型時清除舊的子分類
+        val?.typeClassId = null;
+        val?.typeClassName = null;
+      });
+      _scheduleDraftSave();
+    }
+  }
+
+  // 选择具体经营分类（二级：Category）
+  void selectBusinessSubtype() async {
+    if (isReadOnly) return;
+    final typeId = merchantEntry.typeId;
+    if (typeId == null) {
+      Loading.toast('請先選擇經營類型'.tr);
+      return;
+    }
+    // 緩存為空時即時從 API 拉取並寫回緩存，保證下方 id 匹配有數據
+    final list = await ConfigService.to.ensureTypeCategories(typeId);
+    if (list.isEmpty) {
+      Loading.toast('暫無可用分類'.tr);
+      return;
+    }
+    final data = list.map((e) => e.name ?? '').toList();
+    final res = await ValuePicker.show(
+      title: '請選擇具體經營分類'.tr,
+      datas: data,
+      selectedDatas: [
+        if ((merchantEntry.typeClassName ?? '').isNotEmpty)
+          merchantEntry.typeClassName!,
+      ],
+    );
+    if (res != null && res.isNotEmpty) {
+      final selected = list.firstWhereOrNull(
+        (e) => e.name == res.first,
+      );
+      _merchantEntry.update((val) {
+        val?.typeClassName = res.first;
+        val?.typeClassId = selected?.id;
+      });
+      _scheduleDraftSave();
+    }
+  }
+
+  selectImage(MerchantPhotoType type, {int? index}) async {
+    if (isReadOnly) {
+      return;
+    }
+    final path = await ImagePickerUtil.selectImage(Get.context!);
+    if (path.isEmpty) {
+      return;
+    }
+    switch (type) {
+      case MerchantPhotoType.documents:
+        documentsPicture.value = File(path);
+        _scheduleDraftSave();
+        uploadAndPersistDocuments(path);
+        break;
+      case MerchantPhotoType.merchantPictures:
+        if (index != null && index < merchantPictures.length) {
+          merchantPictures[index] = path;
+        } else {
+          merchantPictures.add(path);
+        }
+        _scheduleDraftSave();
+        uploadAndPersistMerchantPic(path);
+        break;
+    }
+  }
+
+  /// 证件图选图后立即上传，URL 写回入驻数据与草稿（退出重进可恢复）
+  @visibleForTesting
+  Future<void> uploadAndPersistDocuments(String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      _merchantEntry.update((val) {
+        val?.documentsPicture = url;
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
+  }
+
+  /// 商家图片上传成功后把本地路径替换为 URL（草稿随之持久化）
+  @visibleForTesting
+  Future<void> uploadAndPersistMerchantPic(String path) async {
+    try {
+      final url = await ConfigService.to.uploadFile(path);
+      if (url.isEmpty) return;
+      final idx = merchantPictures.indexOf(path);
+      if (idx >= 0) {
+        merchantPictures[idx] = url;
+      }
+      _merchantEntry.update((val) {
+        // picture 默认 const [] 不可变，必须整体替换
+        if (val != null && !val.picture.contains(url)) {
+          val.picture = [...val.picture, url];
+        }
+      });
+      _scheduleDraftSave();
+    } catch (_) {
+      // 上传失败保持本地预览，提交时重试
+    }
+  }
+
+  removeMerchantPicture(int index) {
+    if (isReadOnly) {
+      return;
+    }
+    final path = merchantPictures[index];
+    merchantPictures.removeAt(index);
+    if (path.startsWith('http')) {
+      _merchantEntry.update((val) {
+        // picture 默认 const [] 不可变，必须整体替换
+        if (val != null) {
+          val.picture = val.picture.where((e) => e != path).toList();
+        }
+      });
+    }
+    _scheduleDraftSave();
+  }
+}
+
+extension MerchantEntryDraft on MerchantEntryController {
+  fetchCity() async {
+    final res = await get(
+      ApiUrl.cityList,
+      parameters: {'limit': 1000, 'page': 1},
+    );
+    if (!res.isSuccess) return;
+    final data = res.dataJson['list'] as List<dynamic>? ?? [];
+    cities.value = data.map((e) => CityList.fromJson(e)).toList();
+  }
+
+  // ========== 草稿系統 ==========
+
+  void _setupDraftListeners() {
+    final controllers = <TextEditingController>[
+      nameController, nameEnController, addressController, taxIdController,
+      introductionController, emailController, phoneController,
+      websiteController, otherContactController, wechatController,
+      whatsAppController, lineController,
+    ];
+    for (final c in controllers) {
+      c.addListener(_scheduleDraftSave);
+    }
+  }
+
+  void _scheduleDraftSave() {
+    if (isReadOnly || _submitted || _restoring) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 400), saveDraft);
+  }
+
+  @visibleForTesting
+  Future<void> saveDraft() async {
+    if (isReadOnly || _submitted) return;
+    final map = _buildDraftJson();
+    if (!_hasDraftContent(map)) return;
+    await StorageService.to.setString('merchant_entry_draft', jsonEncode(map));
+  }
+
+  Map<String, dynamic> _buildDraftJson() {
+    return {
+      'form': {
+        'name': nameController.text,
+        'name_en': nameEnController.text,
+        'contact_name': '',
+        'phone': phoneController.text,
+        'email': emailController.text,
+        'country': '',
+        'address': addressController.text,
+        'introduction': introductionController.text,
+        'city_id': merchantEntry.cityId?.toString() ?? '',
+        'tax_id': taxIdController.text,
+        'website': websiteController.text,
+        'wechat': wechatController.text,
+        'whats_app': whatsAppController.text,
+        'line': lineController.text,
+        'other_contact': otherContactController.text,
+        'contact_phone': '',
+        'contact_email': '',
+        'photo': merchantEntry.documentsPicture ?? '',
+        'license': '',
+        'id_card_front': '',
+        'id_card_back': '',
+      },
+      'selectedTypes': [merchantEntry.businessType ?? ''],
+      'typeId': merchantEntry.typeId,
+      'typeClassId': merchantEntry.typeClassId,
+      'typeClassName': merchantEntry.typeClassName ?? '',
+      'storePics': merchantPictures.where((e) => e.startsWith('http')).toList(),
+    };
+  }
+
+  bool _hasDraftContent(Map<String, dynamic> map) {
+    final form = map['form'] as Map<String, dynamic>?;
+    if (form == null) return false;
+    for (final v in form.values) {
+      if (v is String && v.isNotEmpty) return true;
+    }
+    final storePics = map['storePics'] as List?;
+    if (storePics != null && storePics.isNotEmpty) return true;
+    final types = map['selectedTypes'] as List?;
+    if (types != null && types.isNotEmpty && types.first.toString().isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _clearDraft() async {
+    await StorageService.to.remove('merchant_entry_draft');
+  }
+
+  Future<void> checkDraftAndPrompt() async {
+    if (isReadOnly) return;
+    final json = StorageService.to.getString('merchant_entry_draft');
+    if (json.isEmpty) return;
+    Map<String, dynamic>? draft;
+    try {
+      draft = jsonDecode(json) as Map<String, dynamic>?;
+    } catch (_) {
+      return;
+    }
+    if (draft == null || !_hasDraftContent(draft)) return;
+
+    final use = await AlertUtils.show(
+      title: '提示'.tr,
+      content: '偵測到未完成的入駐資料，是否繼續編輯？'.tr,
+      cancelText: '重新填寫'.tr,
+      confirmText: '繼續編輯'.tr,
+    );
+    if (use == true) {
+      _restoreFromDraft(draft);
+    } else {
+      await _clearDraft();
+    }
+  }
+
+  void _restoreFromDraft(Map<String, dynamic> draft) {
+    _restoring = true;
+    final form = draft['form'] as Map<String, dynamic>? ?? {};
+
+    nameController.text = form['name'] as String? ?? '';
+    nameEnController.text = form['name_en'] as String? ?? '';
+    addressController.text = form['address'] as String? ?? '';
+    taxIdController.text = form['tax_id'] as String? ?? '';
+    introductionController.text = form['introduction'] as String? ?? '';
+    emailController.text = form['email'] as String? ?? '';
+    phoneController.text = form['phone'] as String? ?? '';
+    websiteController.text = form['website'] as String? ?? '';
+    otherContactController.text = form['other_contact'] as String? ?? '';
+    wechatController.text = form['wechat'] as String? ?? '';
+    whatsAppController.text = form['whats_app'] as String? ?? '';
+    lineController.text = form['line'] as String? ?? '';
+
+    _merchantEntry.update((val) {
+      // 防御：恢复草稿时强制进入可编辑状态（避免整页只读发灰）
+      val?.auditStatus = null;
+      val?.auditFeedback = null;
+      val?.documentsPicture = form['photo'] as String? ?? '';
+      val?.businessType = ((draft['selectedTypes'] as List?)?.isNotEmpty == true)
+          ? (draft['selectedTypes'] as List).first as String?
+          : null;
+      // 恢復經營類型分類
+      val?.typeId = draft['typeId'] as int?;
+      val?.typeClassId = draft['typeClassId'] as int?;
+      val?.typeClassName = draft['typeClassName'] as String?;
+      // 恢復城市選擇
+      final cityIdStr = form['city_id'] as String?;
+      if (cityIdStr != null && cityIdStr.isNotEmpty) {
+        val?.cityId = int.tryParse(cityIdStr);
+      }
+    });
+
+    merchantPictures.value = (draft['storePics'] as List?)?.cast<String>() ?? [];
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _restoring = false;
+    });
+  }
+
+  _fetchMerchantEntry() async {
+    if (userInfo.companyAuditStatus == 9) {
+      checkDraftAndPrompt();
+      return;
+    }
+    Loading.show();
+    final res = await get(ApiUrl.companyApplyInfo);
+    Loading.dismiss();
+    if (!res.isSuccess) {
+      checkDraftAndPrompt();
+      return;
+    }
+    _merchantEntry.value = MerchantEntry.fromJson(res.dataJson);
+    nameController.text = merchantEntry.name ?? '';
+    nameEnController.text = merchantEntry.nameEn ?? '';
+    addressController.text = merchantEntry.address ?? '';
+    taxIdController.text = merchantEntry.taxId ?? '';
+    introductionController.text = merchantEntry.introduction ?? '';
+    emailController.text = merchantEntry.email ?? '';
+    phoneController.text = merchantEntry.phone ?? '';
+    websiteController.text = merchantEntry.website ?? '';
+    otherContactController.text = merchantEntry.otherContact ?? '';
+    wechatController.text = merchantEntry.wechat ?? '';
+    whatsAppController.text = merchantEntry.whatsApp ?? '';
+    lineController.text = merchantEntry.line ?? '';
+    merchantPictures.value = merchantEntry.picture;
+    // 非只读状态（如被拒后重新编辑）也检测未完成草稿，避免草稿被服务器数据静默覆盖
+    if (!isReadOnly) {
+      checkDraftAndPrompt();
+    }
+  }
+}

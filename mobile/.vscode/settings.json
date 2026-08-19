@@ -1,0 +1,34 @@
+{
+  "dart.flutterSdkPath": "/Users/xuejingchen/flutter",
+  "dart.sdkPath": "/Users/xuejingchen/flutter/bin/cache/dart-sdk",
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.rulers": [100],
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  },
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/.packages": true,
+    "**/build": true,
+    "**/Pods": true
+  },
+  "files.watcherExclude": {
+    "**/.dart_tool/**": true,
+    "**/build/**": true,
+    "**/ios/Pods/**": true,
+    "**/.symlinks/**": true
+  },
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/ios/Pods": true
+  },
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "dart.warnWhenEditingFilesInDepDir": false,
+  "dart.openDevTools": "flutter",
+  "dart.closingLabels": false
+}

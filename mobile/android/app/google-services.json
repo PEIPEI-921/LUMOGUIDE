@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008391750132",
+    "project_id": "lumoguide",
+    "storage_bucket": "lumoguide.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008391750132:android:91f53661702a678490b9a1",
+        "android_client_info": {
+          "package_name": "com.app.lumotrip"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCG6S01CEjYZbg65HOicbww-9B-qWLGa0k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

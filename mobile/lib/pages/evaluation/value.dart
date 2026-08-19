@@ -1,0 +1,4 @@
+enum EvaluationType {
+  news,
+  merchant,
+}
