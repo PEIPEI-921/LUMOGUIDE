@@ -14,7 +14,7 @@
 ## 后端 API 回归测试
 
 ```bash
-cd /www/wwwroot/lumo_new/backend
+cd /www/wwwroot/lumo_family/lumo_guide/backend
 su -s /bin/bash www -c "php vendor/bin/phpunit --do-not-cache-result"
 ```
 
@@ -39,8 +39,7 @@ su -s /bin/bash www -c "php vendor/bin/phpunit --do-not-cache-result"
 ## 线上冒烟测试
 
 ```bash
-bash /www/wwwroot/lumo_new/tests/smoke/run.sh
-# 可选：SMOKE_BASE_URL=https://dev.lumoguide.com bash tests/smoke/run.sh
+bash /www/wwwroot/lumo_family/lumo_guide/tests/smoke/run.sh
 ```
 
 - 每次 **部署/切换代码之后** 运行（包括 nginx 配置、构建、迁移）。
@@ -49,7 +48,7 @@ bash /www/wwwroot/lumo_new/tests/smoke/run.sh
 ## 前端构建校验
 
 ```bash
-node /www/wwwroot/lumo_new/tests/frontend/check_build.mjs
+node /www/wwwroot/lumo_family/lumo_guide/tests/frontend/check_build.mjs
 ```
 
 - 前端重新构建（`node frontend/build.mjs`）后运行，确认 dist 产物完整、未回退到源文件引用、JS 无语法错误。
@@ -57,7 +56,7 @@ node /www/wwwroot/lumo_new/tests/frontend/check_build.mjs
 ## 移动端 Flutter 测试
 
 ```bash
-bash /www/wwwroot/lumo_new/tests/mobile/run.sh
+bash /www/wwwroot/lumo_family/lumo_guide/tests/mobile/run.sh
 ```
 
 - 移动端代码改动后运行。首次运行含依赖拉取，耗时较长。

@@ -77,9 +77,9 @@ check "多语言数据 /api/data/zh" GET "/api/data/zh" 200
 
 echo
 echo "-- 用户上传文件（storage 软链）--"
-UPLOAD_FILE=$(find /www/wwwroot/lumo_new/backend/storage/app/public/uploads -type f 2>/dev/null | tr -d '\0' | head -1)
+UPLOAD_FILE=$(find /www/wwwroot/lumo_family/lumo_guide/backend/storage/app/public/uploads -type f 2>/dev/null | tr -d '\0' | head -1)
 if [ -n "$UPLOAD_FILE" ]; then
-  UPLOAD_URL="${UPLOAD_FILE#/www/wwwroot/lumo_new/backend/storage/app/public}"
+  UPLOAD_URL="${UPLOAD_FILE#/www/wwwroot/lumo_family/lumo_guide/backend/storage/app/public}"
   check "上传文件可访问 /storage$UPLOAD_URL" GET "/storage$UPLOAD_URL" 200
 else
   log_fail "-" "uploads 目录中未找到样本文件" 200
