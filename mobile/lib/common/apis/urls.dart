@@ -1,10 +1,22 @@
 abstract class ApiUrl {
   static const _isDev = false;
-  static const baseUrl = _isDev
-      ? 'https://dev.lumoguide.com/'
-      : 'https://api.lumoguide.com/';
+
+  /// 业务 API 根地址。可用 `--dart-define=API_BASE_URL=http://...` 覆盖（本地联调/预发）。
+  static const baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: _isDev
+        ? 'https://dev.lumoguide.com/'
+        : 'https://api.lumoguide.com/',
+  );
 
   static const apiUrl = '${baseUrl}api/';
+
+  /// LUMO-Chat（IM-as-a-Service）服务地址。
+  /// 可用 `--dart-define=LUMO_CHAT_URL=http://...` 覆盖（本地联调/预发）。
+  static const lumoChatBaseUrl = String.fromEnvironment(
+    'LUMO_CHAT_URL',
+    defaultValue: 'http://localhost:3000',
+  );
 
   static const register = '/auth/register';
 
@@ -122,6 +134,9 @@ abstract class ApiUrl {
 
   /// 根据number获取信息
   static const memberInfo = '/user/numberInfo';
+
+  /// 刷新 LUMO-Chat access_token（过期后重新换取，无需重新登录）
+  static const refreshChatToken = '/user/refreshChatToken';
 
   /// 编辑用户信息
   static const editUserInfo = '/user/editInfo';

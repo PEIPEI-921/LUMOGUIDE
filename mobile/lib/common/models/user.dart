@@ -277,14 +277,36 @@ class UserGuideInfo {
 
 class UserCompanyInfo {
   int? id;
+  String? name;
+  String? nameEn;
+  String? cityName;
+  String? picture;
 
-  UserCompanyInfo({this.id});
+  UserCompanyInfo({
+    this.id,
+    this.name,
+    this.nameEn,
+    this.cityName,
+    this.picture,
+  });
 
   factory UserCompanyInfo.fromJson(Map<String, dynamic> json) {
-    return UserCompanyInfo(id: json.safeInt('id'));
+    return UserCompanyInfo(
+      id: json.safeInt('id'),
+      name: json.safeString('name'),
+      nameEn: json.safeString('name_en'),
+      cityName: json.safeString('city_name'),
+      picture: json.safeString('picture'),
+    );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {
+      'id': id,
+      'name': name,
+      'name_en': nameEn,
+      'city_name': cityName,
+      'picture': picture,
+    };
   }
 }

@@ -13,9 +13,10 @@ class StorageStone {
     await StorageService.to.setString(STORAGE_USER_NUMBER_KEY, value);
   }
 
-  static String get userSig => StorageService.to.getString(STORAGE_USER_SIG_KEY);
-  static setUserSig(String value) async {
-    await StorageService.to.setString(STORAGE_USER_SIG_KEY, value);
+  static String get lumoChatToken =>
+      StorageService.to.getString(STORAGE_LUMO_CHAT_TOKEN_KEY);
+  static setLumoChatToken(String value) async {
+    await StorageService.to.setString(STORAGE_LUMO_CHAT_TOKEN_KEY, value);
   }
 
   /// 过期时间
@@ -76,7 +77,7 @@ class StorageStone {
     await setExpireTime('');
     // 清除 IM 憑證，防止冷啟動時以舊用戶自動登入 IM
     await setUserNumber('');
-    await setUserSig('');
+    await setLumoChatToken('');
     // 清除記住的帳號/密碼，避免退出登錄後敏感信息殘留設備
     await setAccount('');
     await setPassword('');

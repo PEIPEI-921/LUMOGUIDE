@@ -8,14 +8,12 @@ use App\Models\SystemIntegralConfig;
 use App\Models\User;
 use App\Enums\System;
 use App\Models\UserInviteLog;
-use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redis;
-use Tencent\TLSSigAPIv2;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -26,8 +24,6 @@ class AuthService
      * @param array $data
      * @return array
      * @throws ApiException
-     * @throws \Hedeqiang\TenIM\Exceptions\HttpException
-     * @throws \Hedeqiang\TenIM\Exceptions\TenIMException
      */
     public function login(array $data): array
     {
@@ -41,25 +37,30 @@ class AuthService
             throw new ApiException(__('res.login_fail'));
         }
 
-        if ($user->im_login == 0) {
-            // 创建用户
-            $account_body = [
-                'Identifier' => $user->number,
-                'Nick' => $user->nickname,
-                'FaceUrl' => $user->avatar,
-            ];
-            $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-            imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
-
-            $user->im_login = 1;
-            $user->save();
-        }
-
-        $api = new TLSSigAPIv2(env('SDK_APP_ID'), env('SECRET_KEY'));
-        $user_sig = $api->genUserSig($user->number);
-
         Redis::set("user_last_token:{$data['email']}", $token);
-        return ['token' => $token, 'user_sig' => $user_sig, 'user_number' => $user->number];
+
+        // 换取 LUMO-Chat access_token（失败不阻断登录，客户端聊天功能自动降级）
+        $chatToken = $this->exchangeChatToken($user->number);
+
+        return [
+            'token' => $token,
+            'user_number' => $user->number,
+            'lumo_chat_token' => $chatToken,
+        ];
+    }
+
+    /**
+     * 为用户换取 LUMO-Chat access_token；未配置/失败返回空串（不抛异常）。
+     */
+    private function exchangeChatToken(string $userNumber): string
+    {
+        try {
+            $res = app(LumoChatService::class)->createToken($userNumber, (string) config('lumochat.device_id', 'lumoguide'));
+            return $res['access_token'] ?? '';
+        } catch (\Throwable $e) {
+            Log::warning('AuthService exchangeChatToken error: ' . $e->getMessage());
+            return '';
+        }
     }
 
 
@@ -163,15 +164,6 @@ class AuthService
             $number = str_pad($model->id, 6, '0', STR_PAD_LEFT);
             $user_number = "LuMo{$date}{$number}";
 
-            // 创建IM用户
-            $account_body = [
-                'Identifier' => $user_number,
-                'Nick' => $user_number,
-                'FaceUrl' => $model->avatar,
-            ];
-            $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-            imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
-
             User::query()->where('id', $model->id)->update([
                 'number' => $user_number,
                 'nickname' => $user_number,
@@ -199,10 +191,15 @@ class AuthService
         }
 
         $token = auth('api')->login($model);
-        $api = new TLSSigAPIv2(env('SDK_APP_ID'), env('SECRET_KEY'));
-        $user_sig = $api->genUserSig($user_number);
 
-        return ['token' => $token, 'user_sig' => $user_sig, 'user_number' => $user_number];
+        // 换取 LUMO-Chat access_token（失败不阻断注册）
+        $chatToken = $this->exchangeChatToken($user_number);
+
+        return [
+            'token' => $token,
+            'user_number' => $user_number,
+            'lumo_chat_token' => $chatToken,
+        ];
     }
 
 

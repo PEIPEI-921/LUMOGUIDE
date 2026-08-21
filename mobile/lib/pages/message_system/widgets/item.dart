@@ -14,28 +14,37 @@ class MessageSystemItemWidget extends StatelessWidget {
 
     return Column(
       children: [
-        Text(
-          model.formatDate ?? '',
-          style: TextStyle(
-            color: AppColors.primaryText.withValues(alpha: 0.6),
-            fontSize: 12.sp,
-          ),
-        ).padding(bottom: 10.w),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              model.title ?? '',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.primaryText,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // 标题 + 日期时间（同行，标题左侧、时间右侧）
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  model.title ?? '',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: AppColors.primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ).expanded(),
+                if ((model.formatDate ?? '').isNotEmpty) ...[
+                  8.w.horizontalSpace,
+                  Text(
+                    model.formatDate ?? '',
+                    style: TextStyle(
+                      color: AppColors.primaryText.withValues(alpha: 0.4),
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                ],
+              ],
             ),
             10.w.verticalSpace,
             Text(
-              model.desc ?? '',
+              (model.desc ?? '').replaceAll(RegExp(r'[（）]'), ''),
               style: TextStyle(
                 fontSize: 12.sp,
                 color: AppColors.primaryText.withValues(alpha: 0.8),

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6e2a699a480b9271171266048076cc9b",
+    "content-hash": "5af1ffce367d623453c04d41ce313b97",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1643,73 +1643,6 @@
             "time": "2025-02-03T10:55:03+00:00"
         },
         {
-            "name": "hedeqiang/ten-im",
-            "version": "v2.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/hedeqiang/IM.git",
-                "reference": "d80adcd846b60634edd9e1d10cc703d203cac56c"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/hedeqiang/IM/zipball/d80adcd846b60634edd9e1d10cc703d203cac56c",
-                "reference": "d80adcd846b60634edd9e1d10cc703d203cac56c",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "ext-simplexml": "*",
-                "guzzlehttp/guzzle": "^6.4|^7.0",
-                "php": ">=7.0",
-                "tencent/tls-sig-api-v2": "^1.1"
-            },
-            "require-dev": {
-                "roave/security-advisories": "dev-latest"
-            },
-            "type": "library",
-            "extra": {
-                "hyperf": {
-                    "config": "Hedeqiang\\TenIM\\ConfigProvider"
-                },
-                "laravel": {
-                    "providers": [
-                        "Hedeqiang\\TenIM\\ServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Hedeqiang\\TenIM\\": "./src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "hedeqiang",
-                    "email": "laravel_code@163.com"
-                },
-                {
-                    "name": "houseme",
-                    "email": "houseme@outlook.com"
-                }
-            ],
-            "description": "腾讯云即时通信 SDK for PHP",
-            "keywords": [
-                "im",
-                "php",
-                "即时通信",
-                "腾讯云"
-            ],
-            "support": {
-                "issues": "https://github.com/hedeqiang/IM/issues",
-                "source": "https://github.com/hedeqiang/IM/tree/v2.0.0"
-            },
-            "time": "2023-07-05T08:47:26+00:00"
-        },
-        {
             "name": "laravel/framework",
             "version": "v9.52.20",
             "source": {
@@ -3189,6 +3122,69 @@
                 }
             ],
             "time": "2024-07-20T21:41:07+00:00"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v3.6.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/predis/predis.git",
+                "reference": "2ff20c08bb63697245ffee3f198d1673086c302d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/predis/predis/zipball/2ff20c08bb63697245ffee3f198d1673086c302d",
+                "reference": "2ff20c08bb63697245ffee3f198d1673086c302d",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2 || ^8.0",
+                "psr/http-message": "^1.0|^2.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpcov": "^6.0 || ^8.0",
+                "phpunit/phpunit": "^8.0 || ~9.4.4"
+            },
+            "suggest": {
+                "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Predis\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Till Krüss",
+                    "homepage": "https://till.im",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A flexible and feature-complete Redis/Valkey client for PHP.",
+            "homepage": "http://github.com/predis/predis",
+            "keywords": [
+                "nosql",
+                "predis",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/predis/predis/issues",
+                "source": "https://github.com/predis/predis/tree/v3.6.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/tillkruss",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-08-14T23:07:56+00:00"
         },
         {
             "name": "psr/cache",
@@ -6333,53 +6329,6 @@
             "time": "2023-01-20T17:44:14+00:00"
         },
         {
-            "name": "tencent/tls-sig-api-v2",
-            "version": "v1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tencentyun/tls-sig-api-v2-php.git",
-                "reference": "cae9aa1f6ef04c64b451ef72cdbc004b87a800d4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tencentyun/tls-sig-api-v2-php/zipball/cae9aa1f6ef04c64b451ef72cdbc004b87a800d4",
-                "reference": "cae9aa1f6ef04c64b451ef72cdbc004b87a800d4",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Tencent\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "weijunyi",
-                    "email": "weijunyi@tencent.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "tls-sig-api-v2 适用于腾讯云通信生成用户账号签名。",
-            "homepage": "https://github.com/tencentyun/tls-sig-api-v2-php",
-            "keywords": [
-                "im",
-                "tencent",
-                "trtc"
-            ],
-            "support": {
-                "issues": "https://github.com/tencentyun/tls-sig-api-v2-php/issues",
-                "source": "https://github.com/tencentyun/tls-sig-api-v2-php/tree/v1.1"
-            },
-            "time": "2020-12-02T07:22:57+00:00"
-        },
-        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "v2.3.0",
             "source": {
@@ -9302,5 +9251,5 @@
         "ext-gd": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

@@ -69,8 +69,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-wallet:19.3.0'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-     implementation 'com.tencent.timpush:fcm:8.8.7357'
-}
+ }
 
 flutter {
     source = "../.."

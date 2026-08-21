@@ -39,7 +39,7 @@ class Global {
   }
 
   static getPut() {
-    Get.put<TIMStore>(TIMStore());
+    Get.put<ChatStore>(ChatStore());
     Get.put<UserStore>(UserStore());
     Get.put<CityHistoryStore>(CityHistoryStore());
     Get.put<CityListStore>(CityListStore());

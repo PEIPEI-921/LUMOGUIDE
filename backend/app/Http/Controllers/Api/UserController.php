@@ -49,6 +49,28 @@ class UserController extends BaseController
     }
 
     /**
+     * 刷新 LUMO-Chat access_token（有效期 3600s，过期后客户端调用本接口重新换取）
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function refreshChatToken()
+    {
+        $user = auth('api')->user();
+        try {
+            $res = app(\App\Services\LumoChatService::class)->createToken(
+                $user->number,
+                (string) config('lumochat.device_id', 'lumoguide')
+            );
+            return $this->success(__('res.success'), [
+                'lumo_chat_token' => $res['access_token'],
+                'expires_in' => $res['expires_in'],
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('refreshChatToken error: ' . $e->getMessage());
+            return $this->error(__('res.system_error'));
+        }
+    }
+
+    /**
      * 个人信息
      * @param UserService $service
      * @return \Illuminate\Http\JsonResponse

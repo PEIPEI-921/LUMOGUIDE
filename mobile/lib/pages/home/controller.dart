@@ -30,9 +30,8 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
   int _previousMerchantBannerIndex = 0;
   Timer? _merchantSingleBannerTimer;
 
-  // 资讯分类自动轮播
+  // 资讯分类自动轮播（用户滑动浏览时停止）
   Timer? _infoAutoScrollTimer;
-  bool _infoAutoScrollEnabled = true;
   static const _infoAutoScrollInterval = Duration(seconds: 5);
 
   final _home = Rxn<HomeModel>();
@@ -249,7 +248,6 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     informationCategoryIndex.value = 0;
     _stopGuideAutoScroll();
     _stopInfoAutoScroll();
-    _infoAutoScrollEnabled = true;
     _merchantAutoRotateEnabled = true;
     _resetMerchantBannerState();
   }
@@ -268,11 +266,46 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     _guideAutoScrollTimer = null;
   }
 
+  /// 用户浏览/滑动首页内容 → 永久停止导游分类自动轮播
+  void stopGuideAutoScroll() {
+    _stopGuideAutoScroll();
+  }
+
   void onGuideCategoryTap(int index) {
     guideCategoryIndex.value = index;
     _stopGuideAutoScroll();
     _guideAutoScrollTimer = Timer(_guideAutoScrollInterval, () {
       _startGuideAutoScroll();
+    });
+  }
+
+  void _startInfoAutoScroll() {
+    _stopInfoAutoScroll();
+    final count = _home.value?.information.length ?? 0;
+    if (count <= 1) return;
+    _infoAutoScrollTimer = Timer.periodic(_infoAutoScrollInterval, (_) {
+      final count = _home.value?.information.length ?? 0;
+      if (count <= 1) return;
+      informationCategoryIndex.value = (informationCategoryIndex.value + 1) % count;
+    });
+  }
+
+  void _stopInfoAutoScroll() {
+    _infoAutoScrollTimer?.cancel();
+    _infoAutoScrollTimer = null;
+  }
+
+  /// 用户浏览/滑动首页内容 → 永久停止资讯分类自动轮播
+  void stopInfoAutoScroll() {
+    _stopInfoAutoScroll();
+  }
+
+  /// 手动点击资讯分类 → 切换，暂停 5s 后恢复自动轮播
+  void onInfoCategoryTap(int index) {
+    informationCategoryIndex.value = index;
+    _stopInfoAutoScroll();
+    _infoAutoScrollTimer = Timer(_infoAutoScrollInterval, () {
+      _startInfoAutoScroll();
     });
   }
 
@@ -323,40 +356,6 @@ class HomeController extends GetxController with RefreshableMixin, ApiMixin {
     _merchantAutoRotateEnabled = false;
     _resetMerchantBannerState();
     merchantCategoryIndex.value = index;
-  }
-
-  void _startInfoAutoScroll() {
-    _stopInfoAutoScroll();
-    final count = _home.value?.information.length ?? 0;
-    if (count <= 1) return;
-    _infoAutoScrollEnabled = true;
-    _infoAutoScrollTimer = Timer.periodic(_infoAutoScrollInterval, (_) {
-      if (!_infoAutoScrollEnabled) return;
-      final count = _home.value?.information.length ?? 0;
-      if (count <= 1) return;
-      informationCategoryIndex.value = (informationCategoryIndex.value + 1) % count;
-    });
-  }
-
-  void _stopInfoAutoScroll() {
-    _infoAutoScrollTimer?.cancel();
-    _infoAutoScrollTimer = null;
-  }
-
-  /// 用户滑动页面 → 永久停止资讯自动轮播
-  void stopInfoAutoScroll() {
-    if (!_infoAutoScrollEnabled) return;
-    _infoAutoScrollEnabled = false;
-    _stopInfoAutoScroll();
-  }
-
-  /// 手动点击资讯分类 → 暂停 5s 后恢复
-  void onInfoCategoryTap(int index) {
-    informationCategoryIndex.value = index;
-    _stopInfoAutoScroll();
-    _infoAutoScrollTimer = Timer(_infoAutoScrollInterval, () {
-      _startInfoAutoScroll();
-    });
   }
 
   @override

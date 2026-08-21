@@ -80,9 +80,16 @@ class GuideDetailController extends GetxController with ApiMixin {
   }
 
   onSendMessage() async {
-    final conversation = await TIMStore.to.createOrGetConversation(
-      userID: guideInfo!.userNumber,
-    );
+    if (!ChatStore.to.isReady) {
+      Loading.toast('聊天服務未就緒'.tr);
+      return;
+    }
+    final userNumber = guideInfo?.userNumber ?? '';
+    if (userNumber.isEmpty) {
+      AlertUtils.error('創建會話失敗'.tr);
+      return;
+    }
+    final conversation = await ChatStore.to.getOrCreateDirect(userNumber);
     if (conversation == null) {
       AlertUtils.error('創建會話失敗'.tr);
       return;

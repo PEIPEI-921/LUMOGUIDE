@@ -10,7 +10,6 @@ use App\Models\SystemIntegralConfig;
 use App\Models\SystemMessage;
 use Dcat\Admin\Form;
 use Dcat\Admin\Repositories\EloquentRepository;
-use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Support\Facades\DB;
 
 class Guide extends EloquentRepository
@@ -132,17 +131,7 @@ class Guide extends EloquentRepository
                 $city_name = City::query()->where('id', $res->city_id)->value('name_en');
                 $identity_str = \App\Models\GuideType::where('id', $res->identity_type)->value('name');
 
-                $nickname = "$res->name_en($city_name)-$identity_str";
-
-                // 更新腾讯云资料
-                $user_number = \App\Models\User::query()->where('id', $res->user_id)->value('number');
-                $account_body = [
-                    'Identifier' => $user_number,
-                    'Nick' => $nickname,
-                    'FaceUrl' => $res->photo,
-                ];
-                $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-                imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
+                // 认证通过后昵称由 LUMOGUIDE 后端展示，无需再同步 IM（LUMO-Chat 不存用户资料）
             }
 
             if (isset($attributes['audit_status']) && $attributes['audit_status'] == 2) {

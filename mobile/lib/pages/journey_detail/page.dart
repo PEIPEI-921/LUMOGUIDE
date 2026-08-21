@@ -107,7 +107,7 @@ class _HeaderCard extends StatelessWidget {
               color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12.w),
             ),
-            child: Text(work.effectiveStatus.label, style: TextStyle(
+            child: Text(work.effectiveStatus.label.tr, style: TextStyle(
               fontSize: 11.sp, color: statusColor, fontWeight: FontWeight.w500)),
           ),
         ]),
@@ -143,7 +143,7 @@ class _HeaderCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.sync, size: 12.sp, color: AppColors.jadeGreen),
             SizedBox(width: 4.w),
-            Text('来自预约同步', style: TextStyle(fontSize: 11.sp, color: AppColors.jadeGreen)),
+            Text('來自預約同步'.tr, style: TextStyle(fontSize: 11.sp, color: AppColors.jadeGreen)),
           ]),
         ],
       ]),
@@ -250,8 +250,8 @@ class _MergedDetailTab extends StatelessWidget {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.info_outline, size: 48.sp, color: AppColors.assistantText),
         SizedBox(height: 10.w),
-        Text('暂无详细信息', style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
-        Text('点击右上角编辑添加', style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
+        Text('暫無詳細信息'.tr, style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
+        Text('點擊右上角編輯添加'.tr, style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
       ]));
     }
 
@@ -360,9 +360,9 @@ class _ItineraryTab extends StatelessWidget {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.view_day_outlined, size: 48.sp, color: AppColors.assistantText),
         SizedBox(height: 10.w),
-        Text('暂无日行程', style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
+        Text('暫無日行程'.tr, style: TextStyle(fontSize: 14.sp, color: AppColors.assistantText)),
         SizedBox(height: 6.w),
-        Text('点击右上角编辑添加', style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
+        Text('點擊右上角編輯添加'.tr, style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
       ]));
     }
 
@@ -404,7 +404,7 @@ class _DayDetailCard extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(6.w),
             ),
-            child: Text('第${day.dayNumber}天', style: TextStyle(
+            child: Text('第@n天'.trParams({'n': '${day.dayNumber}'}), style: TextStyle(
               fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.primary)),
           ),
           SizedBox(width: 8.w),

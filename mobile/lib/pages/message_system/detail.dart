@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
@@ -13,24 +12,6 @@ class MessageSystemDetailPage extends StatefulWidget {
 }
 
 class _MessageSystemDetailPageState extends State<MessageSystemDetailPage> {
-  TapGestureRecognizer? _cityTapRecognizer;
-  TapGestureRecognizer? _detailTapRecognizer;
-
-  @override
-  void dispose() {
-    _cityTapRecognizer?.dispose();
-    _detailTapRecognizer?.dispose();
-    super.dispose();
-  }
-
-  void _onTapCityName() {
-    final model = widget.model;
-    final cityId = model.contentId;
-    if (cityId != null && cityId > 0 && model.contentType == 'city') {
-      Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': cityId});
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final model = widget.model;
@@ -60,22 +41,12 @@ class _MessageSystemDetailPageState extends State<MessageSystemDetailPage> {
               ),
             ],
           ),
-          5.w.verticalSpace,
-          // ---- 简要描述 ----
-          if (model.desc?.isNotEmpty == true)
-            Text(
-              model.desc ?? '',
-              style: TextStyle(
-                color: AppColors.secondaryText,
-                fontSize: 14.sp,
-              ),
-            ),
           Divider(
-            height: 20,
+            height: 24,
             thickness: 0.5,
             color: AppColors.primaryText.withValues(alpha: 0.1),
           ),
-          // ---- 正文内容（城市名高亮 + 可点击）----
+          // ---- 正文内容（城市/分类/内容解析为可点击按钮）----
           _buildContent(model),
         ],
       ).decorated(
@@ -85,149 +56,160 @@ class _MessageSystemDetailPageState extends State<MessageSystemDetailPage> {
     );
   }
 
-  /// 构建正文内容：城市名以 #666FFF 高亮显示，可点击跳转城市详情
+  /// 构建正文：把内容中的（城市）（分类）（内容）解析成可点击的按钮，
+  /// 去掉括号；会员到期消息在末尾附「前往會員中心」按钮。
   Widget _buildContent(MessageSystemModel model) {
-    final content = model.content;
-    final cityName = model.cityName;
-    final cityNameEn = model.cityNameEn;
-    final hasLinkedContent = model.hasLinkedContent;
-
-    // 拼接城市名展示文本：「首爾 (Seoul)」
-    final cityDisplay = _buildCityDisplay(cityName, cityNameEn);
-
-    // 基础样式
+    final content = model.content ?? '';
     const TextStyle baseStyle = TextStyle(
       fontSize: 14,
       color: Color(0xFF162539), // AppColors.primaryText
-      height: 1.5,
+      height: 1.6,
     );
 
-    const TextStyle cityStyle = TextStyle(
-      fontSize: 14,
-      color: Color(0xFF666FFF), // 主题紫色
-      height: 1.5,
-    );
-
-    // 内容富文本：如果包含城市名则高亮
-    List<InlineSpan> contentSpans = [];
-
-    if (cityName != null && cityName.isNotEmpty && content != null) {
-      // 在正文中定位城市名，拆分为前、城市名、后三段
-      _buildContentWithCity(content, cityName, cityDisplay, baseStyle,
-          cityStyle, contentSpans);
-    } else if (content?.isNotEmpty == true) {
-      // 无城市名信息，纯文本显示
-      contentSpans.add(TextSpan(text: content, style: baseStyle));
+    // 会员到期：纯文本 + 「前往會員中心」按钮
+    if (model.contentType == 'membership') {
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          Text(content, style: baseStyle),
+          _ActionChip(
+            label: '前往會員中心'.tr,
+            onTap: () => Get.toNamed(AppRoutes.MEMBER_CENTER),
+          ),
+        ],
+      );
     }
 
-    // 添加操作链接
-    // 当城市名已高亮可点击时（contentType == 'city'），不再重复显示链接
-    final showDetailLink = hasLinkedContent &&
-        !(cityName != null && cityName.isNotEmpty && model.contentType == 'city');
-    if (showDetailLink) {
-      if (contentSpans.isNotEmpty) {
-        contentSpans.add(const TextSpan(text: '  '));
+    // 解析（xxx）模式：第一个 = 城市，第二个 = 分类，第三个 = 内容名
+    final regex = RegExp(r'（([^（）]*)）');
+    final matches = regex.allMatches(content).toList();
+    if (matches.isEmpty) {
+      return Text(content, style: baseStyle);
+    }
+
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (var i = 0; i < matches.length; i++) {
+      final m = matches[i];
+      if (m.start > cursor) {
+        spans.add(TextSpan(
+          text: _stripParens(content.substring(cursor, m.start)),
+          style: baseStyle,
+        ));
       }
-      _detailTapRecognizer = TapGestureRecognizer()
-        ..onTap = () {
-          model.openLinkedContent();
-        };
-
-      // 會員到期 → 鏈接文字用「前往會員中心」；其他類型 → 「查看詳情」
-      final isMembership = model.contentType == 'membership';
-      final linkText = isMembership ? '前往會員中心'.tr : '查看詳情'.tr;
-
-      contentSpans.add(TextSpan(
-        text: linkText,
-        style: const TextStyle(
-          fontSize: 14,
-          color: Color(0xFF666FFF),
-          height: 1.5,
-        ),
-        recognizer: _detailTapRecognizer,
-      ));
-      contentSpans.add(const WidgetSpan(
-        child: Padding(
-          padding: EdgeInsets.only(left: 4),
-          child: Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF666FFF)),
-        ),
+      final label = m.group(1) ?? '';
+      if (label.isNotEmpty) {
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _buildChip(label, i, model),
+        ));
+      }
+      cursor = m.end;
+    }
+    if (cursor < content.length) {
+      spans.add(TextSpan(
+        text: _stripParens(content.substring(cursor)),
+        style: baseStyle,
       ));
     }
 
-    return Text.rich(
-      TextSpan(children: contentSpans),
+    return Text.rich(TextSpan(children: spans), style: baseStyle);
+  }
+
+  /// 解析出的括号内容 → 可点击按钮（城市/分类/内容名）
+  Widget _buildChip(String label, int index, MessageSystemModel model) {
+    VoidCallback? onTap;
+    // 第一个括号 = 城市名 → 城市详情
+    if (index == 0) {
+      final cityId = model.contentType == 'city'
+          ? model.contentId
+          : model.cityId;
+      if (cityId != null && cityId > 0) {
+        onTap = () =>
+            Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': cityId});
+      }
+    } else {
+      // 分类 / 内容名 → 内容详情（需 content_id + city_id + type_id）
+      final contentId = model.contentId;
+      final cityId = model.cityId;
+      final typeId = model.cityContentType;
+      if (model.contentType == 'city_content' &&
+          contentId != null &&
+          contentId > 0 &&
+          cityId != null &&
+          cityId > 0 &&
+          typeId != null &&
+          typeId > 0) {
+        onTap = () => Get.toNamed(AppRoutes.COMMON_DETAIL, arguments: {
+          'id': contentId,
+          'city_id': cityId,
+          'type_id': typeId,
+        });
+      }
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 2.w),
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.w),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7.r),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+          width: 0.6,
+        ),
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.primary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
-  /// 在正文中定位城市名，拆分为前/中/后三段构建 TextSpan
-  void _buildContentWithCity(
-    String content,
-    String cityName,
-    String cityDisplay,
-    TextStyle baseStyle,
-    TextStyle cityStyle,
-    List<InlineSpan> spans,
-  ) {
-    // 先尝试匹配「城市名 (英文名)」格式
-    final fullPattern = cityDisplay;
-    final fullIndex = content.indexOf(fullPattern);
-    if (fullIndex >= 0) {
-      // 前半部分
-      if (fullIndex > 0) {
-        spans.add(TextSpan(
-            text: content.substring(0, fullIndex), style: baseStyle));
-      }
-      // 城市名（高亮 + 可点击）
-      _addCitySpan(fullPattern, cityStyle, spans);
-      // 后半部分
-      if (fullIndex + fullPattern.length < content.length) {
-        spans.add(TextSpan(
-            text: content.substring(fullIndex + fullPattern.length),
-            style: baseStyle));
-      }
-      return;
-    }
+  /// 去掉文本中残留的（ ）字符
+  String _stripParens(String text) => text.replaceAll(RegExp(r'[（）]'), '');
+}
 
-    // 回退：仅匹配中文城市名
-    final cnIndex = content.indexOf(cityName);
-    if (cnIndex >= 0) {
-      if (cnIndex > 0) {
-        spans.add(
-            TextSpan(text: content.substring(0, cnIndex), style: baseStyle));
-      }
-      final displayText =
-          cityDisplay != cityName ? cityDisplay : cityName;
-      _addCitySpan(displayText, cityStyle, spans);
-      if (cnIndex + cityName.length < content.length) {
-        spans.add(TextSpan(
-            text: content.substring(cnIndex + cityName.length),
-            style: baseStyle));
-      }
-      return;
-    }
+/// 行动按钮（会员中心跳转等）
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({required this.label, required this.onTap});
 
-    // 完全匹配不到，纯文本
-    spans.add(TextSpan(text: content, style: baseStyle));
-  }
+  final String label;
+  final VoidCallback onTap;
 
-  /// 添加城市名 TextSpan（#666FFF 高亮 + 点击跳转城市详情）
-  void _addCitySpan(
-      String text, TextStyle cityStyle, List<InlineSpan> spans) {
-    _cityTapRecognizer = TapGestureRecognizer()
-      ..onTap = _onTapCityName;
-    spans.add(TextSpan(
-      text: text,
-      style: cityStyle,
-      recognizer: _cityTapRecognizer,
-    ));
-  }
-
-  /// 构建城市名展示文本：「首爾 (Seoul)」
-  String _buildCityDisplay(String? cityName, String? cityNameEn) {
-    if (cityName == null || cityName.isEmpty) return '';
-    if (cityNameEn != null && cityNameEn.isNotEmpty) {
-      return '$cityName ($cityNameEn)';
-    }
-    return cityName;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.w),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 13.sp, color: Colors.white),
+            ),
+            4.w.horizontalSpace,
+            Icon(Icons.arrow_forward_ios,
+                size: 11.sp, color: Colors.white),
+          ],
+        ),
+      ),
+    );
   }
 }

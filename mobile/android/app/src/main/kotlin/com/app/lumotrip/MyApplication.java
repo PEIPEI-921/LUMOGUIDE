@@ -1,8 +1,8 @@
 package com.app.lumotrip;
 
-import com.tencent.chat.flutter.push.tencent_cloud_chat_push.application.TencentCloudChatPushApplication;
+import android.app.Application;
 
-public class MyApplication extends TencentCloudChatPushApplication {
+public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();

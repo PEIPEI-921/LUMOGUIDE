@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_conversation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -40,22 +39,18 @@ class MessageItemWidget extends StatelessWidget {
     bool isChat = model.topFixed == MessageTopFixed.chat;
 
     int? unreadCount;
-    bool isMuted = false;
-    bool isPinned = false;
     bool isGroupConversation = false;
+    String location = '';
+    String badge = '';
+    ChatConversation? conversation;
     if (isChat && model.conversation != null) {
-      final conversation = model.conversation as V2TimConversation;
-      unreadCount = conversation.unreadCount;
-      isMuted = conversation.recvOpt != 0;
-      isPinned = conversation.isPinned == true;
-      isGroupConversation = conversation.type != 1; // 1=C2C 单聊, 2=群聊
-      if (conversation.type == 1) {
-        title = conversation.showName ?? conversation.userID ?? '--';
-        avatarUrl = conversation.faceUrl;
-      } else {
-        title = conversation.showName ?? conversation.groupID ?? '--';
-        avatarUrl = conversation.faceUrl;
-      }
+      conversation = model.conversation as ChatConversation;
+      unreadCount = ChatStore.to.unreadCount(conversation.id);
+      isGroupConversation = conversation.isGroup;
+      title = controller.conversationTitle(conversation);
+      avatarUrl = controller.conversationAvatar(conversation);
+      location = controller.conversationLocation(conversation);
+      badge = controller.conversationBadge(conversation);
     }
 
     Widget avatarWidget;
@@ -79,6 +74,26 @@ class MessageItemWidget extends StatelessWidget {
           ),
         ),
       );
+    } else if (isChat && conversation != null && !conversation.isGroup) {
+      // 单聊：对方名称首字头像
+      final name = controller.conversationTitle(conversation);
+      avatarWidget = Container(
+        width: 46.w,
+        height: 46.w,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(23.w),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          name.isNotEmpty ? name.characters.first : '?',
+          style: TextStyle(
+            fontSize: 18.sp,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
     } else {
       avatarWidget = _avatarPlaceholder(
         isGroup: isGroupConversation,
@@ -87,8 +102,7 @@ class MessageItemWidget extends StatelessWidget {
       );
     }
 
-    final showUnread =
-        isChat && !isMuted && unreadCount != null && unreadCount > 0;
+    final showUnread = isChat && unreadCount != null && unreadCount > 0;
     final count = unreadCount;
     final unreadLabel = showUnread && count != null
         ? (count > 99 ? '99+' : count.toString())
@@ -135,22 +149,22 @@ class MessageItemWidget extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                color: AppColors.primaryText,
-                              ),
-                            ).expanded(),
-                            if (isMuted)
-                              Padding(
-                                padding: EdgeInsets.only(right: 6.w),
-                                child: Icon(
-                                  Icons.notifications_off_outlined,
-                                  size: 16.w,
-                                  color: AppColors.assistantText,
+                            Flexible(
+                              child: Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: AppColors.primaryText,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                            ),
+                            if (badge.isNotEmpty) ...[
+                              6.w.horizontalSpace,
+                              IdentityBadge(label: badge),
+                            ],
+                            6.w.horizontalSpace,
                             Text(
                               model.time ?? '',
                               style: TextStyle(
@@ -160,6 +174,31 @@ class MessageItemWidget extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (location.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 1.w),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 12.w,
+                                  color: AppColors.assistantText,
+                                ),
+                                2.w.horizontalSpace,
+                                Flexible(
+                                  child: Text(
+                                    location,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: AppColors.assistantText,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         Text(
                           model.text ?? '',
                           style: TextStyle(
@@ -182,22 +221,20 @@ class MessageItemWidget extends StatelessWidget {
                     .expanded(),
               ],
             )
-            .padding(horizontal: 14.w)
+            .padding(horizontal: 14.w, vertical: 6.w)
             .gestures(
               onTap: () => controller.onTapTopFixed(model),
               behavior: HitTestBehavior.opaque,
             );
 
-    final needHighlight =
-        (isChat && isPinned) || model.topFixed != MessageTopFixed.chat;
+    final needHighlight = model.topFixed != MessageTopFixed.chat;
     final content = needHighlight
         ? Container(color: AppColors.backgroundBlue, child: rowContent)
         : rowContent;
 
-    if (isChat && model.conversation != null) {
-      final conversation = model.conversation as V2TimConversation;
+    if (isChat && conversation != null) {
       return Slidable(
-        key: ValueKey(conversation.conversationID),
+        key: ValueKey(conversation.id),
         endActionPane: ActionPane(
           extentRatio: 0.3,
           motion: const DrawerMotion(),

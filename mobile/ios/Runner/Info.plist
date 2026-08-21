@@ -13,6 +13,14 @@
 			<string>com.app.lumotrip</string>
 		</dict>
 	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- 本地开发联调用：允许访问局域网 HTTP（http://192.168.x.x:8001/3000）。上线前应收紧。 -->
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

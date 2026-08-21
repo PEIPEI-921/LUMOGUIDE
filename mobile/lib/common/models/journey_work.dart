@@ -1,11 +1,11 @@
 import '../extensions/map.dart';
 import 'journey_template.dart';
 
-/// 工作行程状态
+/// 工作行程状态（label 为 i18n key，展示时用 .tr 取对应语言）
 enum JourneyWorkStatus {
-  inProgress(1, '进行中'),
-  pending(2, '待出发'),
-  ended(3, '已结束');
+  inProgress(1, '進行中'),
+  pending(2, '待出發'),
+  ended(3, '已結束');
 
   const JourneyWorkStatus(this.value, this.label);
   final int value;

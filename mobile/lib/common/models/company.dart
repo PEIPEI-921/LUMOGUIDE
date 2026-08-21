@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../index.dart';
 
 class CompanyInfo {
@@ -15,6 +17,7 @@ class CompanyInfo {
   String? whatsApp;
   String? line;
   String? address;
+  String? picture;
   List<MerchantShop>? shop;
 
   String get fullName {
@@ -36,6 +39,7 @@ class CompanyInfo {
     this.website,
     this.otherContact,
     this.address,
+    this.picture,
     this.shop,
     this.wechat,
     this.whatsApp,
@@ -54,12 +58,36 @@ class CompanyInfo {
       phone: json.safeString('phone'),
       website: json.safeString('website'),
       otherContact: json.safeString('other_contact'),
+      picture: _firstPicture(json['picture']),
       shop: json.safeObjectList<MerchantShop>('shop', MerchantShop.fromJson),
       address: json.safeString('address'),
       wechat: json.safeString('wechat'),
       whatsApp: json.safeString('whats_app'),
       line: json.safeString('line'),
     );
+  }
+
+  /// 公司形象照可能是字符串或 JSON 数组，统一取第一张 URL
+  static String? _firstPicture(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      final v = value.trim();
+      if (v.startsWith('[')) {
+        try {
+          final list = jsonDecode(v);
+          if (list is List && list.isNotEmpty) return list.first.toString();
+        } catch (_) {}
+        return null;
+      }
+      return v.isEmpty ? null : v;
+    }
+    if (value is List) {
+      for (final item in value) {
+        if (item is String && item.isNotEmpty) return item;
+      }
+      return null;
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -74,6 +102,7 @@ class CompanyInfo {
       'phone': phone,
       'website': website,
       'other_contact': otherContact,
+      'picture': picture,
       'shop': shop?.map((e) => e.toJson()).toList(),
       'address': address,
       'wechat': wechat,

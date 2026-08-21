@@ -49,8 +49,9 @@ class _Content extends StatelessWidget {
         const _TopBar(),
         NotificationListener<ScrollUpdateNotification>(
           onNotification: (notification) {
-            // 用户手动拖拽滑动 → 停止资讯自动轮播
+            // 用户手动拖拽浏览内容 → 停止导游/资讯分类自动轮播
             if (notification.dragDetails != null) {
+              controller.stopGuideAutoScroll();
               controller.stopInfoAutoScroll();
             }
             return false;

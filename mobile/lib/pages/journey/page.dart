@@ -89,7 +89,7 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
                 borderRadius: BorderRadius.circular(2.w))),
         SizedBox(height: 14.w),
         Text(
-          '新建工作',
+          '新建工作'.tr,
           style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -99,8 +99,8 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
         // 选项列表
         _OptionRow(
           icon: Icons.edit_note,
-          title: '空白创建',
-          subtitle: '从头填写行程信息',
+          title: '空白創建'.tr,
+          subtitle: '從頭填寫行程信息'.tr,
           onTap: () {
             Get.back();
             controller.onAddWork();
@@ -108,8 +108,8 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
         ),
         _OptionRow(
           icon: Icons.bookmark_outline,
-          title: '从模板创建',
-          subtitle: '选择已有模板快速创建',
+          title: '從模板創建'.tr,
+          subtitle: '選擇已有模板快速創建'.tr,
           onTap: () async {
             Get.back();
             final template = await TemplatePickerSheet.show();
@@ -121,14 +121,14 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
         ),
         _OptionRow(
           icon: Icons.camera_alt_outlined,
-          title: '拍照导入',
-          subtitle: '拍摄或选择行程照片',
+          title: '拍照導入'.tr,
+          subtitle: '拍攝或選擇行程照片'.tr,
           onTap: () => _onPhotoImport(context, controller),
         ),
         _OptionRow(
           icon: Icons.upload_file_outlined,
-          title: '文件导入',
-          subtitle: '导入 txt/Word 行程文件',
+          title: '文件導入'.tr,
+          subtitle: '導入 txt/Word 行程文件'.tr,
           onTap: () => _onFileImport(controller),
         ),
         SizedBox(height: 8.w),
@@ -144,7 +144,7 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.w)),
               ),
-              child: Text('取消',
+              child: Text('取消'.tr,
                   style: TextStyle(
                       fontSize: 14.sp, color: AppColors.assistantText)),
             ),
@@ -157,7 +157,7 @@ void _showCreateOptions(BuildContext context, JourneyController controller) {
   );
 }
 
-/// 拍照导入：选择照片 → 手动输入行程文字 → 解析预览 → 填入编辑器
+/// 拍照導入：选择照片 → 手动输入行程文字 → 解析预览 → 填入编辑器
 Future<void> _onPhotoImport(BuildContext context, JourneyController controller) async {
   Get.back();
   final path = await ImagePickerUtil.selectImage(context, canEdit: false);
@@ -169,7 +169,7 @@ Future<void> _onPhotoImport(BuildContext context, JourneyController controller) 
   }
 }
 
-/// 文件导入：选择文件 → 读取文本 → 解析预览 → 填入编辑器
+/// 文件導入：选择文件 → 读取文本 → 解析预览 → 填入编辑器
 Future<void> _onFileImport(JourneyController controller) async {
   Get.back();
   final text = await ImportSheets.pickFileText();
@@ -249,7 +249,7 @@ class _SearchBar extends StatelessWidget {
     Container(height: 38.w, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(19.w)),
       child: TextField(controller: controller.searchCtrl,
         style: TextStyle(fontSize: 13.sp, color: AppColors.primaryText),
-        decoration: InputDecoration(hintText: '搜索工作', hintStyle: TextStyle(fontSize: 13.sp, color: AppColors.assistantText),
+        decoration: InputDecoration(hintText: '搜索工作'.tr, hintStyle: TextStyle(fontSize: 13.sp, color: AppColors.assistantText),
           contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.w), border: InputBorder.none))).expanded(),
     8.w.horizontalSpace,
     Container(width: 38.w, height: 38.w,
@@ -262,7 +262,7 @@ class _SearchBar extends StatelessWidget {
 class _StatusFilter extends StatelessWidget {
   const _StatusFilter({required this.controller});
   final JourneyController controller;
-  static const _items = [(0, '全部'), (1, '进行中'), (2, '待出发'), (3, '已结束')];
+  static const _items = [(0, '全部'), (1, '進行中'), (2, '待出發'), (3, '已結束')];
   @override
   Widget build(BuildContext context) => Obx(() => Row(children: _items.map((e) {
     final s = controller.statusFilter.value == e.$1;
@@ -272,7 +272,7 @@ class _StatusFilter extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.w),
         decoration: BoxDecoration(border: Border(bottom: BorderSide(
           color: s ? AppColors.primary : Colors.transparent, width: 2))),
-        child: Text(e.$2, style: TextStyle(fontSize: 13.sp,
+        child: Text(e.$2.tr, style: TextStyle(fontSize: 13.sp,
           color: s ? AppColors.primary : AppColors.secondaryText,
           fontWeight: s ? FontWeight.w600 : FontWeight.normal))));
   }).toList()));
@@ -419,7 +419,7 @@ class _JourneyCalendar extends StatelessWidget {
     if (works.isEmpty) return;
     final month = date.month;
     final day = date.day;
-    final wd = ['一', '二', '三', '四', '五', '六', '日'][date.weekday - 1];
+    final wd = _weekdayLabel(date.weekday);
 
     Get.bottomSheet(
       Container(
@@ -434,9 +434,14 @@ class _JourneyCalendar extends StatelessWidget {
           Container(width: 36.w, height: 4.w, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2.w))),
           SizedBox(height: 14.w),
           // 标题
-          Text('$month 月 $day 日 星期$wd', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700, color: AppColors.primaryText)),
+          Text('@m月@d日 星期@w'.trParams({
+            'm': '$month',
+            'd': '$day',
+            'w': wd,
+          }), style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700, color: AppColors.primaryText)),
           SizedBox(height: 4.w),
-          Text('共 ${works.length} 个工作', style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
+          Text('共@n個工作'.trParams({'n': '${works.length}'}),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText)),
           SizedBox(height: 14.w),
           // 工作列表
           Flexible(
@@ -472,13 +477,17 @@ class _JourneyCalendar extends StatelessWidget {
                           Row(children: [
                             Icon(Icons.calendar_today, size: 11.sp, color: AppColors.assistantText),
                             SizedBox(width: 4.w),
-                            Text('$sd → $ed  ${w.totalDays}天',
+                            Text('@a → @b  @n天'.trParams({
+                              'a': sd,
+                              'b': ed,
+                              'n': '${w.totalDays}',
+                            }),
                                 style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText)),
                             SizedBox(width: 10.w),
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.w),
                               decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(3.w)),
-                              child: Text(w.effectiveStatus.label,
+                              child: Text(w.effectiveStatus.label.tr,
                                   style: TextStyle(fontSize: 10.sp, color: color, fontWeight: FontWeight.w500)),
                             ),
                           ]),
@@ -514,7 +523,7 @@ class _DayCell extends StatelessWidget {
     required this.onTap,
   });
 
-  String get _wd => ['一', '二', '三', '四', '五', '六', '日'][date.weekday - 1];
+  String get _wd => _weekdayLabel(date.weekday);
   bool get _isPast => date.isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
   Color get _textColor => _isPast ? AppColors.assistantText : AppColors.primaryText;
 
@@ -584,8 +593,8 @@ class _StatusLegend extends StatelessWidget {
   Widget build(BuildContext context) => Obx(() {
     final hideEnded = !controller.showEnded.value;
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const _Leg(color: AppColors.jadeGreen, label: '进行中'), SizedBox(width: 20.w),
-      const _Leg(color: AppColors.primary, label: '即将开始'), SizedBox(width: 20.w),
+      const _Leg(color: AppColors.jadeGreen, label: '進行中'), SizedBox(width: 20.w),
+      const _Leg(color: AppColors.primary, label: '即將開始'), SizedBox(width: 20.w),
       GestureDetector(
         onTap: () => controller.toggleShowEnded(),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -597,7 +606,7 @@ class _StatusLegend extends StatelessWidget {
             ),
           ),
           5.w.horizontalSpace,
-          Text('已结束',
+          Text('已結束'.tr,
             style: TextStyle(
               fontSize: 11.sp,
               color: AppColors.secondaryText,
@@ -614,7 +623,7 @@ class _Leg extends StatelessWidget {
   const _Leg({required this.color, required this.label});
   @override Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
     Container(width: 10.w, height: 10.w, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2.w))),
-    5.w.horizontalSpace, Text(label, style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText))]);
+    5.w.horizontalSpace, Text(label.tr, style: TextStyle(fontSize: 11.sp, color: AppColors.secondaryText))]);
 }
 
 // =============== 工作卡片 ===============
@@ -623,7 +632,7 @@ class _WorkCard extends StatelessWidget {
   final JourneyWork work; final VoidCallback onTap;
   Color get _sc => work.effectiveStatus == JourneyWorkStatus.inProgress ? AppColors.jadeGreen
     : work.effectiveStatus == JourneyWorkStatus.pending ? AppColors.primary : AppColors.assistantText;
-  String get _sd { String s(String? d) => d != null && d.length >= 10 ? d.substring(5) : (d ?? ''); return '${s(work.startDate)} - ${s(work.endDate)}日'; }
+  String get _sd { String s(String? d) => d != null && d.length >= 10 ? d.substring(5) : (d ?? ''); return '@a - @b日'.trParams({'a': s(work.startDate), 'b': s(work.endDate)}); }
   @override Widget build(BuildContext context) {
     return GestureDetector(onTap: onTap,
       child: Opacity(opacity: work.effectiveStatus == JourneyWorkStatus.ended ? 0.45 : 1.0,
@@ -640,16 +649,16 @@ class _WorkCard extends StatelessWidget {
               Text(work.title ?? '', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700, color: AppColors.primaryText)).expanded(),
               Container(padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.w),
                 decoration: BoxDecoration(color: _sc.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10.w)),
-                child: Text(work.effectiveStatus.label, style: TextStyle(fontSize: 10.sp, color: _sc, fontWeight: FontWeight.w500))),
+                child: Text(work.effectiveStatus.label.tr, style: TextStyle(fontSize: 10.sp, color: _sc, fontWeight: FontWeight.w500))),
             ]),
             10.w.verticalSpace,
-            _Dr(Icons.people, '${work.peopleCount ?? 0}人'), 6.w.verticalSpace,
+            _Dr(Icons.people, '@n人'.trParams({'n': '${work.peopleCount ?? 0}'})), 6.w.verticalSpace,
             _Dr(Icons.calendar_today, _sd), 6.w.verticalSpace,
             if (work.cities.isNotEmpty) _Dr(Icons.location_on, work.cities.join('、')),
             if (work.isFromBooking) Padding(padding: EdgeInsets.only(top: 6.w),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.sync, size: 11.sp, color: AppColors.jadeGreen), 4.w.horizontalSpace,
-                Text('预约同步', style: TextStyle(fontSize: 10.sp, color: AppColors.jadeGreen))])),
+                Text('預約同步'.tr, style: TextStyle(fontSize: 10.sp, color: AppColors.jadeGreen))])),
             ]))));
   }
 }
@@ -662,5 +671,11 @@ class _Dr extends StatelessWidget {
 class _JourneyEmptyWidget extends StatelessWidget {
   @override Widget build(BuildContext context) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
     Image.asset(Assets.iconEmpty, height: 110.w), SizedBox(height: 18.w),
-    const Text('暂无工作行程', style: TextStyle(color: AppColors.assistantText, fontSize: 14, fontWeight: FontWeight.w500))]));
+    Text('暫無工作行程'.tr, style: const TextStyle(color: AppColors.assistantText, fontSize: 14, fontWeight: FontWeight.w500))]));
+}
+
+/// 星期短标签（i18n）：一/二/…/日（英文 Mon/Sun）
+String _weekdayLabel(int weekday) {
+  const keys = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+  return keys[weekday - 1].tr;
 }

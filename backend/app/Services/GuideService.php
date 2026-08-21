@@ -22,7 +22,6 @@ use App\Models\TripDay;
 use App\Models\User;
 use App\Enums\Trip as TripCode;
 use Carbon\Carbon;
-use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -211,7 +210,7 @@ class GuideService
                     'city_name' => $city->name
                 ]);
 
-                // 导游资料
+                // 导游资料（昵称由 LUMOGUIDE 后端展示，无需同步 IM）
                 $identity_str = $user->identity_str;
                 $user_number = $user->number;
                 $city_name = $city->name_en;
@@ -220,14 +219,6 @@ class GuideService
                 $guide_name = $guide_info->name_en ?: $guide_info->name;
 
                 $nickname = "$guide_name($city_name)-$identity_str";
-
-                // 更新腾讯云资料
-                $account_body = [
-                    'Identifier' => $user_number,
-                    'Nick' => $nickname,
-                ];
-                $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-                imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
             } else {
                 Guide::query()->where('id', $user->guide_id)->update([
                     'city_id' => 0,

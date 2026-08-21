@@ -53,7 +53,7 @@
 | 支付 | Stripe | VIP 订阅 |
 | Web 前端 | Vue 3 + Vue Router 4 | CDN 加载，同源 API |
 | 移动端 | Flutter | REST API 客户端 |
-| 即时通讯 | 腾讯 IM | 仅移动端 |
+| 即时通讯 | LUMO-Chat（IM-as-a-Service，NestJS） | REST + WebSocket，仅移动端 |
 
 ## 快速部署
 
@@ -81,7 +81,7 @@ cd lumo_guide
 cp .env.example .env
 php artisan key:generate
 php artisan jwt:secret
-# 编辑 .env 填入数据库密码、Stripe、邮件、AUDIT_EMAIL、IM 等密钥
+# 编辑 .env 填入数据库密码、Stripe、邮件、AUDIT_EMAIL、LUMO_CHAT_* 等密钥
 
 # 2. 安装依赖
 composer install --no-dev --optimize-autoloader

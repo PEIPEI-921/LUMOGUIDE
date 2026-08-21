@@ -10,8 +10,8 @@ import '../models/user.dart';
 import '../routers/names.dart';
 import '../services/deep_link.dart';
 import '../utils/loading.dart';
+import 'chat.dart';
 import 'storage.dart';
-import 't_im.dart';
 
 class UserStore extends GetxController with ApiMixin {
   static UserStore get to => Get.find();
@@ -74,11 +74,12 @@ class UserStore extends GetxController with ApiMixin {
       token = newToken;
       StorageStone.setToken(token);
       final userNumber = value['user_number'] as String? ?? '';
-      final userSig = value['user_sig'] as String? ?? '';
+      final lumoChatToken = value['lumo_chat_token'] as String? ?? '';
       StorageStone.setUserNumber(userNumber);
-      StorageStone.setUserSig(userSig);
-      if (userNumber.isNotEmpty && userSig.isNotEmpty) {
-        TIMStore.to.login(userNumber, userSig);
+      StorageStone.setLumoChatToken(lumoChatToken);
+      if (userNumber.isNotEmpty && lumoChatToken.isNotEmpty) {
+        // 初始化 LUMO-Chat：建立实时连接并拉取会话
+        ChatStore.to.init(token: lumoChatToken, userId: userNumber);
       }
       _isLogin.value = true;
       await getProfile();
@@ -111,7 +112,7 @@ class UserStore extends GetxController with ApiMixin {
     _profile.value = UserInfo();
     token = '';
     try {
-      await TIMStore.to.logout();
+      await ChatStore.to.logout();
     } catch (e) {
       log('UserStore: IM 登出失敗: $e', name: 'UserStore');
     }

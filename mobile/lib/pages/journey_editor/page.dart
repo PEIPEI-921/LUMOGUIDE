@@ -16,7 +16,7 @@ class JourneyEditorPage extends StatelessWidget {
     });
 
     return IScaffold(
-      title: ctrl.isEdit.value ? '编辑行程' : '新建工作',
+      title: ctrl.isEdit.value ? '編輯行程'.tr : '新建工作',
       backgroundImage: const AssetImage(Assets.bgMine),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(14.w),
@@ -74,7 +74,7 @@ class _QuickCreateCard extends StatelessWidget {
         Row(children: [
           Icon(Icons.edit_note, size: 18.sp, color: AppColors.primary),
           SizedBox(width: 6.w),
-          Text('快速创建', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
+          Text('快速創建'.tr, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: AppColors.primaryText)),
         ]),
         SizedBox(height: 12.w),
         // 团名（自动生成，可手动编辑）
@@ -82,7 +82,7 @@ class _QuickCreateCard extends StatelessWidget {
         if (!ctrl.isEdit.value)
           Padding(
             padding: EdgeInsets.only(top: 4.w, left: 23.w),
-            child: Text('选择起止城市和日期后自动生成',
+            child: Text('選擇起止城市和日期後自動生成'.tr,
                 style: TextStyle(fontSize: 10.sp, color: AppColors.assistantText)),
           ),
         SizedBox(height: 10.w),
@@ -124,7 +124,7 @@ class _QuickCreateCard extends StatelessWidget {
                   final s = ctrl.startDateCtrl.text;
                   final e = ctrl.endDateCtrl.text;
                   if (s.isEmpty && e.isEmpty) {
-                    return Text('选择出发和结束日期',
+                    return Text('選擇出發和結束日期'.tr,
                         style: TextStyle(fontSize: 13.sp, color: AppColors.assistantText));
                   }
                   return Row(children: [
@@ -146,7 +146,7 @@ class _QuickCreateCard extends StatelessWidget {
                           color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(4.w),
                         ),
-                        child: Text('共$days天',
+                        child: Text('共@n天'.trParams({'n': '$days'}),
                             style: TextStyle(fontSize: 11.sp, color: AppColors.primary, fontWeight: FontWeight.w600)),
                       ),
                     ],
@@ -166,7 +166,7 @@ class _QuickCreateCard extends StatelessWidget {
           Text('+', style: TextStyle(color: AppColors.assistantText, fontSize: 13.sp)),
           SizedBox(width: 4.w),
           SizedBox(width: 55.w, child: _MiniField('儿童', ctrl.childCountCtrl)),
-          Obx(() => Text(' = ${ctrl.totalPeople.value}人',
+          Obx(() => Text('= @n人'.trParams({'n': '${ctrl.totalPeople.value}'}),
               style: TextStyle(fontSize: 13.sp, color: AppColors.primary, fontWeight: FontWeight.w600))),
         ]),
         if (!ctrl.isEdit.value) ...[
@@ -174,7 +174,7 @@ class _QuickCreateCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.lightbulb_outline, size: 13.sp, color: AppColors.assistantText),
             SizedBox(width: 4.w),
-            Text('创建后可逐步补全详细信息', style: TextStyle(fontSize: 11.sp, color: AppColors.assistantText)),
+            Text('創建後可逐步補全詳細信息'.tr, style: TextStyle(fontSize: 11.sp, color: AppColors.assistantText)),
           ]),
         ],
       ]),
@@ -281,7 +281,7 @@ class _FlightSection extends StatelessWidget {
             child: Row(children: [
               Icon(Icons.flight, size: 17.sp, color: ctrl.showFlight.value ? AppColors.primary : AppColors.secondaryText),
               SizedBox(width: 8.w),
-              Text('大交通', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
+              Text('大交通'.tr, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
                 color: ctrl.showFlight.value ? AppColors.primary : AppColors.primaryText)),
               const Spacer(),
               SizedBox(
@@ -303,7 +303,7 @@ class _FlightSection extends StatelessWidget {
             Row(children: [
               Icon(Icons.flight, size: 13.sp, color: AppColors.jadeGreen),
               SizedBox(width: 6.w),
-              Text('到达', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.jadeGreen)),
+              Text('到達'.tr, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.jadeGreen)),
             ]),
             SizedBox(height: 6.w),
             _InField('航班号', ctrl.arrFlightCtrl),
@@ -319,7 +319,7 @@ class _FlightSection extends StatelessWidget {
             Row(children: [
               Icon(Icons.flight_land, size: 13.sp, color: AppColors.assistantText),
               SizedBox(width: 6.w),
-              Text('离开', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.assistantText)),
+              Text('離開'.tr, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: AppColors.assistantText)),
             ]),
             SizedBox(height: 6.w),
             _InField('航班号', ctrl.depFlightCtrl),
@@ -360,10 +360,10 @@ class _ItinerarySection extends StatelessWidget {
               Icon(Icons.view_day_outlined, size: 17.sp,
                 color: ctrl.showItinerary.value ? AppColors.primary : AppColors.secondaryText),
               SizedBox(width: 8.w),
-              Text('每日行程', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
+              Text('每日行程'.tr, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500,
                 color: ctrl.showItinerary.value ? AppColors.primary : AppColors.primaryText)),
               const Spacer(),
-              Obx(() => Text('${ctrl.itineraryDays.length}天',
+              Obx(() => Text('@n天'.trParams({'n': '${ctrl.itineraryDays.length}'}),
                 style: TextStyle(fontSize: 11.sp, color: AppColors.assistantText))),
               SizedBox(width: 4.w),
               Icon(ctrl.showItinerary.value ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -484,7 +484,7 @@ class _CityBlockSectionState extends State<_CityBlockSection> {
           child: Row(children: [
             Icon(Icons.add, size: 15.sp, color: AppColors.primary),
             SizedBox(width: 4.w),
-            Text('添加活动', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
+            Text('添加活動'.tr, style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
           ]),
         ),
         // ---- 城市推荐 ----
@@ -506,7 +506,7 @@ class _CityBlockSectionState extends State<_CityBlockSection> {
             Row(children: [
               Icon(Icons.auto_awesome_outlined, size: 11.sp, color: AppColors.primary),
               SizedBox(width: 4.w),
-              Text('${block.cityName ?? ''}推荐',
+              Text('@city推薦'.trParams({'city': block.cityName ?? ''}),
                 style: TextStyle(fontSize: 10.sp, color: AppColors.primary, fontWeight: FontWeight.w500)),
             ]),
           ];
@@ -601,7 +601,7 @@ class _DayCardState extends State<_DayCard> {
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4.w),
             ),
-            child: Text('第${day.dayNumber}天', style: TextStyle(
+            child: Text('第@n天'.trParams({'n': '${day.dayNumber}'}), style: TextStyle(
               fontSize: 11.sp, fontWeight: FontWeight.w600, color: AppColors.primary)),
           ),
           SizedBox(width: 6.w),
@@ -636,7 +636,7 @@ class _DayCardState extends State<_DayCard> {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.add_location_outlined, size: 14.sp, color: AppColors.primary),
                 SizedBox(width: 4.w),
-                Text('添加城市', style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
+                Text('添加城市'.tr, style: TextStyle(fontSize: 11.sp, color: AppColors.primary)),
               ]),
             ),
           ),
@@ -847,7 +847,7 @@ class _SubmitRow extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.bookmark_outline, size: 16.sp, color: AppColors.primary),
           SizedBox(width: 6.w),
-          Text('保存为模板', style: TextStyle(fontSize: 14.sp, color: AppColors.primary)),
+          Text('保存為模板'.tr, style: TextStyle(fontSize: 14.sp, color: AppColors.primary)),
         ]),
       ),
     ),
@@ -862,7 +862,7 @@ class _SubmitRow extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.delete_outline, size: 16.sp, color: Colors.red.shade400),
             SizedBox(width: 6.w),
-            Text('删除此工作', style: TextStyle(fontSize: 14.sp, color: Colors.red.shade400)),
+            Text('刪除此工作'.tr, style: TextStyle(fontSize: 14.sp, color: Colors.red.shade400)),
           ]),
         ),
       ),

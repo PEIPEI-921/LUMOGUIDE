@@ -74,7 +74,7 @@ No code generation (build_runner, json_serializable) is used — models are hand
 ### Stack
 - **State management / DI / Routing**: GetX (`get: ^4.6.6`)
 - **HTTP**: Dio (`dio: ^5.4.3`) — singleton `ApiProvider` + `ApiMixin` convenience mixin
-- **IM / Push**: Tencent Cloud Chat (`tencent_cloud_chat_uikit`, `tencent_cloud_chat_push`)
+- **IM**: LUMO-Chat（IM-as-a-Service）— `socket_io_client` WebSocket + REST（`ChatStore`，见下）
 - **Payments**: Stripe (`flutter_stripe`)
 - **Screen adaptation**: flutter_screenutil (design size 375×834)
 - **Local storage**: shared_preferences
@@ -125,7 +125,7 @@ Every page follows a strict 3-file pattern:
 ### State management
 
 - **Services** (`GetxService`): long-lived singletons initialized in `Global.init()` — `StorageService`, `ConfigService`, `ImageCacheService`, `LocalizationService`, `StripeService`.
-- **Stores** (`GetxController`): reactive state holders — `UserStore` (auth, profile), `TIMStore` (IM login, conversations, friends), `CityListStore`, `CityHistoryStore`.
+- **Stores** (`GetxController`): reactive state holders — `UserStore` (auth, profile), `ChatStore` (LUMO-Chat: 会话/消息/群组/未读), `CityListStore`, `CityHistoryStore`.
 - **Page controllers** (`GetxController`): per-page logic and state, disposed when page is popped.
 
 ### Root navigation
@@ -332,9 +332,16 @@ See [[calendar-redesign]], [[booking-color-coding]].
 3. **Page blank for 2-3 seconds:** `fetchData()` waited for API timeout before fallback. Fixed: mock data renders immediately, API request runs in background.
 4. ~~**Calendar month switching not working:**~~ **Obsolete (2026-07-27).** `TableCalendar` removed entirely. Replaced with custom 5×6 grid calendar (`_JourneyCalendar` StatelessWidget + Obx).
 
-### IM (Tencent Cloud Chat)
+### IM (LUMO-Chat，2026 替换腾讯云 IM)
 
-`TIMStore` manages the IM SDK lifecycle: init → login with userSig → register push → maintain conversation/friend lists. SDK App ID: `1600121769`. User credentials (`userNumber`, `userSig`) come from the login API response and are stored in shared_preferences. On `onKickedOffline` or `onUserSigExpired`, the user is force-logged-out.
+`ChatStore`（`lib/common/stores/chat.dart`）管理 LUMO-Chat（IM-as-a-Service，NestJS）客户端：
+- **REST**：`GET /api/v1/conversations`、`POST /api/v1/conversations/direct`、`GET /api/v1/conversations/:id/messages`、群组管理 `POST/DELETE /api/v1/groups...`（Bearer token）
+- **WebSocket**：`/ws` namespace（`send_message` / `new_message` / `server_ack` / `mark_read` / `typing` / `message_recalled` / `message_edited`），`socket_io_client` 实现
+- 服务地址 `ApiUrl.lumoChatBaseUrl`（默认 `http://localhost:3000`，生产改为部署域名）
+- 登录响应 `lumo_chat_token`（后端用 `LUMO_CHAT_APP_ID/SECRET` 换取，3600s 有效）存 `StorageStone.lumoChatToken`，冷启动自动重连
+- 聊天页 `lib/pages/chat/` 为自实现 UI（文本/图片气泡 + 输入栏 + 撤回 + 输入状态），不再依赖 TIM UIKit
+- 未读数由客户端本地累计（LUMO-Chat 不返回 unread count）
+- 协议文档：LUMO-Chat 仓库 `docs/API.md`
 
 ### System Messages（系統消息 / 系统消息，2026-07-27）
 
@@ -506,9 +513,9 @@ See [[calendar-redesign]], [[booking-color-coding]].
 
 `docs/testflight-deploy-with-claude.md` — 配合 Claude Code 使用的 TestFlight 上传教程，供同事的 Claude Code 逐步骤引导操作。
 
-## Patched dependencies
+## Patched dependencies（已废弃，2026 随 Tencent IM 移除）
 
-`patched_packages/extended_text_field/` is a locally patched copy of `extended_text_field` 16.0.2, loaded via `dependency_overrides` in pubspec.yaml. 
+> `patched_packages/` 与 `plugins/` 已随腾讯云 IM 替换为 LUMO-Chat 一并删除（`extended_text_field` / `tencent_cloud_chat_uikit` 不再需要）。 
 
 **Why:** Flutter 3.44 removed `ExtendSelectionByPageIntent` from the services package. `extended_text_field` (a transitive dependency of `tencent_cloud_chat_uikit`) references this class in `editable_text.dart`, causing compile errors on all platforms. The patch removes the `_extendSelectionByPage` method and its action binding.
 

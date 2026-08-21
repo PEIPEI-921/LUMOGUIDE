@@ -12,7 +12,6 @@ use App\Models\SystemIntegralConfig;
 use App\Models\SystemMessage;
 use Dcat\Admin\Form;
 use Dcat\Admin\Repositories\EloquentRepository;
-use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Support\Facades\DB;
 
 class Company extends EloquentRepository
@@ -101,21 +100,7 @@ class Company extends EloquentRepository
 
             $res->save();
 
-            // 更新腾讯云资料
-            if (isset($attributes['audit_status']) && $attributes['audit_status'] == 1) {
-                $user = \App\Models\User::where('id', $res->user_id)->first(['identity_str', 'number']);
-                $city_name = City::query()->where('id', $res->city_id)->value('name_en');
-
-                $identity_str = $user->identity_str;
-                $nickname = "$res->name_en($city_name)-$identity_str";
-
-                $account_body = [
-                    'Identifier' => $user->number,
-                    'Nick' => $nickname,
-                ];
-                $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-                imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
-            }
+            // 认证通过后昵称由 LUMOGUIDE 后端展示，无需再同步 IM（LUMO-Chat 不存用户资料）
 
             if (isset($attributes['audit_status']) && $attributes['audit_status'] == 2) {
                 SystemMessage::saveData($res->user_id, '企業認證', '企業認證失败', "很抱歉,您提交的資料沒有通過,原因是:{$attributes['audit_feedback']},請重新填寫資料");

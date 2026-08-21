@@ -6,7 +6,7 @@ const String STORAGE_LANGUAGE_CODE_KEY = 'language_code';
 
 const String STORAGE_TOKEN_KEY = 'token';
 const String STORAGE_USER_NUMBER_KEY = 'user_number';
-const String STORAGE_USER_SIG_KEY = 'user_sig';
+const String STORAGE_LUMO_CHAT_TOKEN_KEY = 'lumo_chat_token';
 const String STORAGE_EXPIRE_TIME_KEY = 'expire_time';
 const String STORAGE_USER_INFO_KEY = 'user_info';
 

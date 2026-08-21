@@ -106,9 +106,16 @@ class CommonDetailController extends GetxController with ApiMixin {
   }
 
   void sendMessage() async {
-    final conversation = await TIMStore.to.createOrGetConversation(
-      userID: merchantInfo.userNumber,
-    );
+    if (!ChatStore.to.isReady) {
+      Loading.toast('聊天服務未就緒'.tr);
+      return;
+    }
+    final userNumber = merchantInfo.userNumber ?? '';
+    if (userNumber.isEmpty) {
+      AlertUtils.error('創建會話失敗'.tr);
+      return;
+    }
+    final conversation = await ChatStore.to.getOrCreateDirect(userNumber);
     if (conversation == null) {
       AlertUtils.error('創建會話失敗'.tr);
       return;

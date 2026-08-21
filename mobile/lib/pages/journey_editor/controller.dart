@@ -976,7 +976,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
           SizedBox(width: 8.w),
           Text('发现未完成的行程', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
         ]),
-        content: Text('上次编辑的行程还未完成，是否继续编辑？',
+        content: Text('上次編輯的行程還未完成，是否繼續編輯？'.tr,
             style: TextStyle(fontSize: 13.sp, color: AppColors.secondaryText)),
         actions: [
           TextButton(
@@ -984,7 +984,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
               _clearDraft();
               Get.back();
             },
-            child: Text('重新开始', style: TextStyle(fontSize: 13.sp, color: AppColors.assistantText)),
+            child: Text('重新開始'.tr, style: TextStyle(fontSize: 13.sp, color: AppColors.assistantText)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -996,7 +996,7 @@ class JourneyEditorController extends GetxController with ApiMixin {
               _draftRestored = true;
               Get.back();
             },
-            child: Text('继续编辑', style: TextStyle(fontSize: 13.sp, color: Colors.white)),
+            child: Text('繼續編輯'.tr, style: TextStyle(fontSize: 13.sp, color: Colors.white)),
           ),
         ],
       ),

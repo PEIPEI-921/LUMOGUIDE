@@ -39,7 +39,7 @@ class MessagePage extends StatelessWidget {
                         model: controller.topFixedList[index],
                       ),
                       itemCount: controller.topFixedList.length,
-                      itemExtent: 73.w,
+                      itemExtent: 90.w,
                     ).decorated(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8.w),

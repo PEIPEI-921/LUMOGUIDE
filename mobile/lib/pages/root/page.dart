@@ -29,8 +29,8 @@ class RootPage extends StatelessWidget {
   Widget _buildBottomNavigationBar() {
     final controller = Get.find<RootController>();
     return Obx(() {
-      final imUnread = Get.isRegistered<TIMStore>()
-          ? TIMStore.to.totalUnreadCount.value
+      final imUnread = Get.isRegistered<ChatStore>()
+          ? ChatStore.to.totalUnreadCount.value
           : 0;
       int businessUnread = 0;
       if (Get.isRegistered<MessageController>()) {

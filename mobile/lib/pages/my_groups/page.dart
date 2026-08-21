@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_group_info.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'controller.dart';
 
@@ -27,7 +25,7 @@ class MyGroupsPage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final group = controller.groupList[index];
                   return _GroupItem(
-                    groupInfo: group,
+                    group: group,
                     onTap: () => controller.onTapGroup(group),
                   );
                 },
@@ -38,38 +36,18 @@ class MyGroupsPage extends StatelessWidget {
 }
 
 class _GroupItem extends StatelessWidget {
-  const _GroupItem({required this.groupInfo, required this.onTap});
+  const _GroupItem({required this.group, required this.onTap});
 
-  final V2TimGroupInfo groupInfo;
+  final ChatConversation group;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final name = groupInfo.groupName?.isNotEmpty == true
-        ? groupInfo.groupName!
-        : groupInfo.groupID;
-    final faceUrl = groupInfo.faceUrl;
-
-    Widget avatar;
-    if (faceUrl != null && faceUrl.isNotEmpty) {
-      avatar = ClipRRect(
-        borderRadius: BorderRadius.circular(20.w),
-        child: CachedNetworkImage(
-          imageUrl: faceUrl,
-          width: 40.w,
-          height: 40.w,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => _placeholderAvatar(),
-          errorWidget: (_, __, ___) => _placeholderAvatar(),
-        ),
-      );
-    } else {
-      avatar = _placeholderAvatar();
-    }
+    final name = (group.title?.isNotEmpty ?? false) ? group.title! : '群聊'.tr;
 
     return Row(
           children: [
-            avatar,
+            _placeholderAvatar(),
             10.w.horizontalSpace,
             Expanded(
               child: Column(

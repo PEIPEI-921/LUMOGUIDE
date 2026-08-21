@@ -10,10 +10,10 @@
         "dcat/laravel-admin": "2.*",
         "endroid/qr-code": "^4.8",
         "guzzlehttp/guzzle": "^7.2",
-        "hedeqiang/ten-im": "^2.0",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
+        "predis/predis": "^3.6",
         "stripe/stripe-php": "^18.0",
         "tymon/jwt-auth": "^2.2"
     },

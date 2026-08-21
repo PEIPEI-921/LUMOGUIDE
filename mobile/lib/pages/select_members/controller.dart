@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_group_member.dart';
-import 'package:tencent_cloud_chat_sdk/enum/group_member_role_enum.dart';
 
 import 'purpose.dart';
 
@@ -47,7 +45,7 @@ class SelectMembersController extends GetxController
     if (_purpose == SelectMembersPurpose.addToGroup &&
         _excludedUserIDs.isNotEmpty) {
       list = list
-          .where((u) => !_excludedUserIDs.contains(u.userId.toString()))
+          .where((u) => !_excludedUserIDs.contains(u.userNumber.toString()))
           .toList();
     }
     if (keyword.isEmpty) return list;
@@ -89,8 +87,8 @@ class SelectMembersController extends GetxController
   }
 
   Future<void> _loadExcludedUserIDs() async {
-    final ids = await TIMStore.to.getGroupMemberUserIDs(_groupID!);
-    _excludedUserIDs.assignAll(ids.toList());
+    final members = await ChatStore.to.getGroupMembers(_groupID!);
+    _excludedUserIDs.assignAll(members.map((m) => m.userId));
   }
 
   @override
@@ -118,7 +116,6 @@ class SelectMembersController extends GetxController
         .toList();
     endLoad(users);
   }
-
 
   void toggleSelect(FollowUser user) {
     if (isSelected(user)) {
@@ -173,7 +170,7 @@ class SelectMembersController extends GetxController
     Loading.show();
     final userList = selected.map((e) => e.userNumber ?? '').toList();
     if (userList.isEmpty) return;
-    final ok = await TIMStore.to.inviteUserToGroup(_groupID!, userList);
+    final ok = await ChatStore.to.addGroupMembers(_groupID!, userList);
     Loading.dismiss();
     if (ok) {
       Loading.success('添加成功'.tr);
@@ -186,23 +183,17 @@ class SelectMembersController extends GetxController
   onCreateGroup() async {
     Loading.show();
     final groupName = _defaultGroupName();
-    final memberList = selected
-        .map(
-          (e) => V2TimGroupMember(
-            userID: e.userNumber ?? '',
-            role: GroupMemberRoleTypeEnum.V2TIM_GROUP_MEMBER_ROLE_MEMBER,
-          ),
-        )
-        .toList();
-    final groupID = await TIMStore.to.createGroup(groupName, memberList);
+    final userNumbers = selected.map((e) => e.userNumber ?? '').toList();
+    final groupID = await ChatStore.to.createGroup(groupName, userNumbers);
     Loading.dismiss();
     if (groupID.isEmpty) {
       Loading.error('创建群组失败'.tr);
       return;
     }
-    final conversation = await TIMStore.to.createOrGetConversation(
-      groupID: groupID,
+    final conversation = await ChatStore.to.getConversation(groupID);
+    Get.offNamed(
+      AppRoutes.CHAT,
+      arguments: {'conversation': conversation ?? ChatConversation(id: groupID, type: 'GROUP', title: groupName)},
     );
-    Get.offNamed(AppRoutes.CHAT, arguments: {'conversation': conversation});
   }
 }

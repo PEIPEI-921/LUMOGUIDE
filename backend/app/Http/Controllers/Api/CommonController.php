@@ -17,7 +17,6 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Cache;
 use App\Services\CommonService;
-use Hedeqiang\TenIM\Facades\IM;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -32,66 +31,8 @@ class CommonController extends BaseController
 
     public function test()
     {
-        // dd(1);
+        // 调试接口：原腾讯云 IM 资料同步逻辑已随 LUMO-Chat 替换移除
         $data = User::query()->where('id', '>', 1)->get()->toArray();
-        // dd($data);
-
-        foreach ($data as $k => $v) {
-            if ($v['im_login'] == 0) {
-                $account_body = [
-                    'Identifier' => $v['number'],
-                    'Nick' => $v['nickname'],
-                    'FaceUrl' => $v['avatar'],
-                ];
-                $im_res = IM::im()->send('im_open_login_svc', 'account_import', $account_body);
-                imApiLog('im_open_login_svc', 'account_import', $account_body, $im_res);
-
-                User::query()->where('id', $v['id'])->update(['im_login' => 1]);
-            } else {
-                $nickname = $v['nickname'];
-                $avatar = $v['avatar'];
-                $city_id = 0;
-                $identity_str = $v['identity_str'];
-
-                if ($v['identity'] == 2) {
-                    $guide = Guide::query()->where('id', $v['guide_id'])->first(['name', 'name_en', 'photo', 'city_id']);
-                    $nickname = $guide->name;
-                    if ($guide->name_en) {
-                        $nickname = $guide->name_en;
-                    }
-                    $avatar = $guide->photo;
-                    $city_id = $guide->city_id;
-                }
-                if ($v['identity'] == 3) {
-                    $company = Company::query()->where('id', $v['company_id'])->first(['name', 'city_id']);
-                    $nickname = $company->name;
-                    $city_id = $company->city_id;
-                }
-
-                if ($city_id > 0) {
-                    $city_name = City::query()->where('id', $city_id)->value('name_en');
-                    $nickname = $nickname . "($city_name)";
-                }
-                if($identity_str){
-                    $nickname = $nickname . "-$identity_str";
-                }
-
-
-                // 修改资料
-                $profile_body = [
-                    "From_Account" => $v['number'],
-                    "ProfileItem" => [
-                        ['Tag' => 'Tag_Profile_IM_Nick', 'Value' => $nickname],
-                        ['Tag' => 'Tag_Profile_IM_Image', 'Value' => $avatar]
-                    ]
-                ];
-
-                // dd($profile_body);
-
-                $profile_res = IM::im()->send('profile', 'portrait_set', $profile_body);
-                imApiLog('profile', 'portrait_set', $profile_body, $profile_res);
-            }
-        }
 
         dd($data);
 

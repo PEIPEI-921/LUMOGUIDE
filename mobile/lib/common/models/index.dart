@@ -30,3 +30,4 @@ export 'search.dart';
 export 'member_info.dart';
 export 'journey_work.dart';
 export 'journey_template.dart';
+export 'chat.dart';

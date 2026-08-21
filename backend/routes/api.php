@@ -74,6 +74,8 @@ Route::prefix('payment')->group(function () {
 Route::middleware('auth:api')->prefix('user')->group(function () {
     Route::get('loginRecord', [UserController::class, 'loginRecord']);
     Route::get('numberInfo', [UserController::class, 'numberInfo']);
+    // 刷新 LUMO-Chat access_token（过期后客户端重新换取，避免聊天功能失效）
+    Route::get('refreshChatToken', [UserController::class, 'refreshChatToken']);
     Route::get('index', [UserController::class, 'index']);
     Route::post('editInfo', [UserController::class, 'editInfo']);
     Route::post('delAccount', [UserController::class, 'delAccount']);

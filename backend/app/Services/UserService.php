@@ -73,11 +73,29 @@ class UserService
         $guide_info = [];
         if ($user->guide_id > 0) {
             $guide_info = Guide::find($user->guide_id);
+            // 附加认证身份类型名称（如 Local guide / Driver guide），供聊天列表展示
+            if ($guide_info) {
+                $guide_info->identity_type_name = \App\Models\GuideType::where('id', $guide_info->identity_type)->value('name') ?? '';
+            }
         }
 
         $company_info = [];
         if ($user->company_id > 0) {
             $company_info = Company::find($user->company_id);
+        }
+
+        // 对方所在城市 → 国家 / 大洲 / 地區（聊天列表与聊天页展示）
+        $city_country = '';
+        $city_continent = '';
+        $city_area = '';
+        $city_id = (int)($guide_info->city_id ?? $company_info->city_id ?? 0);
+        if ($city_id > 0) {
+            $city = City::find($city_id);
+            if ($city) {
+                $city_country = $city->country ? $city->country->name : '';
+                $city_continent = $city->continents ? $city->continents->name : '';
+                $city_area = $city->area ? $city->area->name : '';
+            }
         }
 
         return [
@@ -86,6 +104,11 @@ class UserService
             'guide_info' => $guide_info,
             'company_id' => $user->company_id,
             'company_info' => $company_info,
+            'nickname' => $user->nickname,
+            'avatar' => $user->avatar,
+            'city_country' => $city_country,
+            'city_continent' => $city_continent,
+            'city_area' => $city_area,
         ];
     }
 
@@ -127,7 +150,7 @@ class UserService
 
         $company = (object)[];
         if ($user->company_id > 0) {
-            $company = Company::query()->where('id', $user->company_id)->first(['id', 'name', 'city_name', 'business_type'])->toArray();
+            $company = Company::query()->where('id', $user->company_id)->first(['id', 'name', 'name_en', 'city_name', 'business_type', 'picture'])->toArray();
             $fan_count = UserFollowShop::query()->where('followed_user_id', $user->id)->count();
 
             $reserve_count = Reserve::query()->where('company_id', $user->company_id)->where('is_read', 0)->count();

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:lumotrip/common/index.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_conversation.dart';
 
 import '../index.dart';
 
@@ -15,8 +14,14 @@ class MessageController extends GetxController
   /// 是否已加入至少一个群组（供「我的群聊」入口是否显示）
   final hasJoinedGroups = false.obs;
 
+  /// 单聊对方资料缓存（peer user_id -> 认证名称/头像/城市）
+  final _peerInfos = <String, PeerChatInfo>{}.obs;
+  Map<String, PeerChatInfo> get peerInfos => _peerInfos;
+
   Timer? _messageListPollTimer;
   static const Duration _messageListPollInterval = Duration(seconds: 30);
+
+  StreamSubscription? _chatStreamSub;
 
   List<MessageTopFixedModel> get topFixedList {
     final List<MessageTopFixedModel> messages = [];
@@ -61,44 +66,17 @@ class MessageController extends GetxController
       }
     }
 
-    if (TIMStore.to.isIMLoginReady) {
-      for (final conversation in TIMStore.to.conversationList) {
-        final lastMessage = conversation.lastMessage;
-        String? text;
-        if (lastMessage != null) {
-          if (lastMessage.textElem != null) {
-            text = lastMessage.textElem?.text;
-            if (text != null && text.contains('[TUIEmoji_')) {
-              text = '[${'表情'.tr}]';
-            }
-          } else if (lastMessage.customElem != null) {
-            text = '[${'自定義消息'.tr}]';
-          } else if (lastMessage.imageElem != null) {
-            text = '[${'圖片'.tr}]';
-          } else if (lastMessage.videoElem != null) {
-            text = '[${'視頻'.tr}]';
-          } else if (lastMessage.soundElem != null) {
-            text = '[${'語音'.tr}]';
-          } else if (lastMessage.fileElem != null) {
-            text = '[${'文件'.tr}]';
-          } else {
-            text = '[${'消息'.tr}]';
-          }
-        }
-
-        String? time;
-        if (lastMessage?.timestamp != null) {
-          final date = DateTime.fromMillisecondsSinceEpoch(
-            lastMessage!.timestamp! * 1000,
-          );
-          time = date.formatTimeAgo();
-        }
+    if (ChatStore.to.isReady) {
+      for (final conversation in ChatStore.to.conversationList) {
+        final lastMessage = ChatStore.to.lastMessageOf(conversation.id);
+        final text = _chatPreviewText(conversation, lastMessage);
+        final time = _chatPreviewTime(conversation);
 
         messages.add(
           MessageTopFixedModel(
             topFixed: MessageTopFixed.chat,
             time: time,
-            text: text ?? '',
+            text: text,
             conversation: conversation,
           ),
         );
@@ -130,24 +108,60 @@ class MessageController extends GetxController
       if (timeA == null) return 1;
       if (timeB == null) return -1;
 
-      final isAPinned = (a.conversation)?.isPinned == true;
-      final isBPinned = (b.conversation)?.isPinned == true;
-      if (isAPinned && !isBPinned) return -1;
-      if (!isAPinned && isBPinned) return 1;
       return timeB.compareTo(timeA);
     });
 
     return messages;
   }
 
+  /// 会话列表预览文本
+  String _chatPreviewText(ChatConversation conv, ChatMessage? lastMessage) {
+    if (lastMessage == null) return '';
+    if (lastMessage.isRecalled) return '[${'已撤回'.tr}]';
+    switch (lastMessage.type) {
+      case 'TEXT':
+        return lastMessage.content;
+      case 'IMAGE':
+        return '[${'圖片'.tr}]';
+      case 'VOICE':
+        return '[${'語音'.tr}]';
+      case 'VIDEO':
+        return '[${'視頻'.tr}]';
+      case 'FILE':
+        return '[${'文件'.tr}]';
+      default:
+        return '[${'消息'.tr}]';
+    }
+  }
+
+  /// 会话列表时间（updated_at ISO 或缓存消息时间）
+  String? _chatPreviewTime(ChatConversation conv) {
+    final lastMessage = ChatStore.to.lastMessageOf(conv.id);
+    if (lastMessage != null) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        lastMessage.createdAt,
+      ).formatTimeAgo();
+    }
+    final updatedAt = conv.updatedAt;
+    if (updatedAt != null && updatedAt.isNotEmpty) {
+      final date = DateTime.tryParse(updatedAt);
+      if (date != null) return date.formatTimeAgo();
+    }
+    return null;
+  }
+
   DateTime? _getMessageTime(MessageTopFixedModel model) {
     if (model.topFixed == MessageTopFixed.chat) {
-      final conversation = model.conversation as V2TimConversation?;
-      final lastMessage = conversation?.lastMessage;
-      if (lastMessage?.timestamp != null) {
-        return DateTime.fromMillisecondsSinceEpoch(
-          lastMessage!.timestamp! * 1000,
-        );
+      final conversation = model.conversation as ChatConversation?;
+      final lastMessage = conversation == null
+          ? null
+          : ChatStore.to.lastMessageOf(conversation.id);
+      if (lastMessage != null) {
+        return DateTime.fromMillisecondsSinceEpoch(lastMessage.createdAt);
+      }
+      final updatedAt = conversation?.updatedAt;
+      if (updatedAt != null && updatedAt.isNotEmpty) {
+        return DateTime.tryParse(updatedAt);
       }
       return null;
     }
@@ -201,15 +215,21 @@ class MessageController extends GetxController
     initRefresh();
     fetchData();
     _startMessageListPoll();
-    TIMStore.to.conversationList.listen((_) {
+    // 监听会话列表变化 + 新消息（刷新列表 / 未读角标）
+    ChatStore.to.conversationList.listen((_) {
       update();
       _updateHasJoinedGroups();
+      _resolvePeerInfos();
+    });
+    _chatStreamSub = ChatStore.to.onNewMessage.listen((_) {
+      update();
     });
   }
 
   @override
   void onClose() {
     _stopMessageListPoll();
+    _chatStreamSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.onClose();
   }
@@ -239,17 +259,44 @@ class MessageController extends GetxController
   }
 
   Future<void> _updateHasJoinedGroups() async {
-    if (!TIMStore.to.isIMLoginReady) {
-      hasJoinedGroups.value = false;
-      return;
+    final list = ChatStore.to.conversationList;
+    hasJoinedGroups.value = list.any((c) => c.isGroup);
+  }
+
+  /// 为单聊会话拉取对方资料（认证名称/头像/城市，并行、失败静默）
+  Future<void> _resolvePeerInfos() async {
+    if (!isLogin) return;
+    final peers = <String>{};
+    for (final conv in ChatStore.to.conversationList) {
+      if (conv.isGroup) continue;
+      final peerId = conv.peerUserId;
+      if (peerId == null ||
+          peerId.isEmpty ||
+          _peerInfos.containsKey(peerId)) {
+        continue;
+      }
+      peers.add(peerId);
     }
-    final list = await TIMStore.to.getJoinedGroupList();
-    hasJoinedGroups.value = list.isNotEmpty;
+    if (peers.isEmpty) return;
+    await Future.wait(peers.map((peerId) async {
+      try {
+        final res = await get(
+          ApiUrl.memberInfo,
+          parameters: {'user_number': peerId},
+        );
+        if (res.isSuccess) {
+          final member = MemberInfo.fromJson(res.dataJson);
+          _peerInfos[peerId] = PeerChatInfo.fromMember(member);
+        }
+      } catch (e) {
+        // 静默
+      }
+    }));
   }
 
   Future<void> _refreshConversationList() async {
-    if (TIMStore.to.isIMLoginReady) {
-      await TIMStore.to.refreshConversationList();
+    if (ChatStore.to.isReady) {
+      await ChatStore.to.refreshConversationList();
     }
   }
 
@@ -270,17 +317,9 @@ class MessageController extends GetxController
       return;
     }
 
-    final conversation = model.conversation as V2TimConversation;
-    final conversationID = conversation.conversationID;
-    if (conversationID.isEmpty) {
-      return;
-    }
-    final success = await TIMStore.to.deleteConversation(conversationID);
-    if (success) {
-      Loading.success('刪除成功'.tr);
-    } else {
-      Loading.error('刪除失敗'.tr);
-    }
+    final conversation = model.conversation as ChatConversation;
+    await ChatStore.to.deleteConversation(conversation.id);
+    Loading.success('刪除成功'.tr);
   }
 
   int messageCount(MessageCategory category) {
@@ -323,29 +362,8 @@ class MessageController extends GetxController
 
   Future<void> _handleScannedGroup(String groupID) async {
     if (groupID.isEmpty) return;
-    final info = await TIMStore.to.getGroupInfo(groupID);
-    if (info == null) {
-      Loading.error('群組不存在或已解散'.tr);
-      return;
-    }
-    Loading.show();
-    final res = await TIMStore.to.joinGroup(
-      groupID: groupID,
-      message: '',
-      groupType: info.groupType,
-    );
-    Loading.dismiss();
-    if (res.code == 0) {
-      Loading.success('加入成功'.tr);
-      final conversation = await TIMStore.to.createOrGetConversation(
-        groupID: groupID,
-      );
-      Get.toNamed(AppRoutes.CHAT, arguments: {'conversation': conversation});
-      fetchData();
-    } else {
-      final msg = res.desc.isNotEmpty ? res.desc : '加入失敗'.tr;
-      Loading.error(msg);
-    }
+    // LUMO-Chat 无自助加群接口：群成员需由群主/管理员添加
+    Loading.error('無法直接加入群組，請聯繫群主邀請'.tr);
   }
 
   void _handleScannedUser(String userID) {
@@ -414,11 +432,57 @@ class MessageController extends GetxController
     fetchData();
   }
 
+  /// 会话显示标题（单聊取认证名称/昵称，群聊取群名）
+  String conversationTitle(ChatConversation conversation) {
+    if (conversation.isGroup) {
+      return (conversation.title?.isNotEmpty ?? false)
+          ? conversation.title!
+          : '群聊'.tr;
+    }
+    final peerId = conversation.peerUserId ?? '';
+    if (peerId.isNotEmpty && _peerInfos.containsKey(peerId)) {
+      final name = _peerInfos[peerId]!.name;
+      if (name.isNotEmpty) return name;
+    }
+    return peerId.isNotEmpty ? peerId : '聊天'.tr;
+  }
+
+  /// 单聊对方头像（认证导游照片 / 公司形象照；无则空串）
+  String conversationAvatar(ChatConversation conversation) {
+    if (conversation.isGroup) return conversation.avatar ?? '';
+    final peerId = conversation.peerUserId ?? '';
+    if (peerId.isNotEmpty && _peerInfos.containsKey(peerId)) {
+      return _peerInfos[peerId]!.avatar;
+    }
+    return '';
+  }
+
+  /// 单聊对方身份标签（导游认证类型 / 商家经营分类；无则空串）
+  String conversationBadge(ChatConversation conversation) {
+    if (conversation.isGroup) return '';
+    final peerId = conversation.peerUserId ?? '';
+    if (peerId.isNotEmpty && _peerInfos.containsKey(peerId)) {
+      return _peerInfos[peerId]!.badge;
+    }
+    return '';
+  }
+
+  /// 单聊对方所在位置（城市 · 国家 · 大洲；无则空串）
+  String conversationLocation(ChatConversation conversation) {
+    if (conversation.isGroup) return '';
+    final peerId = conversation.peerUserId ?? '';
+    if (peerId.isNotEmpty && _peerInfos.containsKey(peerId)) {
+      return _peerInfos[peerId]!.location;
+    }
+    return '';
+  }
+
   @override
   Future<void> fetchData() async {
     if (!isLogin) return;
     await _refreshConversationList();
     _updateHasJoinedGroups();
+    _resolvePeerInfos();
     final res = await get(ApiUrl.messageList);
     if (!res.isSuccess) {
       endLoad([]);
