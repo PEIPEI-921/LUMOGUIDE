@@ -21,7 +21,10 @@ class AuthLoginTest extends FeatureTestCase
 
         $response->assertStatus(200)->assertJson(['code' => 200]);
         $this->assertNotEmpty($response->json('data.token'), '登录应返回 JWT token');
-        $this->assertNotEmpty($response->json('data.user_sig'), '登录应返回腾讯 IM user_sig');
+        // LUMO-Chat 替换腾讯云 IM：登录返回 lumo_chat_token 字段（测试环境无 LUMO-Chat 服务时为空串，但字段必须存在）
+        $data = $response->json('data');
+        $this->assertArrayHasKey('lumo_chat_token', $data, '登录应返回 lumo_chat_token 字段');
+        $this->assertArrayNotHasKey('user_sig', $data, '腾讯云 IM user_sig 已移除');
         $this->assertNotEmpty($response->json('data.user_number'));
     }
 
