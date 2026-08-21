@@ -39,6 +39,72 @@ class UserService
 {
 
     /**
+     * 评论/消息列表用：返回用户展示信息，认证通过（guide/company audit_status=1）时
+     * 用认证头像（photo）、认证名（guide.name/company.name），并附所在城市与城市所在国家。
+     * @param User $user
+     * @return array
+     */
+    public static function certifiedUserInfo(User $user): array
+    {
+        $nickname = $user->nickname;
+        $avatar = $user->avatar;
+        $city_name = '';
+        $country_name = '';
+
+        // 导游认证通过：用认证资料
+        if ($user->guide_id > 0) {
+            $guide = Guide::find($user->guide_id);
+            if ($guide && (int)$guide->audit_status === 1) {
+                if (!empty($guide->name)) $nickname = $guide->name;
+                if (!empty($guide->photo)) $avatar = $guide->photo;
+                if (!empty($guide->city_name)) {
+                    $city_name = $guide->city_name;
+                    $country_name = self::countryNameOfCity((int)$guide->city_id);
+                }
+            }
+        }
+        // 商家认证通过：用认证资料
+        if ($user->company_id > 0 && empty($city_name)) {
+            $company = Company::find($user->company_id);
+            if ($company && (int)$company->audit_status === 1) {
+                if (!empty($company->name)) $nickname = $company->name;
+                $company_pic = $company->picture;
+                if (is_string($company_pic)) {
+                    $company_pic = json_decode($company_pic, true);
+                }
+                if (is_array($company_pic) && !empty($company_pic)) {
+                    $avatar = is_string($company_pic[0]) ? $company_pic[0] : $avatar;
+                }
+                if (!empty($company->city_name)) {
+                    $city_name = $company->city_name;
+                    $country_name = self::countryNameOfCity((int)$company->city_id);
+                }
+            }
+        }
+
+        return [
+            'id' => $user->id,
+            'nickname' => $nickname,
+            'avatar' => $avatar,
+            'identity' => $user->identity,
+            'guide_id' => $user->guide_id,
+            'company_id' => $user->company_id,
+            'city_name' => $city_name,
+            'country_name' => $country_name,
+        ];
+    }
+
+    /**
+     * 城市 → 国家名（无则空串）
+     */
+    private static function countryNameOfCity(int $city_id): string
+    {
+        if ($city_id <= 0) return '';
+        $city = City::find($city_id);
+        return $city && $city->country ? (string)$city->country->name : '';
+    }
+
+    /**
      * 记录登录
      * @return void
      */
@@ -704,6 +770,17 @@ class UserService
         }
         $reserve->status = ReserveCode::StatusCancel;
         $reserve->save();
+
+        // 推送通知给导游：预约被取消
+        $guide = Guide::query()->where('id', $reserve->guide_id)->first(['user_id']);
+        if ($guide && $guide->user_id != $user_id) {
+            \App\Models\SystemMessage::sendPush(
+                (int)$guide->user_id,
+                '預約已取消',
+                '用户取消了一笔导游预约',
+                ['type' => 'reserve']
+            );
+        }
     }
 
 
@@ -949,6 +1026,17 @@ class UserService
         }
         $reserve->status = ReserveCode::StatusCancel;
         $reserve->save();
+
+        // 推送通知给商家：预约被取消
+        $company = Company::query()->where('id', $reserve->company_id)->first(['user_id']);
+        if ($company && $company->user_id != $user_id) {
+            \App\Models\SystemMessage::sendPush(
+                (int)$company->user_id,
+                '預約已取消',
+                '用户取消了一笔商家预约',
+                ['type' => 'reserve']
+            );
+        }
     }
 
 

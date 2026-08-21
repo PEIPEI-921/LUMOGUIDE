@@ -38,6 +38,7 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
   StreamSubscription? _typingSub;
 
   Timer? _typingStopTimer;
+  Timer? _typingDebounceTimer;
   bool _sending = false;
 
   @override
@@ -74,6 +75,7 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
     _editedSub?.cancel();
     _typingSub?.cancel();
     _typingStopTimer?.cancel();
+    _typingDebounceTimer?.cancel();
     inputController.dispose();
     super.onClose();
   }
@@ -97,7 +99,7 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
     final list = await ChatStore.to.fetchMessages(conversationID!, limit: 50);
     _messages.assignAll(list);
     if (list.isNotEmpty) {
-      ChatStore.to.markRead(conversationID!, list.last.messageId);
+      await ChatStore.to.markRead(conversationID!, list.last.messageId);
     }
   }
 
@@ -252,15 +254,19 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
     _messages.refresh();
   }
 
-  /// 输入变化：上报输入状态（2 秒后停止）
+  /// 输入变化：防抖上报输入状态（避免每次按键都 emit socket）
   void onInputChanged(String value) {
     _inputText.value = value;
     final convId = conversationID;
     if (convId == null) return;
-    ChatStore.to.sendTyping(convId, true);
     _typingStopTimer?.cancel();
-    _typingStopTimer = Timer(const Duration(seconds: 2), () {
-      ChatStore.to.sendTyping(convId, false);
+    // 停顿 400ms 后上报一次「正在输入」，随后 2 秒内无输入自动停止
+    _typingDebounceTimer?.cancel();
+    _typingDebounceTimer = Timer(const Duration(milliseconds: 400), () {
+      ChatStore.to.sendTyping(convId, true);
+      _typingStopTimer = Timer(const Duration(seconds: 2), () {
+        ChatStore.to.sendTyping(convId, false);
+      });
     });
   }
 
@@ -367,7 +373,7 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
         );
       }
     } else {
-      Loading.toast('暫無詳情'.tr);
+      Loading.toast('暫無詳細信息'.tr);
     }
   }
 

@@ -36,6 +36,11 @@ class Global {
     await Get.putAsync<ImageCacheService>(() => ImageCacheService().init());
     await Get.putAsync<ConfigService>(() => ConfigService().init());
     await Get.putAsync<LocalizationService>(() => LocalizationService().init());
+    await Get.putAsync<PushService>(() async {
+      final s = PushService();
+      await s.init();
+      return s;
+    });
   }
 
   static getPut() {

@@ -22,4 +22,7 @@ return [
 
     // 换取 token 时上报的设备 ID
     'device_id' => env('LUMO_CHAT_DEVICE_ID', 'lumoguide'),
+
+    // LUMO-Chat 管理端 token（系统消息推送等内部接口用，需与 LUMO-Chat .env 的 ADMIN_TOKEN 一致）
+    'admin_token' => env('LUMO_CHAT_ADMIN_TOKEN', ''),
 ];

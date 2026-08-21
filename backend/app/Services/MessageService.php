@@ -44,12 +44,17 @@ class MessageService
             ];
         }
 
-        // 评价消息
+        // 评价消息（认证通过的用户用认证名）
         $last_evaluate = ContentEvaluate::with(['user'])->where('content_user_id', $user_id)->orderBy('id', 'desc')->first(['user_id', 'created_at', 'content']);
         $evaluate_message = (object)[];
         if ($last_evaluate) {
+            $display_name = $last_evaluate->user->nickname ?? '';
+            if ($last_evaluate->user) {
+                $certified = \App\Services\UserService::certifiedUserInfo($last_evaluate->user);
+                $display_name = $certified['nickname'] ?: $display_name;
+            }
             $evaluate_message = [
-                'text' => "[{$last_evaluate->user->nickname}] 评价了你: {$last_evaluate->content}",
+                'text' => "[{$display_name}] 评价了你: {$last_evaluate->content}",
                 'time' => $last_evaluate->created_at->toDateTimeString(),
             ];
         }

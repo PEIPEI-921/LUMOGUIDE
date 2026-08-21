@@ -15,12 +15,14 @@ class ContentEvaluate extends Model
 
     public function user()
     {
-        return $this->hasOne(User::class, 'id', 'user_id')->select(['id', 'nickname', 'avatar']);
+        return $this->hasOne(User::class, 'id', 'user_id')
+            ->select(['id', 'nickname', 'avatar', 'identity', 'guide_id', 'company_id']);
     }
 
     public function content_user()
     {
-        return $this->hasOne(User::class, 'id', 'content_user_id')->select(['id', 'nickname', 'avatar']);
+        return $this->hasOne(User::class, 'id', 'content_user_id')
+            ->select(['id', 'nickname', 'avatar', 'identity', 'guide_id', 'company_id']);
     }
 
     public function contents()

@@ -48,11 +48,21 @@ class EvaluateListUser {
   int? id;
   String? nickname;
   String? avatar;
+  int? identity;
+  int? guideId;
+  int? companyId;
+  String? cityName;
+  String? countryName;
 
   EvaluateListUser({
     this.id,
     this.nickname,
     this.avatar,
+    this.identity,
+    this.guideId,
+    this.companyId,
+    this.cityName,
+    this.countryName,
   });
 
   factory EvaluateListUser.fromJson(Map<String, dynamic> json) {
@@ -60,6 +70,11 @@ class EvaluateListUser {
       id: json.safeInt('id'),
       nickname: json.safeString('nickname'),
       avatar: json.safeString('avatar'),
+      identity: json.safeInt('identity'),
+      guideId: json.safeInt('guide_id'),
+      companyId: json.safeInt('company_id'),
+      cityName: json.safeString('city_name'),
+      countryName: json.safeString('country_name'),
     );
   }
 
@@ -68,6 +83,11 @@ class EvaluateListUser {
       'id': id,
       'nickname': nickname,
       'avatar': avatar,
+      'identity': identity,
+      'guide_id': guideId,
+      'company_id': companyId,
+      'city_name': cityName,
+      'country_name': countryName,
     };
   }
 }

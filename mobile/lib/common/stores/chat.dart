@@ -9,6 +9,7 @@ import '../apis/mixin.dart';
 import '../apis/urls.dart';
 import '../extensions/map.dart';
 import '../models/chat.dart';
+import '../services/push.dart';
 import 'storage.dart';
 
 /// LUMO-Chat（IM-as-a-Service）客户端 Store。
@@ -26,6 +27,9 @@ class ChatStore extends GetxController with ApiMixin {
 
   /// token 刷新进行中标记（防重入）
   bool _refreshing = false;
+
+  /// 进行中的刷新 Completer（并发调用等待同一结果）
+  Completer<bool>? _refreshCompleter;
 
   final _isReady = false.obs;
 
@@ -88,6 +92,19 @@ class ChatStore extends GetxController with ApiMixin {
       await refreshConversationList();
     } catch (e) {
       log('ChatStore init error: $e');
+    }
+
+    // 登录后上报推送 token 并同步角标
+    unawaited(_syncPushAfterLogin());
+  }
+
+  /// 登录后：上报 APNs device token 给 LUMO-Chat，并按未读数设置图标角标
+  Future<void> _syncPushAfterLogin() async {
+    try {
+      await PushService.to.uploadToken();
+      await PushService.to.setBadge(totalUnreadCount.value);
+    } catch (e) {
+      log('ChatStore push sync error: $e');
     }
   }
 
@@ -160,6 +177,13 @@ class ChatStore extends GetxController with ApiMixin {
 
   /// 登出：断开连接并清空本地状态
   Future<void> logout() async {
+    // 登出前移除推送 token（需在清空 _token 之前，用旧 token 调用）
+    try {
+      await PushService.to.removeToken();
+      await PushService.to.setBadge(0);
+    } catch (e) {
+      log('ChatStore push cleanup error: $e');
+    }
     try {
       _socket?.dispose();
     } catch (e) {
@@ -234,9 +258,17 @@ class ChatStore extends GetxController with ApiMixin {
   }
 
   /// 通过 LUMOGUIDE 后端重新换取 LUMO-Chat access_token
+  /// 并发调用会共享同一次刷新结果（避免重复请求/竞态）
   Future<bool> _refreshToken() async {
-    if (_refreshing) return false;
+    if (_refreshing) {
+      // 已有刷新进行中：等待其结果
+      final pending = _refreshCompleter;
+      if (pending != null) return pending.future;
+      return false;
+    }
     _refreshing = true;
+    final completer = Completer<bool>();
+    _refreshCompleter = completer;
     try {
       final res = await get(ApiUrl.refreshChatToken);
       if (res.isSuccess) {
@@ -245,13 +277,17 @@ class ChatStore extends GetxController with ApiMixin {
           _token = newToken;
           await StorageStone.setLumoChatToken(newToken);
           log('ChatStore: token refreshed');
+          completer.complete(true);
           return true;
         }
       }
+      completer.complete(false);
     } catch (e) {
       log('ChatStore refreshToken error: $e');
+      completer.complete(false);
     } finally {
       _refreshing = false;
+      _refreshCompleter = null;
     }
     return false;
   }
@@ -264,6 +300,25 @@ class ChatStore extends GetxController with ApiMixin {
       await refreshConversationList();
       _connectSocket();
     }
+  }
+
+  /// 确保 socket 已连接：未连接时刷新 token 并重建连接，最多等待 8 秒
+  Future<bool> _ensureSocketConnected() async {
+    if (_connected.value) return true;
+    try {
+      final ok = await _refreshToken();
+      if (ok) {
+        _connectSocket();
+        final deadline = DateTime.now().add(const Duration(seconds: 8));
+        while (DateTime.now().isBefore(deadline)) {
+          if (_connected.value) return true;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+      }
+    } catch (e) {
+      log('ChatStore: ensure socket connected error: $e');
+    }
+    return _connected.value;
   }
 
   // ─── 会话 ────────────────────────────────────────────────────
@@ -502,6 +557,14 @@ class ChatStore extends GetxController with ApiMixin {
     required String content,
     Map<String, dynamic>? extra,
   }) async {
+    // 发送前确保 socket 已连接：token 过期导致断连时先刷新并重建连接
+    if (!_connected.value) {
+      final ok = await _ensureSocketConnected();
+      if (!ok) {
+        throw Exception('發送超時，請重試');
+      }
+    }
+
     final clientMsgId = _generateClientMsgId();
     final completer = Completer<ChatMessage>();
     _ackWaiters[clientMsgId] = completer;
@@ -580,8 +643,10 @@ class ChatStore extends GetxController with ApiMixin {
       final map = (data as Map).cast<String, dynamic>();
       final msg = ChatMessage.fromJson(map);
       _lastMessageByConv[msg.conversationId] = msg;
-      // 非当前打开会话则累计未读
-      if (activeConversationId != msg.conversationId) {
+      // 自己其他设备发的消息（多设备同时在线时服务端会广播回来）不计未读
+      final isOwnMessage = msg.isMine;
+      // 非当前打开会话且非自己发的消息则累计未读
+      if (!isOwnMessage && activeConversationId != msg.conversationId) {
         _incrementUnread(msg.conversationId);
       }
       // 会话列表排序：最新消息的会话置顶
@@ -606,6 +671,15 @@ class ChatStore extends GetxController with ApiMixin {
   void _handleMessageRecalled(dynamic data) {
     try {
       final map = (data as Map).cast<String, dynamic>();
+      final convId = map['conversation_id'] as String? ?? '';
+      final msgId = map['message_id'] as String? ?? '';
+      // 若撤回的是会话最后一条消息，更新会话预览为「消息已撤回」
+      if (convId.isNotEmpty) {
+        final last = _lastMessageByConv[convId];
+        if (last != null && last.messageId == msgId) {
+          _lastMessageByConv[convId] = last.copyWith(isRecalled: true);
+        }
+      }
       _recalledController.add(map);
     } catch (e) {
       log('ChatStore _handleMessageRecalled error: $e');
@@ -615,6 +689,16 @@ class ChatStore extends GetxController with ApiMixin {
   void _handleMessageEdited(dynamic data) {
     try {
       final map = (data as Map).cast<String, dynamic>();
+      final convId = map['conversation_id'] as String? ?? '';
+      final msgId = map['message_id'] as String? ?? '';
+      final content = map['content'] as String? ?? '';
+      // 若编辑的是会话最后一条消息，同步更新会话预览
+      if (convId.isNotEmpty && content.isNotEmpty) {
+        final last = _lastMessageByConv[convId];
+        if (last != null && last.messageId == msgId) {
+          _lastMessageByConv[convId] = last.copyWith(content: content);
+        }
+      }
       _editedController.add(map);
     } catch (e) {
       log('ChatStore _handleMessageEdited error: $e');
@@ -669,9 +753,13 @@ class ChatStore extends GetxController with ApiMixin {
     }
   }
 
-  /// 上报已读
-  void markRead(String conversationId, String maxReadMessageId) {
-    if (_socket == null || maxReadMessageId.isEmpty) return;
+  /// 上报已读（socket 断开时先恢复连接再发送，确保游标送达服务端）
+  Future<void> markRead(String conversationId, String maxReadMessageId) async {
+    if (maxReadMessageId.isEmpty) return;
+    if (!_connected.value) {
+      final ok = await _ensureSocketConnected();
+      if (!ok) return;
+    }
     _socket?.emit('mark_read', {
       'conversation_id': conversationId,
       'max_read_message_id': maxReadMessageId,
@@ -848,11 +936,22 @@ class ChatStore extends GetxController with ApiMixin {
   void _incrementUnread(String conversationId) {
     _unreadByConv[conversationId] = (_unreadByConv[conversationId] ?? 0) + 1;
     totalUnreadCount.value = _unreadByConv.values.fold(0, (a, b) => a + b);
+    _syncBadge();
   }
 
   void clearUnread(String conversationId) {
     if (_unreadByConv.remove(conversationId) != null) {
       totalUnreadCount.value = _unreadByConv.values.fold(0, (a, b) => a + b);
+      _syncBadge();
+    }
+  }
+
+  /// 未读总数变化 → 同步 App 图标角标（桌面 badge）
+  void _syncBadge() {
+    try {
+      PushService.to.setBadge(totalUnreadCount.value);
+    } catch (e) {
+      // 非 iOS 环境忽略
     }
   }
 

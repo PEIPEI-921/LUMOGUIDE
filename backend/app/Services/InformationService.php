@@ -133,6 +133,13 @@ class InformationService
         $data = $res['data'];
         foreach ($data as $k => &$v) {
             $v['pictures'] = json_decode($v['pictures'], true) ?? [];
+            // 认证通过的用户：用认证头像/认证名，并附城市与国家
+            if (!empty($v['user_id'])) {
+                $user = \App\Models\User::find($v['user_id']);
+                if ($user) {
+                    $v['user'] = \App\Services\UserService::certifiedUserInfo($user);
+                }
+            }
             unset($v);
         }
         return ['total' => $res['total'], 'list' => $data];

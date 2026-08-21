@@ -201,6 +201,29 @@ class ConfigService extends GetxService with ApiMixin {
     return '';
   }
 
+  /// 归一化上传 URL：后端 APP_URL 可能配置为 localhost（本地联调），
+  /// 真机/模拟器访问 localhost 指向设备自身 → 替换为当前 API baseUrl 的主机。
+  /// 例: http://localhost/storage/x.png → http://192.168.68.70:8001/storage/x.png
+  static String normalizeUploadUrl(String url) {
+    if (url.isEmpty || !url.startsWith('http')) return url;
+    final lower = url.toLowerCase();
+    final isLocalHost = lower.startsWith('http://localhost') ||
+        lower.startsWith('http://127.0.0.1');
+    if (!isLocalHost) return url;
+
+    const base = ApiUrl.baseUrl; // 形如 http://192.168.68.70:8001/ 或 https://api.lumoguide.com/
+    if (base.isEmpty) return url;
+    // 取出 baseUrl 的 scheme://host:port 部分
+    final uri = Uri.tryParse(base);
+    if (uri == null || uri.host.isEmpty) return url;
+    final origin =
+        '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+    // 截取原始 URL 的路径部分
+    final pathIndex = lower.indexOf('/storage');
+    final path = pathIndex >= 0 ? url.substring(pathIndex) : '/';
+    return '$origin$path';
+  }
+
   /// 上传文件（支持任意图片格式：PNG/JPEG/GIF/HEIC/HEIF/WebP/BMP）
   ///
   /// 策略：
@@ -269,7 +292,7 @@ class ConfigService extends GetxService with ApiMixin {
         lastUploadError = '';
       }
       if (kDebugMode) debugPrint('[uploadFile] SUCCESS url=$url');
-      return url;
+      return normalizeUploadUrl(url);
     } catch (e) {
       log('[uploadFile] EXCEPTION: $e', name: 'uploadFile');
       lastUploadError = e.toString();

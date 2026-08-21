@@ -8,17 +8,54 @@ class CommentWidget extends StatelessWidget {
   final EvaluateList item;
   final bool showStar;
 
+  /// 点击评论用户头像/昵称 → 跳转用户详情（导游→导游详情、商家→商家详情、普通用户→提示）
+  void _openUserDetail(EvaluateListUser? user) {
+    if (user == null || (user.id ?? 0) <= 0) return;
+    if (user.identity == 2 && (user.guideId ?? 0) > 0) {
+      Get.toNamed(AppRoutes.GUIDE_DETAIL, arguments: {'id': user.guideId});
+    } else if (user.identity == 3 && (user.companyId ?? 0) > 0) {
+      Get.toNamed(AppRoutes.COMPANY_INFO, arguments: {'id': user.companyId});
+    } else {
+      Loading.toast('暫無詳細信息'.tr);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = item.user;
     return Column(
       children: [
         Row(
           children: [
-            CircleNetworkImage(imageUrl: item.user?.avatar ?? '', radius: 16.w),
+            GestureDetector(
+              onTap: () => _openUserDetail(user),
+              behavior: HitTestBehavior.opaque,
+              child: CircleNetworkImage(
+                imageUrl: user?.avatar ?? '',
+                radius: 16.w,
+              ),
+            ),
             5.w.horizontalSpace,
-            Text(
-              item.user?.nickname ?? '',
-              style: TextStyle(fontSize: 14.sp, color: AppColors.primaryText),
+            GestureDetector(
+              onTap: () => _openUserDetail(user),
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user?.nickname ?? '',
+                    style: TextStyle(fontSize: 14.sp, color: AppColors.primaryText),
+                  ),
+                  if (user?.cityName?.isNotEmpty ?? false)
+                    Text(
+                      user!.cityName!,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: AppColors.assistantText,
+                      ),
+                    ).padding(top: 1.w),
+                ],
+              ),
             ),
             const Spacer(),
             Text(

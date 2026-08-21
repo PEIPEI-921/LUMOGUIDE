@@ -525,6 +525,18 @@ class CompanyService
         }
         $data->status = $status;
         $data->save();
+
+        // 推送通知给预约用户：商家确认/完成预约
+        if ($data->user_id != $user->id) {
+            $push_title = $status == 2 ? '預約已確認' : '預約狀態更新';
+            $push_body = $status == 2 ? '您的商家预约已确认' : '您的商家预约状态已更新';
+            \App\Models\SystemMessage::sendPush(
+                (int)$data->user_id,
+                $push_title,
+                $push_body,
+                ['type' => 'reserve']
+            );
+        }
     }
 
 
@@ -550,6 +562,16 @@ class CompanyService
             $reserve->status = ReserveCode::StatusReject;
             $reserve->reason = $reason;
             $reserve->save();
+
+            // 推送通知给预约用户：预约被拒绝
+            if ($reserve->user_id != $user->id) {
+                \App\Models\SystemMessage::sendPush(
+                    (int)$reserve->user_id,
+                    '預約被拒絕',
+                    '您的预约被拒绝：' . ($reason ?: '暂无法接待'),
+                    ['type' => 'reserve']
+                );
+            }
         } catch (\Throwable $exception) {
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }

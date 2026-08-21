@@ -145,14 +145,21 @@ class _MessageBubble extends StatelessWidget {
     final isMine = message.isMine;
     final isGroup = controller.conversation.isGroup;
 
-    // 撤回消息：居中灰色提示
+    // 撤回消息：居中浅灰胶囊提示
     if (message.isRecalled) {
       return Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.w),
+        padding: EdgeInsets.symmetric(vertical: 6.w),
         child: Center(
-          child: Text(
-            isMine ? '你撤回了一條消息'.tr : '對方撤回了一條消息'.tr,
-            style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.w),
+            decoration: BoxDecoration(
+              color: AppColors.assistantText.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12.w),
+            ),
+            child: Text(
+              isMine ? '你撤回了一條消息'.tr : '對方撤回了一條消息'.tr,
+              style: TextStyle(fontSize: 13.sp, color: AppColors.assistantText),
+            ),
           ),
         ),
       );
@@ -229,13 +236,13 @@ class _MessageBubble extends StatelessWidget {
     if (message.type == 'IMAGE') {
       return GestureDetector(
         onTap: () => Get.toNamed(AppRoutes.PHOTO_VIEW, arguments: {
-          'pictures': [message.content],
+          'pictures': [ConfigService.normalizeUploadUrl(message.content)],
           'index': 0,
         }),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.r),
           child: CachedNetworkImage(
-            imageUrl: message.content,
+            imageUrl: ConfigService.normalizeUploadUrl(message.content),
             width: 180.w,
             height: 180.w,
             fit: BoxFit.cover,

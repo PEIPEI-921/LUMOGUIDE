@@ -390,6 +390,17 @@ class CityService
             // 预约导游增加未读
             $model->is_read = 0;
             $model->save();
+
+            // 推送通知给导游：有人预约了
+            $guide = Guide::query()->where('id', $data['guide_id'])->first(['user_id', 'name']);
+            if ($guide && $guide->user_id != $user->id) {
+                \App\Models\SystemMessage::sendPush(
+                    (int)$guide->user_id,
+                    '新的預約',
+                    $user->nickname . ' 预约了您的导游服务',
+                    ['type' => 'reserve']
+                );
+            }
         } catch (Throwable $exception) {
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
@@ -557,6 +568,13 @@ class CityService
         $data = $res['data'];
         foreach ($data as $k => &$v) {
             $v['pictures'] = json_decode($v['pictures'], true) ?? [];
+            // 认证通过的用户：用认证头像/认证名，并附城市与国家
+            if (!empty($v['user_id'])) {
+                $user = \App\Models\User::find($v['user_id']);
+                if ($user) {
+                    $v['user'] = \App\Services\UserService::certifiedUserInfo($user);
+                }
+            }
             unset($v);
         }
         return ['total' => $res['total'], 'list' => $data];
@@ -885,6 +903,17 @@ class CityService
             // 预约商家增加未读
             $model->is_read = 0;
             $model->save();
+
+            // 推送通知给商家：有人预约了内容
+            $company = Company::query()->where('id', $content->publisher_id)->first(['user_id', 'name']);
+            if ($company && $company->user_id != $user->id) {
+                \App\Models\SystemMessage::sendPush(
+                    (int)$company->user_id,
+                    '新的預約',
+                    $user->nickname . ' 预约了您的' . ($content->name ?: '内容'),
+                    ['type' => 'reserve']
+                );
+            }
         } catch (Throwable $exception) {
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }

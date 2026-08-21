@@ -191,7 +191,7 @@ class MessageSystemModel {
         final cid = cityId ?? 0;
         final tid = cityContentType ?? 0;
         if (cid <= 0 || tid <= 0) {
-          Loading.toast('暫無詳情'.tr);
+          Loading.toast('暫無詳細信息'.tr);
           return;
         }
         Get.toNamed(
