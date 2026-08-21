@@ -654,7 +654,7 @@ class GuideService
                 $value = json_decode($value, true);
             }
             $old_data[$v] = $value;
-            $new_data[$v] = $data[$v];
+            $new_data[$v] = $data[$v] ?? $old_data[$v];
         }
         if (arrayEqual($old_data, $new_data)) {
             throw new ApiException(__('res.updated_no'));
@@ -671,7 +671,7 @@ class GuideService
             if ($content->is_finish == 0 && $content->audit_status == 2) {
                 foreach ($key_arr as $key) {
                     if (!in_array($key, ['pictures', 'type_id', 'first_picture'])) {
-                        $content->{$key} = $data[$key];
+                        $content->{$key} = $data[$key] ?? $content->{$key};
                     }
                 }
                 if (isset($data['pictures']) && is_array($data['pictures'])) {
@@ -689,7 +689,7 @@ class GuideService
                 $res->type_id = $content->type_id;
                 foreach ($key_arr as $key) {
                     if (!in_array($key, ['pictures', 'type_id', 'first_picture'])) {
-                        $res->{$key} = $data[$key];
+                        $res->{$key} = $data[$key] ?? $content->{$key};
                     }
                 }
                 if (isset($data['pictures']) && is_array($data['pictures'])) {
