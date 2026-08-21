@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# 密钥/敏感文件（切勿提交）
+*.jks
+*.p8
+*.pem
+*.mobileprovision
+
+# IDE
+.idea/
+.vscode/
