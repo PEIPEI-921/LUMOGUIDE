@@ -33,3 +33,6 @@ vite.config.js
 /storage/cache/
 /frontend/dist
 storage-uploads.tar.gz
+
+# 运行时生成的邀请二维码
+/storage/app/public/user_invite/*
