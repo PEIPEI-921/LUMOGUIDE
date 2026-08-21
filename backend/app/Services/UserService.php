@@ -802,7 +802,7 @@ class UserService
     public function reserveCompanyEdit(int $id, array $data)
     {
         $user_id = auth('api')->id();
-        $content_id = $data['content_id'];
+        $content_id = $data['content_id'] ?? 0;
 
         $content = CityContent::query()->where('id', $content_id)->first();
         if (!$content) {
@@ -888,7 +888,6 @@ class UserService
         $rule['email'] = 'required';
         $rule['phone'] = ['required', new PhoneWithCountryCode];
         $rule['other'] = 'sometimes';
-        $rule['content_id'] = 'sometimes';
 
         $message['contact.required'] = __('res.contact_required');
         $message['email.required'] = __('res.email_required');

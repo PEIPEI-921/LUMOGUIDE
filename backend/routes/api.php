@@ -26,7 +26,7 @@ use App\Http\Controllers\Api\VipController;
 */
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+    return response()->json(['code' => 200, 'message' => __('res.success'), 'data' => $request->user()]);
 });
 
 
@@ -43,7 +43,6 @@ Route::get('health', [CommonController::class, 'health']);
 Route::get('data/{lang}', [CommonController::class, 'data']);
 
 Route::prefix('common')->group(function () {
-    Route::get('test', [CommonController::class, 'test'])->middleware('auth:api');
     Route::get('config', [CommonController::class, 'config']);
     Route::post('fileUpload', [CommonController::class, 'fileUpload'])->middleware('auth:api');
     Route::get('getArea', [CommonController::class, 'getArea']);

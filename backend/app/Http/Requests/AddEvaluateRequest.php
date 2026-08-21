@@ -19,7 +19,7 @@ class AddEvaluateRequest extends FormRequest
             'content_id' => 'required',
             'content' => 'required|max:255',
             'pictures' => 'sometimes|array',
-            'star' => 'required|in:1,5',
+            'star' => 'required|integer|between:1,5',
         ];
     }
 
