@@ -400,7 +400,7 @@ class CommonService
 
             if (!empty($data)) {
                 foreach ($data as &$v) {
-                    $v['pictures'] = json_decode($v['pictures'], true) ?? [];
+                    $v['pictures'] = !empty($v['pictures']) ? json_decode($v['pictures'], true) : [];
                     $v['guide_type'] = $v['user']['identity_str'] ?? '';
                     $v['user_nickname'] = $v['guide']['name'] ?? '';
                     $v['user_avatar'] = $v['guide']['photo'] ?? '';

@@ -117,7 +117,6 @@ class GuideService
     {
         $user = auth('api')->user();
         handleGuideVip($user);
-
         if (City::query()->where('name', $data['name'])->exists()) {
             throw new ApiException(__('res.city_name_unique'));
         }
@@ -136,7 +135,7 @@ class GuideService
             $model->latitude = !empty($data['latitude']) ? $data['latitude'] : null;
             $model->is_capital = $data['is_capital'];
             $model->currency = $data['currency'];
-            $model->language = $data['language'];
+            $model->language = self::normalizeLanguage($data['language']);
             $model->population = $data['population'];
             $model->race = $data['race'];
             $model->overview = $data['overview'];
@@ -359,7 +358,7 @@ class GuideService
                 $city->latitude = !empty($data['latitude']) ? $data['latitude'] : $city->latitude;
                 $city->is_capital = $data['is_capital'];
                 $city->currency = $data['currency'];
-                $city->language = $data['language'];
+                $city->language = self::normalizeLanguage($data['language']);
                 $city->population = $data['population'];
                 $city->race = $data['race'];
                 $city->overview = $data['overview'];
@@ -386,7 +385,7 @@ class GuideService
                     : null;
                 $model->is_capital = $data['is_capital'];
                 $model->currency = $data['currency'];
-                $model->language = $data['language'];
+                $model->language = self::normalizeLanguage($data['language']);
                 $model->population = $data['population'];
                 $model->race = $data['race'];
                 $model->overview = $data['overview'];
@@ -1178,5 +1177,17 @@ class GuideService
             Log::error('delReserve error: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString());
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
+    }
+
+    /**
+     * 语言字段归一化：city.language 为 varchar 字符串；
+     * 兼容客户端传数组（如 ["中文","英語"]）或字符串（如 "中文,英語"）。
+     */
+    private static function normalizeLanguage($value): string
+    {
+        if (is_array($value)) {
+            return implode(',', array_filter(array_map('trim', $value)));
+        }
+        return (string) $value;
     }
 }

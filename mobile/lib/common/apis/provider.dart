@@ -10,9 +10,10 @@ class ApiProvider {
   ApiProvider._() {
     final options = BaseOptions(
       baseUrl: ApiUrl.apiUrl,
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 60),
+      // 生产库经 SSH 隧道访问较慢：放宽超时，避免慢请求被中断
+      connectTimeout: const Duration(seconds: 120),
+      receiveTimeout: const Duration(seconds: 180),
+      sendTimeout: const Duration(seconds: 120),
       validateStatus: (status) {
         return status != null && status >= 200 && status < 300;
       },

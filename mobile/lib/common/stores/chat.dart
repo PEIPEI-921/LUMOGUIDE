@@ -183,8 +183,8 @@ class ChatStore extends GetxController with ApiMixin {
     final dio = _dio ??= Dio(
       BaseOptions(
         baseUrl: ApiUrl.lumoChatBaseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {'Content-Type': 'application/json'},
       ),
     );

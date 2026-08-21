@@ -83,24 +83,8 @@ class MessageController extends GetxController
       }
     }
 
+    // 统一按最新时间排序：预订/关注/评论/聊天混合，最新消息在最上面
     messages.sort((a, b) {
-      final isAFixed = a.topFixed != MessageTopFixed.chat;
-      final isBFixed = b.topFixed != MessageTopFixed.chat;
-
-      if (isAFixed && !isBFixed) return -1;
-      if (!isAFixed && isBFixed) return 1;
-
-      if (isAFixed && isBFixed) {
-        final timeA = _getMessageTime(a);
-        final timeB = _getMessageTime(b);
-
-        if (timeA == null && timeB == null) return 0;
-        if (timeA == null) return 1;
-        if (timeB == null) return -1;
-
-        return timeB.compareTo(timeA);
-      }
-
       final timeA = _getMessageTime(a);
       final timeB = _getMessageTime(b);
 

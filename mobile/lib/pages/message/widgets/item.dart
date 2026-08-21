@@ -221,7 +221,7 @@ class MessageItemWidget extends StatelessWidget {
                     .expanded(),
               ],
             )
-            .padding(horizontal: 14.w, vertical: 6.w)
+            .padding(horizontal: 14.w, vertical: 3.w)
             .gestures(
               onTap: () => controller.onTapTopFixed(model),
               behavior: HitTestBehavior.opaque,
