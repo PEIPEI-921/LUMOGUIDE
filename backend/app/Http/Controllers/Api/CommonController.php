@@ -35,6 +35,44 @@ class CommonController extends BaseController
         return $this->success(__('res.success'), $data);
     }
 
+    /**
+     * 用户显示名（供 LUMO-Chat 离线推送标题使用）。
+     * 认证导游/企业优先取认证名，否则昵称，兜底用户编号。
+     * 调用方需带 X-Push-Key 头（与 LUMO_CHAT_ADMIN_TOKEN 一致），防止匿名枚举。
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function userDisplayName(Request $request)
+    {
+        if ($request->header('X-Push-Key') !== (string) config('lumochat.admin_token')) {
+            return $this->error('forbidden');
+        }
+        $number = (string) $request->get('number', '');
+        if ($number === '') {
+            return $this->error('missing number');
+        }
+        $user = User::query()->where('number', $number)->first();
+        if (!$user) {
+            return $this->error('user not found');
+        }
+        $name = $user->nickname ?: '';
+        if ($user->guide_id > 0) {
+            $guide = Guide::find($user->guide_id);
+            if ($guide && !empty($guide->name)) {
+                $name = $guide->name;
+            }
+        } elseif ($user->company_id > 0) {
+            $company = Company::find($user->company_id);
+            if ($company) {
+                $name = !empty($company->name_en) ? $company->name_en : ($company->name ?? '');
+            }
+        }
+        if ($name === '') {
+            $name = $number;
+        }
+        return $this->success('ok', ['name' => $name, 'number' => $number]);
+    }
+
 
     /**
      * 文件上传

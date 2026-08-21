@@ -64,6 +64,7 @@ Route::prefix('common')->group(function () {
     Route::post('deferredLink', [CommonController::class, 'deferredLink']);
     Route::get('checkDeferredLink', [CommonController::class, 'checkDeferredLink']);
     Route::post('appError', [CommonController::class, 'appError']);
+    Route::get('userDisplayName', [CommonController::class, 'userDisplayName']);
 });
 
 Route::prefix('payment')->group(function () {
