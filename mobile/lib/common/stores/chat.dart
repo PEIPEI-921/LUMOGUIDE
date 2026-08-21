@@ -268,7 +268,7 @@ class ChatStore extends GetxController with ApiMixin {
 
   // ─── 会话 ────────────────────────────────────────────────────
 
-  /// 刷新会话列表（更新响应式列表 + 补拉缺失的预览）
+  /// 刷新会话列表（更新响应式列表 + 补拉缺失的预览 + 加入会话房间 + 补算未读）
   Future<void> refreshConversationList() async {
     if (_token.isEmpty) return;
     try {
@@ -287,10 +287,58 @@ class ChatStore extends GetxController with ApiMixin {
         }
       }
       conversationList.assignAll(list);
+      _joinConversationRooms(list);
       _fetchMissingPreviews(list);
+      _syncUnreadFromServer(list);
     } catch (e) {
       log('ChatStore refreshConversationList error: $e');
     }
+  }
+
+  /// 为所有会话加入 socket 房间（他人新建的会话不会自动入房，需显式 join）
+  void _joinConversationRooms(List<ChatConversation> list) {
+    final socket = _socket;
+    if (socket == null) return;
+    for (final c in list) {
+      socket.emit('join_conversation', {'conversation_id': c.id});
+    }
+  }
+
+  /// 补算服务端未读：本地未累计过、且存在比 last_read_message_id 更新的消息时，
+  /// 按消息历史统计未读数（覆盖「他人先建会话再发消息」导致的漏计）。
+  Future<void> _syncUnreadFromServer(List<ChatConversation> list) async {
+    final need = list
+        .where((c) =>
+            c.lastMessageId != null &&
+            c.lastMessageId!.isNotEmpty &&
+            c.lastReadMessageId != null &&
+            c.lastReadMessageId!.isNotEmpty &&
+            c.lastMessageId != c.lastReadMessageId &&
+            !_unreadByConv.containsKey(c.id))
+        .take(10)
+        .toList();
+    if (need.isEmpty) return;
+    await Future.wait(need.map((c) async {
+      try {
+        final msgs = await fetchMessages(c.id, limit: 50);
+        if (msgs.isEmpty) return;
+        final readId = int.tryParse(c.lastReadMessageId ?? '0') ?? 0;
+        var unread = 0;
+        for (final m in msgs) {
+          final mid = int.tryParse(m.messageId) ?? 0;
+          if (mid > readId && !m.isMine) {
+            unread++;
+          }
+        }
+        if (unread > 0) {
+          _unreadByConv[c.id] = unread;
+          totalUnreadCount.value =
+              _unreadByConv.values.fold(0, (a, b) => a + b);
+        }
+      } catch (e) {
+        // 静默
+      }
+    }));
   }
 
   /// 对没有预览缓存的会话拉取最新一条消息（并行、失败静默）
