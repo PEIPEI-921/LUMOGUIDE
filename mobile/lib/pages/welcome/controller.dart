@@ -74,6 +74,11 @@ class WelcomeController extends GetxController {
     // 此時導航器未就緒、跳轉靜默失敗。welcome 完成主導航後補一次處理，
     // 讓已登錄用戶掃碼也能直接進入對應內容詳情頁。
     DeepLinkService.checkPendingDeepLink();
+
+    // 主導航（offAll）完成後重試緩存的推送點擊，避免被 offAll 清掉
+    try {
+      PushService.to.retryPendingTap();
+    } catch (_) {}
   }
 
   _loadConfig() async {

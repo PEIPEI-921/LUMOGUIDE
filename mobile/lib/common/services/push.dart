@@ -26,17 +26,123 @@ class PushService extends GetxService {
   Stream<Map<String, dynamic>> get onNotificationTap =>
       _notificationTapController.stream;
 
-  /// 应用启动时调用：注册 APNs 授权 + 恢复 token
+  /// 应用启动时调用：注册 APNs 授权 + 恢复 token + 订阅通知点击
   Future<void> init() async {
     _channel.setMethodCallHandler(_handleNativeCall);
+    // 订阅通知点击（需在 register 之前，确保冷启动补发的通知不丢失）
+    _notificationTapController.stream.listen(handleNotificationTap);
     try {
       final cached = await _channel.invokeMethod<String>('getToken') ?? '';
       if (cached.isNotEmpty) deviceToken = cached;
+      // 主动拉取冷启动通知（原生补发可能早于 Dart 就绪而丢失，这里兜底）
+      try {
+        final pending = await _channel.invokeMethod<Map>('getPendingNotification');
+        if (pending is Map && pending.isNotEmpty) {
+          handleNotificationTap(pending.cast<String, dynamic>());
+        }
+      } catch (_) {}
       // 申请授权（用户同意后原生回调 onTokenReceived → _uploadToken）
       await _channel.invokeMethod('register');
     } catch (e) {
       dev.log('[PushService] init error: $e');
     }
+  }
+
+  /// 待处理的点击通知（App 未就绪时缓存，就绪后重试）
+  Map<String, dynamic>? _pendingTap;
+
+  /// 通知点击 → 跳转对应会话内容。
+  /// 推送 data 中含 conversation_id（聊天消息推送）→ 打开聊天页。
+  /// App 未就绪（冷启动早期/未登录）时缓存，由 [retryPendingTap] 稍后处理。
+  Future<void> handleNotificationTap(Map<String, dynamic> data) async {
+    try {
+      if (!_isReadyForNavigation()) {
+        _pendingTap = data;
+        _debugReport('handleNotificationTap: cached pending (not ready)');
+        return;
+      }
+      await _processTap(data);
+    } catch (e) {
+      _debugReport('handleNotificationTap error: $e');
+      dev.log('[PushService] handleNotificationTap error: $e');
+    }
+  }
+
+  /// App 初始化/登录完成后再调用，处理之前缓存的点击通知。
+  Future<void> retryPendingTap() async {
+    final pending = _pendingTap;
+    if (pending == null) {
+      _debugReport('retryPendingTap: NO pending');
+      return;
+    }
+    if (!_isReadyForNavigation()) {
+      _debugReport('retryPendingTap: not ready');
+      return;
+    }
+    // 守卫：主导航（welcome → ROOT/LOGIN）进行中时保留 pending，
+    // 否则 push 的页面会被随后的 Get.offAll(ROOT) 清掉（回到首页）。
+    final currentRoute = Get.currentRoute;
+    if (currentRoute == AppRoutes.WELCOME ||
+        currentRoute == AppRoutes.LOGIN) {
+      _debugReport('retryPendingTap: guarded on $currentRoute');
+      return;
+    }
+    _pendingTap = null;
+    _debugReport('retryPendingTap: processing, route=$currentRoute');
+    await _processTap(pending);
+  }
+
+  /// 导航/登录是否就绪（冷启动早期 UserStore/ChatStore 尚未注册）
+  bool _isReadyForNavigation() {
+    return Get.isRegistered<UserStore>() &&
+        Get.isRegistered<ChatStore>() &&
+        UserStore.to.isLogin &&
+        Get.context != null;
+  }
+
+  /// 解析会话并跳转聊天页
+  Future<void> _processTap(Map<String, dynamic> data) async {
+    // APNs userInfo 结构：{aps: {...}, data: {message_id, conversation_id, ...}}
+    // 兼容 conversation_id 在顶层或 data 嵌套层
+    final inner = data['data'];
+    final innerMap = inner is Map
+        ? Map<String, dynamic>.from(inner)
+        : const <String, dynamic>{};
+    final convId =
+        (data['conversation_id'] ?? innerMap['conversation_id']) as String? ??
+            '';
+    _debugReport('_processTap: convId=$convId');
+    if (convId.isEmpty) return;
+    // 优先用内存会话对象，缺失时拉取会话详情
+    ChatConversation? conv = ChatStore.to.conversationList
+        .firstWhereOrNull((c) => c.id == convId);
+    conv ??= await ChatStore.to.getConversation(convId);
+    if (conv == null) {
+      // 降级：getConversation 失败时用最小会话对象跳转（聊天页只需 id 拉消息）
+      _debugReport('_processTap: getConversation null, fallback minimal conv');
+      conv = ChatConversation(id: convId, type: 'DIRECT');
+    }
+    await Get.toNamed(
+      AppRoutes.CHAT,
+      arguments: {'conversation': conv},
+    );
+    _debugReport('_processTap: navigated to CHAT');
+  }
+
+  /// 临时调试：上报关键路径到后端（排查冷启动跳转）
+  void _debugReport(String msg) {
+    try {
+      final client = dio.Dio(dio.BaseOptions(
+        baseUrl: ApiUrl.baseUrl,
+        sendTimeout: const Duration(seconds: 3),
+        receiveTimeout: const Duration(seconds: 3),
+      ));
+      client.post('/api/common/appError', data: {
+        'page': 'push_debug',
+        'error': msg,
+        'time': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {}
   }
 
   /// 处理原生回调

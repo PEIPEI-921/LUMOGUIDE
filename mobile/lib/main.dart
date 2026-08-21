@@ -60,6 +60,18 @@ void main() async {
 
   runApp(const MyApp());
   Global.setSystemUi();
+
+  // 首帧渲染完成后多次重试缓存的推送点击（冷启动点横幅时导航栈尚未就绪，
+  // 且 welcome 主导航（offAll）可能在稍后才完成，多次延时兜底）。
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    for (final delay in const [1, 2, 3, 5, 8]) {
+      Future<void>.delayed(Duration(seconds: delay), () {
+        try {
+          PushService.to.retryPendingTap();
+        } catch (_) {}
+      });
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {

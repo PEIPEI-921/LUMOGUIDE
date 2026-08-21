@@ -12,6 +12,7 @@ import '../services/deep_link.dart';
 import '../utils/loading.dart';
 import 'chat.dart';
 import 'storage.dart';
+import '../services/push.dart';
 
 class UserStore extends GetxController with ApiMixin {
   static UserStore get to => Get.find();
@@ -86,6 +87,10 @@ class UserStore extends GetxController with ApiMixin {
 
       // 登錄後恢復未處理的深鏈（綁定邀請 + 跳轉內容頁）
       DeepLinkService.checkPendingDeepLink();
+      // 登錄後重試緩存的推送點擊（冷啟動/未登錄時點擊通知）
+      try {
+        PushService.to.retryPendingTap();
+      } catch (_) {}
       _uploadUserRecord();
       return true;
     } catch (e) {

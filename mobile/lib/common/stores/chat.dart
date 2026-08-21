@@ -11,6 +11,7 @@ import '../extensions/map.dart';
 import '../models/chat.dart';
 import '../services/push.dart';
 import 'storage.dart';
+import 'user.dart';
 
 /// LUMO-Chat（IM-as-a-Service）客户端 Store。
 ///
@@ -565,6 +566,12 @@ class ChatStore extends GetxController with ApiMixin {
       }
     }
 
+    // 注入发送者显示名（推送横幅标题用），LUMO-Chat 离线推送时读取 extra.sender_name
+    final finalExtra = <String, dynamic>{
+      ...?extra,
+      'sender_name': _myDisplayName(),
+    };
+
     final clientMsgId = _generateClientMsgId();
     final completer = Completer<ChatMessage>();
     _ackWaiters[clientMsgId] = completer;
@@ -573,7 +580,7 @@ class ChatStore extends GetxController with ApiMixin {
       'client_msg_id': clientMsgId,
       'type': type,
       'content': content,
-      'extra': extra ?? {},
+      'extra': finalExtra,
     };
 
     // 超时保护
@@ -979,5 +986,29 @@ class ChatStore extends GetxController with ApiMixin {
     final now = DateTime.now().millisecondsSinceEpoch;
     final rand = (DateTime.now().microsecondsSinceEpoch % 1000000).toString();
     return 'lumo_${now}_$rand';
+  }
+
+  /// 当前登录用户的显示名（推送横幅标题用）。
+  /// 认证导游/企业取认证名，普通用户取昵称，兜底用户编号。
+  String _myDisplayName() {
+    try {
+      final info = UserStore.to.profile;
+      if (info.identity == 2) {
+        final guideName = info.guideInfo?.name;
+        if (guideName?.isNotEmpty ?? false) return guideName!;
+      } else if (info.identity == 3) {
+        final company = info.companyInfo;
+        final companyName = (company?.nameEn?.isNotEmpty ?? false)
+            ? company!.nameEn!
+            : (company?.name ?? '');
+        if (companyName.isNotEmpty) return companyName;
+      }
+      final nick = info.nickname;
+      if (nick?.isNotEmpty ?? false) return nick!;
+      final number = info.number;
+      return number?.isNotEmpty ?? false ? number! : '用户';
+    } catch (e) {
+      return '';
+    }
   }
 }
