@@ -9,7 +9,13 @@ class CitySearchWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<CityController>();
+    // 防御：CityController 可能已被 GetX 销毁（页面切换/重新登录），
+    // 直接 find 会拿到已 dispose 的 controller → TextField 崩溃。
+    final controller = Get.isRegistered<CityController>() &&
+            !Get.find<CityController>().isClosed
+        ? Get.find<CityController>()
+        : null;
+    if (controller == null) return const SizedBox.shrink();
 
     return Column(
       children: [

@@ -9,7 +9,12 @@ class CityPage extends StatelessWidget with UserStoreMixin {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(CityController());
+    // 页面重建（如登录后 offAll 竞态）时，注册表中可能残留已 dispose 的 controller，
+    // 复用会导致 TextEditingController used after disposed 崩溃，必须重建新实例。
+    final controller = Get.isRegistered<CityController>() &&
+            !Get.find<CityController>().isClosed
+        ? Get.find<CityController>()
+        : Get.put(CityController());
     return IScaffold(
       appBar: IAppBar(
         title: '城市'.tr,
