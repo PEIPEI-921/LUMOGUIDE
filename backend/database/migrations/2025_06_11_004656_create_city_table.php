@@ -44,7 +44,6 @@ return new class extends Migration {
             $table->integer('order')->default(0);
             $table->boolean('is_finish')->default(0)->comment('是否完成');
             $table->boolean('is_read')->default(1)->comment('是否已读');
-            $table->boolean('status')->default(1)->comment('状态');
             $table->timestamps();
         });
 
@@ -69,7 +68,7 @@ return new class extends Migration {
             $table->integer('guide_type_id')->default(0)->comment('导游身份ID');
             $table->integer('class_id')->default(0)->comment('分类ID');
             $table->string('title', 30)->comment('标题');
-            $table->string('title', 255)->nullable()->comment('简介');
+            $table->string('desc', 255)->nullable()->comment('简介');
             $table->text('content')->comment('内容');
             $table->string('first_picture', 255)->nullable()->comment('首张封面');
             $table->string('pictures', 1000)->nullable()->comment('图片');

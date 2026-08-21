@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Exceptions\ApiException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RegisterRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'inviter_code' => 'required',
-            'email' => 'required|unique:users',
+            'email' => ['required', Rule::unique('users')->whereNull('deleted_at')],
 //            'verify_code' => 'required',
             'password' => 'required|confirmed',
             'password_confirmation' => 'required'

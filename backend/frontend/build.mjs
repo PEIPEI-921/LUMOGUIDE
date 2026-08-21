@@ -122,4 +122,4 @@ if (lastCdnInsert !== -1) {
 
 writeFileSync(DIST_HTML, prodHtml);
 console.log(`[build] Written: dist/index.html`);
-console.log(`[build] Done! HTTP requests: 2 CDN + 1 JS + 1 CSS = 4 total`);
+console.log(`[build] Done! HTTP requests: 1 CDN (Stripe) + 2 vendor + 1 JS + 1 CSS = 5 total`);

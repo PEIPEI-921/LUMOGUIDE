@@ -50,8 +50,8 @@ const IntegralRecordsPage = {
                 <p style="font-size:11px;color:var(--color-assistant-text);margin-top:4px">{{ formatDate(r.created_at) }}</p>
               </div>
               <div style="text-align:right;flex-shrink:0">
-                <span :style="{fontSize:'15px',fontWeight:700,color:Number(r.num||r.integral||0)>=0?'var(--color-green)':'var(--color-red)'}">
-                  {{ Number(r.num||r.integral||0)>=0 ? '+' : '' }}{{ r.num || r.integral || 0 }}
+                <span :style="{fontSize:'15px',fontWeight:700,color:Number(r.type)===1?'var(--color-red)':'var(--color-green)'}">
+                  {{ Number(r.type)===1 ? '-' : '+' }}{{ Number(r.amount || 0) }}
                 </span>
               </div>
             </div>
@@ -69,7 +69,7 @@ const IntegralRecordsPage = {
       return Number(profile?.integral || 0);
     }
   },
-  mounted() { this.fetchRecords(); },
+  mounted() { this.fetchRecords(); UserStore.getProfile(); },
   methods: {
     async fetchRecords() {
       this.loading = true; this.error = null;

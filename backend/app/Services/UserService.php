@@ -249,7 +249,8 @@ class UserService
         $user_id = auth('api')->id();
 
         try {
-            User::destroy($user_id);
+            // 硬删除，释放邮箱供重新注册
+            User::find($user_id)?->forceDelete();
         } catch (Throwable $e) {
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }

@@ -78,7 +78,7 @@ class AuthService
         }
 
         if ($type == 'reg') {
-            if (DB::table('users')->where('email', $email)->exists()) {
+            if (DB::table('users')->where('email', $email)->whereNull('deleted_at')->exists()) {
                 throw new ApiException(__('res.account_in'));
             }
         }
@@ -145,10 +145,13 @@ class AuthService
 
         DB::beginTransaction();
         try {
-            // 事务内原子性检查：防止并发注册同一邮箱
-            if (DB::table('users')->where('email', $data['email'])->exists()) {
+            // 事务内原子性检查：防止并发注册同一邮箱（忽略已注销的软删除记录）
+            if (DB::table('users')->where('email', $data['email'])->whereNull('deleted_at')->exists()) {
                 throw new ApiException(__('res.email_unique'));
             }
+
+            // 清理已注销账号的残留记录，释放邮箱（email 有唯一索引）
+            DB::table('users')->where('email', $data['email'])->whereNotNull('deleted_at')->delete();
 
             $model = new User();
             $model->email = $data['email'];

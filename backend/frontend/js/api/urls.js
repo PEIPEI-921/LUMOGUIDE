@@ -19,7 +19,6 @@ const ApiUrl = {
   config: '/common/config',
   fileUpload: '/common/fileUpload',
   getArea: '/common/getArea',
-  getCountry: '/common/getCountry',
   getLocation: '/common/location',
   getContinents: '/common/getContinents',
   getContinentsList: '/common/getContinentsList',

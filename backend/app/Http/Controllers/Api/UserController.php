@@ -42,7 +42,7 @@ class UserController extends BaseController
      */
     public function numberInfo(UserService $service, Request $request)
     {
-        $user_number = $request->get('user_number');
+        $user_number = (string) $request->get('user_number', '');
 
         $data = $service->numberInfo($user_number);
         return $this->success(__('res.success'), $data);
