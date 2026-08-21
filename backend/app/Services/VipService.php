@@ -169,6 +169,10 @@ class VipService
                 // 增加会员到期任务
                 VipExpiredJob::dispatch($user->id)->delay(now()->addDays($day));
             } else {
+                if (empty(config('services.stripe.secret')) || empty(config('services.stripe.key'))) {
+                    Log::error('Stripe createPaymentIntent error: Stripe API key not configured in .env');
+                    throw new ApiException(__('res.stripe_not_configured'), System::SYSTEM_ERROR);
+                }
                 Stripe::setApiKey(config('services.stripe.secret'));
 
                 try {
@@ -195,6 +199,9 @@ class VipService
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+            if ($e instanceof ApiException) {
+                throw $e;
+            }
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 
@@ -273,6 +280,10 @@ class VipService
                 // 訂閱企业會員給邀請人增加積分
                 SystemIntegralConfig::saveData($user->inviter_id, 'invite_company');
             } else {
+                if (empty(config('services.stripe.secret')) || empty(config('services.stripe.key'))) {
+                    Log::error('Stripe createPaymentIntent error: Stripe API key not configured in .env');
+                    throw new ApiException(__('res.stripe_not_configured'), System::SYSTEM_ERROR);
+                }
                 Stripe::setApiKey(config('services.stripe.secret'));
 
                 try {
@@ -299,6 +310,9 @@ class VipService
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+            if ($e instanceof ApiException) {
+                throw $e;
+            }
             throw new ApiException(__('res.system_error'), System::SYSTEM_ERROR);
         }
 

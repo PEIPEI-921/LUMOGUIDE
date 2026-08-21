@@ -159,4 +159,5 @@ return [
     'phone.max' => 'Phone number cannot exceed 50 characters',
     'website_required' => 'Company website address cannot be empty',
     'documents_picture_required' => 'Document images cannot be empty',
+    'stripe_not_configured' => 'Payment service is not configured yet, please contact the administrator',
 ];

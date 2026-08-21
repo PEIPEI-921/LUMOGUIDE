@@ -153,4 +153,5 @@ return [
     'phone.max' => '聯系電話不能超過50個字符',
     'website_required' => '公司網址不能為空',
     'documents_picture_required' => '證件圖片不能為空',
+    'stripe_not_configured' => '支付服務尚未配置，請聯繫管理員',
 ];
