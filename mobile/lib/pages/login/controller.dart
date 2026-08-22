@@ -87,13 +87,15 @@ class LoginController extends GetxController with ApiMixin {
       AlertUtils.error(res.message);
       return;
     }
-    // 僅記住帳號，不存明文密碼（安全）：
-    // 密碼僅存在內存中，退出登錄後不殘留設備。
+    // 記住密碼：勾選後保存帳號+密碼，下次打開自動填充。
+    // 退出登錄時 logout() 會清除（不殘留設備）。
     if (rememberPassword.value) {
       StorageStone.setAccount(email.value);
+      StorageStone.setPassword(password.value);
       StorageStone.setRememberMe(true);
     } else {
       StorageStone.setAccount('');
+      StorageStone.setPassword('');
       StorageStone.setRememberMe(false);
     }
     final loggedIn = await UserStore.to.login(res.data);
