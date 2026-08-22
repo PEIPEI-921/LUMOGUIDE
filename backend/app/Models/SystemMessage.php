@@ -73,7 +73,7 @@ class SystemMessage extends Model
      */
     static private function pushSystemMessage(int $user_id, string $title, string $desc, string $content, string $content_type = '', int $city_id = 0, int $content_id = 0)
     {
-        self::sendPush($user_id, $title, $desc, $content, [
+        self::sendPush($user_id, $title, $desc, [
             'type' => 'system_message',
             'content_type' => $content_type,
             'city_id' => $city_id,
