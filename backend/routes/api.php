@@ -63,7 +63,7 @@ Route::prefix('common')->group(function () {
     Route::get('shareQrcode', [CommonController::class, 'shareQrcode'])->middleware('auth:api');
     Route::post('deferredLink', [CommonController::class, 'deferredLink']);
     Route::get('checkDeferredLink', [CommonController::class, 'checkDeferredLink']);
-    Route::post('appError', [CommonController::class, 'appError']);
+    Route::post('appError', [CommonController::class, 'appError'])->withoutMiddleware('throttle:api');
     Route::get('userDisplayName', [CommonController::class, 'userDisplayName']);
 });
 
