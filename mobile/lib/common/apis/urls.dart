@@ -13,10 +13,10 @@ abstract class ApiUrl {
 
   /// LUMO-Chat（IM-as-a-Service）服务地址（REST）。
   /// 可用 `--dart-define=LUMO_CHAT_URL=http://...` 覆盖（本地联调/预发）。
-  /// 生产经 Nginx 反代时用带路径前缀的地址（如 https://api.lumoguide.com/im）。
+  /// 生产经 Nginx 反代：https://api.lumoguide.com/im（/im 前缀转发 LUMO-Chat REST）。
   static const lumoChatBaseUrl = String.fromEnvironment(
     'LUMO_CHAT_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://api.lumoguide.com/im',
   );
 
   /// LUMO-Chat WebSocket 服务地址。
@@ -26,7 +26,7 @@ abstract class ApiUrl {
   /// 可用 `--dart-define=LUMO_CHAT_WS_URL=http://...` 覆盖。
   static const lumoChatWsBaseUrl = String.fromEnvironment(
     'LUMO_CHAT_WS_URL',
-    defaultValue: lumoChatBaseUrl,
+    defaultValue: 'https://api.lumoguide.com',
   );
 
   static const register = '/auth/register';
