@@ -132,6 +132,13 @@ class ChatStore extends GetxController with ApiMixin {
             'conversation_id': _activeConversationId,
           });
         }
+        // 补发未加入的会话房间（连接前 join 的 emit 会丢失，导致收不到实时消息）
+        if (_pendingJoinConversations.isNotEmpty) {
+          for (final cid in _pendingJoinConversations) {
+            socket.emit('join_conversation', {'conversation_id': cid});
+          }
+          _pendingJoinConversations.clear();
+        }
         log('ChatStore: socket connected');
       });
 
@@ -390,10 +397,21 @@ class ChatStore extends GetxController with ApiMixin {
 
   /// 为所有会话加入 socket 房间（他人新建的会话不会自动入房，需显式 join）
   void _joinConversationRooms(List<ChatConversation> list) {
-    final socket = _socket;
-    if (socket == null) return;
     for (final c in list) {
-      socket.emit('join_conversation', {'conversation_id': c.id});
+      _emitJoinConversation(c.id);
+    }
+  }
+
+  /// 待加入的会话房间（socket 未连接时记录，连接后补发，避免收不到实时消息）
+  final _pendingJoinConversations = <String>{};
+
+  /// 发送 join_conversation；socket 未连接时先记录，onConnect 后补发
+  void _emitJoinConversation(String conversationId) {
+    final socket = _socket;
+    if (socket != null && _connected.value) {
+      socket.emit('join_conversation', {'conversation_id': conversationId});
+    } else {
+      _pendingJoinConversations.add(conversationId);
     }
   }
 
@@ -817,7 +835,7 @@ class ChatStore extends GetxController with ApiMixin {
 
   /// 加入会话房间（新会话需显式 join）
   void joinConversation(String conversationId) {
-    _socket?.emit('join_conversation', {'conversation_id': conversationId});
+    _emitJoinConversation(conversationId);
   }
 
   /// 当前打开的会话（在线推送判断：正在看该会话则不推）。
