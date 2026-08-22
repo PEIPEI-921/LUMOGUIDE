@@ -342,13 +342,44 @@ class ChatStore extends GetxController with ApiMixin {
           }
         }
       }
-      conversationList.assignAll(list);
+      // 单聊去重：同一 peer 可能因历史数据/竞态存在多个 DIRECT 会话，
+      // 列表只保留 updatedAt 最新的一条（避免同一用户出现两个聊天记录）。
+      conversationList.assignAll(_dedupeByPeer(list));
       _joinConversationRooms(list);
       _fetchMissingPreviews(list);
       _syncUnreadFromServer(list);
     } catch (e) {
       log('ChatStore refreshConversationList error: $e');
     }
+  }
+
+  /// 单聊会话按 peer 去重（保留 updatedAt 最新；群聊不去重）。
+  List<ChatConversation> _dedupeByPeer(List<ChatConversation> list) {
+    final result = <ChatConversation>[];
+    final seen = <String, int>{}; // peer_user_id -> 在 result 中的下标
+    for (final c in list) {
+      if (!c.isGroup && (c.peerUserId?.isNotEmpty ?? false)) {
+        final peer = c.peerUserId!;
+        final existingIdx = seen[peer];
+        if (existingIdx != null) {
+          // 保留 updatedAt 更新的
+          if (_later(c, result[existingIdx])) {
+            result[existingIdx] = c;
+          }
+          continue;
+        }
+        seen[peer] = result.length;
+      }
+      result.add(c);
+    }
+    return result;
+  }
+
+  bool _later(ChatConversation a, ChatConversation b) {
+    final ta = DateTime.tryParse(a.updatedAt ?? '');
+    final tb = DateTime.tryParse(b.updatedAt ?? '');
+    if (ta == null || tb == null) return false;
+    return ta.isAfter(tb);
   }
 
   /// 为所有会话加入 socket 房间（他人新建的会话不会自动入房，需显式 join）
@@ -650,8 +681,13 @@ class ChatStore extends GetxController with ApiMixin {
       final map = (data as Map).cast<String, dynamic>();
       final msg = ChatMessage.fromJson(map);
       _lastMessageByConv[msg.conversationId] = msg;
-      // 自己其他设备发的消息（多设备同时在线时服务端会广播回来）不计未读
-      final isOwnMessage = msg.isMine;
+      // 自己其他设备发的消息（多设备同时在线时服务端会广播回来）不计未读。
+      // isMine 依赖 ChatStoreRef.currentUserId（init 时设置）；未初始化时兜底用
+      // UserStore 当前用户编号判断，避免把自己的消息误计为未读（角标/通知异常）。
+      final isOwnMessage = msg.isMine ||
+          (Get.isRegistered<UserStore>() &&
+              msg.senderId.isNotEmpty &&
+              msg.senderId == UserStore.to.profile.number);
       // 非当前打开会话且非自己发的消息则累计未读
       if (!isOwnMessage && activeConversationId != msg.conversationId) {
         _incrementUnread(msg.conversationId);
