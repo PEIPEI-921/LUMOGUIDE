@@ -239,34 +239,8 @@ class _MessageBubble extends StatelessWidget {
           'pictures': [ConfigService.normalizeUploadUrl(message.content)],
           'index': 0,
         }),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12.r),
-          child: CachedNetworkImage(
-            imageUrl: ConfigService.normalizeUploadUrl(message.content),
-            width: 180.w,
-            height: 180.w,
-            fit: BoxFit.cover,
-            placeholder: (_, __) => Container(
-              width: 180.w,
-              height: 180.w,
-              color: AppColors.backgroundBlue,
-              alignment: Alignment.center,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            ),
-            errorWidget: (_, __, ___) => Container(
-              width: 180.w,
-              height: 180.w,
-              color: AppColors.backgroundBlue,
-              alignment: Alignment.center,
-              child: Text(
-                '圖片加載失敗'.tr,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: AppColors.assistantText,
-                ),
-              ),
-            ),
-          ),
+        child: _ChatImageBubble(
+          url: ConfigService.normalizeUploadUrl(message.content),
         ),
       );
     }
@@ -527,6 +501,127 @@ class _InputBar extends StatelessWidget {
               }),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 聊天图片气泡：按图片原始宽高比显示缩略图（不裁剪成正方形）。
+/// 先解析原始尺寸 → 计算等比显示尺寸（最大 180.w）→ 渲染。
+class _ChatImageBubble extends StatefulWidget {
+  final String url;
+
+  const _ChatImageBubble({required this.url});
+
+  @override
+  State<_ChatImageBubble> createState() => _ChatImageBubbleState();
+}
+
+class _ChatImageBubbleState extends State<_ChatImageBubble> {
+  Size? _imageSize;
+  static const double _maxSide = 180;
+  ImageStream? _imageStream;
+  ImageStreamListener? _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImageSize();
+  }
+
+  @override
+  void didUpdateWidget(_ChatImageBubble old) {
+    super.didUpdateWidget(old);
+    if (old.url != widget.url) {
+      _imageSize = null;
+      _resolveImageSize();
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_imageStream != null && _listener != null) {
+      _imageStream!.removeListener(_listener!);
+    }
+    super.dispose();
+  }
+
+  /// 解析图片原始尺寸（走 cached_network_image 的缓存，不重复下载）
+  void _resolveImageSize() {
+    try {
+      final provider = CachedNetworkImageProvider(widget.url);
+      final stream = provider.resolve(ImageConfiguration.empty);
+      _listener = ImageStreamListener((info, _) {
+        if (!mounted) return;
+        setState(() {
+          _imageSize = Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          );
+        });
+      }, onError: (_, __) {});
+      _imageStream = stream;
+      stream.addListener(_listener!);
+    } catch (_) {}
+  }
+
+  /// 等比显示尺寸：最大边 180，保持原始宽高比
+  Size _displaySize() {
+    final s = _imageSize;
+    if (s == null || s.width <= 0 || s.height <= 0) {
+      return const Size(_maxSide, _maxSide);
+    }
+    final ratio = s.width / s.height;
+    double w = _maxSide;
+    double h = w / ratio;
+    if (h > _maxSide) {
+      h = _maxSide;
+      w = h * ratio;
+    }
+    // 极小图（如 1×1 图标）放大到最小可见尺寸
+    const minSide = 60.0;
+    if (w < minSide && h < minSide) {
+      if (w >= h) {
+        w = minSide;
+        h = w / ratio;
+      } else {
+        h = minSide;
+        w = h * ratio;
+      }
+    }
+    return Size(w, h);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = _displaySize();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.r),
+      child: CachedNetworkImage(
+        imageUrl: widget.url,
+        width: size.width,
+        height: size.height,
+        fit: BoxFit.fill,
+        placeholder: (_, __) => Container(
+          width: size.width,
+          height: size.height,
+          color: AppColors.backgroundBlue,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+        errorWidget: (_, __, ___) => Container(
+          width: size.width,
+          height: size.height,
+          color: AppColors.backgroundBlue,
+          alignment: Alignment.center,
+          child: Text(
+            '圖片加載失敗'.tr,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: AppColors.assistantText,
+            ),
+          ),
         ),
       ),
     );
