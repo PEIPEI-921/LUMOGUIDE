@@ -46,4 +46,23 @@ class CompanyInfoController extends GetxController
       },
     );
   }
+
+  /// 联系企业：创建单聊并进入聊天页
+  Future<void> onSendMessage() async {
+    if (!ChatStore.to.isReady) {
+      Loading.toast('聊天服務未就緒'.tr);
+      return;
+    }
+    final userNumber = _companyInfo.value?.userNumber ?? '';
+    if (userNumber.isEmpty) {
+      AlertUtils.error('創建會話失敗'.tr);
+      return;
+    }
+    final conversation = await ChatStore.to.getOrCreateDirect(userNumber);
+    if (conversation == null) {
+      AlertUtils.error('創建會話失敗'.tr);
+      return;
+    }
+    Get.toNamed(AppRoutes.CHAT, arguments: {'conversation': conversation});
+  }
 }

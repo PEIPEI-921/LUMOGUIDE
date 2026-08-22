@@ -1,21 +1,26 @@
 import 'dart:async';
 import 'dart:developer' as dev;
+import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../index.dart';
 import 'package:dio/dio.dart' as dio;
 
-/// 推送服务：iOS 原生 APNs 注册 + device token 上报 LUMO-Chat + 角标 + 通知点击。
+/// 推送服务：iOS APNs / Android FCM 注册 + device token 上报 LUMO-Chat + 角标 + 通知点击。
 ///
-/// 原生通道（ios/Runner/AppDelegate.swift）：
-/// - MethodChannel "lumotrip/push"
+/// 原生通道（MethodChannel "lumotrip/push"）：
+/// - iOS：ios/Runner/AppDelegate.swift
+/// - Android：android/.../MainActivity.kt + FcmService.kt
 ///   - 调用: register / getToken / setBadge
 ///   - 原生回调: onTokenReceived / onNotificationTap
 class PushService extends GetxService {
   static PushService get to => Get.find();
 
   static const _channel = MethodChannel('lumotrip/push');
+
+  /// 当前平台推送标识（上报 LUMO-Chat 用）
+  static String get platformName => Platform.isAndroid ? 'android' : 'ios';
 
   /// 当前设备的 APNs token（缓存）
   String deviceToken = '';
@@ -144,7 +149,7 @@ class PushService extends GetxService {
         headers: {'Authorization': 'Bearer $chatToken'},
       ));
       await dioClient.post('/api/v1/users/device-token', data: {
-        'platform': 'ios',
+        'platform': platformName,
         'token': deviceToken,
       });
     } catch (e) {
@@ -163,7 +168,7 @@ class PushService extends GetxService {
         headers: {'Authorization': 'Bearer $chatToken'},
       ));
       await dioClient.delete('/api/v1/users/device-token', data: {
-        'platform': 'ios',
+        'platform': platformName,
       });
     } catch (e) {
       dev.log('[PushService] removeToken error: $e');

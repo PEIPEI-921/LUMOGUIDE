@@ -12,7 +12,23 @@ class CompanyInfoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(CompanyInfoController());
     return IScaffold(
-      title: '企業詳情'.tr,
+      appBar: IAppBar(
+        title: '企業詳情'.tr,
+        actions: [
+          Obx(
+            () => (controller.companyInfo?.userNumber?.isNotEmpty ?? false)
+                ? IconButton(
+                    icon: Icon(
+                      Icons.chat_bubble_outline,
+                      size: 22.w,
+                      color: AppColors.primaryText,
+                    ),
+                    onPressed: controller.onSendMessage,
+                  ).paddingOnly(right: 10)
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
       body: Obx(() {
         if (controller.companyInfo == null) {
           return const SizedBox.shrink();

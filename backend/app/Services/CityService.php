@@ -417,7 +417,7 @@ class CityService
      */
     public function getCityContentList(int $city_id, int $type_id, int $type_class_id, int $limit)
     {
-        $query = CityContent::query()->where('city_id', $city_id)->where('type_id', $type_id);
+        $query = CityContent::query()->with('user:id,number')->where('city_id', $city_id)->where('type_id', $type_id);
         if ($type_class_id > 0) {
             if ($type_class_id == 10000) {
                 $query->where('recommend', 1)
@@ -443,6 +443,9 @@ class CityService
                 $v['tickets_free'] = \App\Enums\City::TicketsFree[$v['tickets_free']];
             }
             $v['evaluate_count'] = ContentEvaluate::query()->where('content_type', \App\Enums\City::ContentTypeCity)->where('content_id', $v['id'])->count();
+            // 聊天入口：内容发布者的 user_number（商家列表直接发消息用）
+            $v['user_number'] = $v['user']['number'] ?? '';
+            unset($v['user']);
             unset($v);
         }
         return ['total' => $res['total'], 'list' => $data];

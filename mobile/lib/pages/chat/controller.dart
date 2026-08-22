@@ -13,6 +13,17 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
   final _messages = <ChatMessage>[].obs;
   List<ChatMessage> get messages => _messages;
 
+  /// 更早消息分页游标（= 当前最旧消息的 message_id）
+  String? _nextCursor;
+
+  /// 是否还有更早消息
+  final _hasMore = false.obs;
+  bool get hasMore => _hasMore.value;
+
+  /// 正在加载更早消息
+  final _loadingOlder = false.obs;
+  bool get loadingOlder => _loadingOlder.value;
+
   final _peerInfo = Rxn<MemberInfo>();
   MemberInfo? get memberInfo => _peerInfo.value;
 
@@ -100,10 +111,37 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
 
   /// 拉取历史消息并上报已读
   Future<void> _loadMessages() async {
-    final list = await ChatStore.to.fetchMessages(conversationID!, limit: 50);
-    _messages.assignAll(list);
-    if (list.isNotEmpty) {
-      await ChatStore.to.markRead(conversationID!, list.last.messageId);
+    final page = await ChatStore.to.fetchMessagePage(
+      conversationID!,
+      limit: 50,
+    );
+    _messages.assignAll(page.messages);
+    _nextCursor = page.nextCursor;
+    _hasMore.value = page.hasMore;
+    if (page.messages.isNotEmpty) {
+      await ChatStore.to.markRead(conversationID!, page.messages.last.messageId);
+    }
+  }
+
+  /// 上滑到顶部时加载更早消息（cursor 分页，防重入）
+  Future<void> loadOlderMessages() async {
+    if (_loadingOlder.value || !_hasMore.value) return;
+    final cursor = _nextCursor;
+    if (cursor == null || cursor.isEmpty) return;
+    _loadingOlder.value = true;
+    try {
+      final page = await ChatStore.to.fetchMessagePage(
+        conversationID!,
+        cursor: cursor,
+        limit: 30,
+      );
+      if (page.messages.isNotEmpty) {
+        _messages.insertAll(0, page.messages);
+      }
+      _nextCursor = page.nextCursor;
+      _hasMore.value = page.hasMore;
+    } finally {
+      _loadingOlder.value = false;
     }
   }
 
@@ -393,6 +431,26 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
       }
     } else {
       Loading.error('撤回失敗'.tr);
+    }
+  }
+
+  /// 编辑自己的消息（仅文本）
+  Future<void> editMessage(ChatMessage message, String newContent) async {
+    if (!message.isMine || message.isRecalled) return;
+    final content = newContent.trim();
+    if (content.isEmpty || content == message.content) return;
+    final ok = await ChatStore.to.editMessage(message.messageId, content);
+    if (ok) {
+      final idx = _messages.indexWhere((m) => m.messageId == message.messageId);
+      if (idx >= 0) {
+        _messages[idx] = _messages[idx].copyWith(
+          content: content,
+          editedAt: DateTime.now().millisecondsSinceEpoch,
+        );
+        _messages.refresh();
+      }
+    } else {
+      Loading.error('修改失敗'.tr);
     }
   }
 }

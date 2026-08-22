@@ -202,6 +202,25 @@ class MerchantChildListController extends GetxController
       'type_id': type.id,
     });
   }
+
+  /// 直接与商家发起聊天（需后端返回 user_number）
+  Future<void> onChat(MerchantList merchant) async {
+    final userNumber = merchant.userNumber ?? '';
+    if (userNumber.isEmpty) {
+      Loading.toast('暫無聯繫方式'.tr);
+      return;
+    }
+    if (!ChatStore.to.isReady) {
+      Loading.toast('聊天服務未就緒'.tr);
+      return;
+    }
+    final conversation = await ChatStore.to.getOrCreateDirect(userNumber);
+    if (conversation == null) {
+      AlertUtils.error('創建會話失敗'.tr);
+      return;
+    }
+    Get.toNamed(AppRoutes.CHAT, arguments: {'conversation': conversation});
+  }
 }
 
 class MerchantChildListWidget extends StatelessWidget {
@@ -258,11 +277,38 @@ class _Item extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        NetImageCached(
-          item.firstPicture ?? '',
-          width: double.infinity,
-          height: 95.w,
-          fit: BoxFit.cover,
+        Stack(
+          children: [
+            NetImageCached(
+              item.firstPicture ?? '',
+              width: double.infinity,
+              height: 95.w,
+              fit: BoxFit.cover,
+            ),
+            // 聊天入口：直接与商家发起会话
+            if ((item.userNumber ?? '').isNotEmpty)
+              Positioned(
+                top: 6.w,
+                right: 6.w,
+                child: GestureDetector(
+                  onTap: () => controller.onChat(item),
+                  child: Container(
+                    width: 28.w,
+                    height: 28.w,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.chat_bubble_outline,
+                      size: 15.w,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         10.w.verticalSpace,
         Column(

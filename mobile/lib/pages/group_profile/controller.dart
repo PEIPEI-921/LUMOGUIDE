@@ -158,4 +158,13 @@ class GroupProfileController extends GetxController with ApiMixin {
     }
     return ok;
   }
+
+  /// 修改群名（群主/管理员）
+  Future<bool> updateGroupTitle(String title) async {
+    final ok = await ChatStore.to.updateGroupTitle(groupID, title);
+    if (ok) {
+      _groupInfo.value = _groupInfo.value?.copyWith(title: title.trim());
+    }
+    return ok;
+  }
 }

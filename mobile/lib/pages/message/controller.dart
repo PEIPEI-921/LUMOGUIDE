@@ -346,8 +346,27 @@ class MessageController extends GetxController
 
   Future<void> _handleScannedGroup(String groupID) async {
     if (groupID.isEmpty) return;
-    // LUMO-Chat 无自助加群接口：群成员需由群主/管理员添加
-    Loading.error('無法直接加入群組，請聯繫群主邀請'.tr);
+    // 自助加群（LUMO-Chat 服务端 join 接口，幂等：已是成员直接成功）
+    final ok = await AlertUtils.show(
+      title: '加入群聊'.tr,
+      content: '掃描到群二維碼，是否加入該群聊？'.tr,
+      confirmText: '加入'.tr,
+      cancelText: '取消'.tr,
+    );
+    if (ok != true) return;
+    Loading.show();
+    final conversation = await ChatStore.to.joinGroup(groupID);
+    Loading.dismiss();
+    if (conversation == null) {
+      Loading.error('加入群聊失敗，請聯繫群主邀請'.tr);
+      return;
+    }
+    Loading.success('已加入群聊'.tr);
+    await Get.toNamed(
+      AppRoutes.CHAT,
+      arguments: {'conversation': conversation},
+    );
+    await _refreshConversationList();
   }
 
   void _handleScannedUser(String userID) {

@@ -14,6 +14,7 @@ class MerchantList {
     this.address,
     this.typeId,
     this.cityId,
+    this.userNumber,
   });
 
   int? id;
@@ -40,6 +41,9 @@ class MerchantList {
   /// 城市id
   int? cityId;
 
+  /// 发布者 user_number（聊天入口）
+  String? userNumber;
+
   factory MerchantList.fromJson(Map<String, dynamic> json) => MerchantList(
         id: json.safeInt('id'),
         name: json.safeString('name'),
@@ -53,6 +57,7 @@ class MerchantList {
         address: json.safeString('address'),
         typeId: json.safeInt('type_id'),
         cityId: json.safeInt('city_id'),
+        userNumber: json.safeString('user_number'),
       );
 
   Map<String, dynamic> toJson() => {
@@ -68,5 +73,6 @@ class MerchantList {
         "address": address,
         "type_id": typeId,
         "city_id": cityId,
+        "user_number": userNumber,
       };
 }

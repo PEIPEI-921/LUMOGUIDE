@@ -167,9 +167,17 @@ class _GroupInfoCard extends StatelessWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
-                            // LUMO-Chat 无修改群名接口：提示并仅更新本地展示
+                            final text = controller.text.trim();
+                            if (text.isEmpty) return;
                             Navigator.pop(ctx);
-                            Loading.toast('暫不支持修改群名稱'.tr);
+                            final ok = await this
+                                .controller
+                                .updateGroupTitle(text);
+                            if (ok) {
+                              Loading.success('修改成功'.tr);
+                            } else {
+                              Loading.error('修改失敗'.tr);
+                            }
                           },
                           child: Text('確定'.tr),
                         ),

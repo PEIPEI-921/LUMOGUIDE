@@ -98,24 +98,64 @@ class ChatPage extends GetView<ChatController> {
 
 // ─── 消息列表 ──────────────────────────────────────────────────
 
-class _MessageListView extends StatelessWidget {
+class _MessageListView extends StatefulWidget {
   const _MessageListView({required this.controller});
 
   final ChatController controller;
 
   @override
+  State<_MessageListView> createState() => _MessageListViewState();
+}
+
+class _MessageListViewState extends State<_MessageListView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// reverse 列表：offset 0 在底部（最新消息），maxScrollExtent 在顶部（最旧）。
+  /// 滚到距顶部 200 内时触发加载更早消息。
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.maxScrollExtent - pos.pixels < 200) {
+      widget.controller.loadOlderMessages();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final messages = controller.messages;
+      final messages = widget.controller.messages;
       if (messages.isEmpty) {
         return const Center(child: EmptyListWidget());
       }
+      final controller = widget.controller;
+      final loadingOlder = controller.loadingOlder;
+      final hasMore = controller.hasMore;
+      // 有更多/加载中/或首次加载已达页大小（说明存在历史）时保留页脚
+      final showFooter =
+          hasMore || loadingOlder || messages.length >= 50;
       // reverse 列表：底部为最新消息，新消息自动贴底
       return ListView.builder(
+        controller: _scrollController,
         reverse: true,
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.w),
-        itemCount: messages.length,
+        itemCount: messages.length + (showFooter ? 1 : 0),
         itemBuilder: (context, index) {
+          // 列表末尾（reverse 下=顶部）的加载更早消息项
+          if (index >= messages.length) {
+            return _OlderLoader(loading: loadingOlder, hasMore: hasMore);
+          }
           final msg = messages[messages.length - 1 - index];
           return _MessageBubble(
             key: ValueKey(msg.messageId),
@@ -125,6 +165,42 @@ class _MessageListView extends StatelessWidget {
         },
       );
     });
+  }
+}
+
+/// 顶部「加载更早消息」项：有更多时显示加载中/轻触加载，无更多时显示提示
+class _OlderLoader extends StatelessWidget {
+  const _OlderLoader({required this.loading, required this.hasMore});
+
+  final bool loading;
+  final bool hasMore;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.w),
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    if (!hasMore) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.w),
+        child: Center(
+          child: Text(
+            '沒有更多消息了'.tr,
+            style: TextStyle(fontSize: 12.sp, color: AppColors.assistantText),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 
@@ -270,9 +346,26 @@ class _MessageBubble extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        message.content,
-        style: TextStyle(fontSize: 15.sp, color: textColor, height: 1.35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message.content,
+            style: TextStyle(fontSize: 15.sp, color: textColor, height: 1.35),
+          ),
+          if (message.editedAt != null)
+            Padding(
+              padding: EdgeInsets.only(top: 3.w),
+              child: Text(
+                '已編輯'.tr,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: textColor.withValues(alpha: 0.55),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -313,10 +406,17 @@ class _MessageBubble extends StatelessWidget {
             left: left,
             top: top,
             child: _MessageActionBar(
+              showEdit: message.isMine &&
+                  !message.isRecalled &&
+                  message.type == 'TEXT',
               showRecall: message.isMine && !message.isRecalled,
               onForward: () {
                 entry.remove();
                 _showForwardTargets();
+              },
+              onEdit: () {
+                entry.remove();
+                _showEditDialog();
               },
               onRecall: () {
                 entry.remove();
@@ -328,6 +428,41 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
     overlay.insert(entry);
+  }
+
+  /// 编辑自己的文本消息：弹出输入框 → 提交修改
+  void _showEditDialog() {
+    final textController = TextEditingController(text: message.content);
+    Get.dialog(
+      AlertDialog(
+        title: Text('編輯消息'.tr),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: '輸入消息...'.tr,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('取消'.tr),
+          ),
+          TextButton(
+            onPressed: () async {
+              final content = textController.text;
+              Get.back();
+              await controller.editMessage(message, content);
+            },
+            child: Text('確定'.tr),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 选择转发目标会话（排除当前会话）→ 发送消息内容
@@ -750,15 +885,19 @@ class _ChatImageBubbleState extends State<_ChatImageBubble> {
   }
 }
 
-/// 微信风格消息操作条：深色半透明横条，水平排列「转发」「撤回（仅自己）」
+/// 微信风格消息操作条：深色半透明横条，水平排列「转发」「编辑（仅自己文本）」「撤回（仅自己）」
 class _MessageActionBar extends StatelessWidget {
+  final bool showEdit;
   final bool showRecall;
   final VoidCallback onForward;
+  final VoidCallback onEdit;
   final VoidCallback onRecall;
 
   const _MessageActionBar({
+    required this.showEdit,
     required this.showRecall,
     required this.onForward,
+    required this.onEdit,
     required this.onRecall,
   });
 
@@ -784,6 +923,18 @@ class _MessageActionBar extends StatelessWidget {
             label: '轉發'.tr,
             onTap: onForward,
           ),
+          if (showEdit) ...[
+            Container(
+              width: 1,
+              height: 22,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            _ActionItem(
+              icon: Icons.edit_outlined,
+              label: '編輯'.tr,
+              onTap: onEdit,
+            ),
+          ],
           if (showRecall) ...[
             Container(
               width: 1,

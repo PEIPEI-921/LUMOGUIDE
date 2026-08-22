@@ -20,6 +20,9 @@ class CompanyInfo {
   String? picture;
   List<MerchantShop>? shop;
 
+  /// 企业所属用户编号（聊天入口）
+  String? userNumber;
+
   String get fullName {
     if ((nameEn?.isNotEmpty ?? false) && name != nameEn) {
       return '$name\n($nameEn)';
@@ -44,6 +47,7 @@ class CompanyInfo {
     this.wechat,
     this.whatsApp,
     this.line,
+    this.userNumber,
   });
 
   factory CompanyInfo.fromJson(Map<String, dynamic> json) {
@@ -64,6 +68,7 @@ class CompanyInfo {
       wechat: json.safeString('wechat'),
       whatsApp: json.safeString('whats_app'),
       line: json.safeString('line'),
+      userNumber: json.safeString('user_number'),
     );
   }
 

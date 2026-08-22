@@ -548,7 +548,21 @@ class ChatStore extends GetxController with ApiMixin {
     String? cursor,
     int limit = 30,
   }) async {
-    if (_token.isEmpty) return [];
+    final page = await fetchMessagePage(
+      conversationId,
+      cursor: cursor,
+      limit: limit,
+    );
+    return page.messages;
+  }
+
+  /// 分页拉取历史消息（含游标信息，供聊天页上滑加载更早消息）
+  Future<ChatMessagePage> fetchMessagePage(
+    String conversationId, {
+    String? cursor,
+    int limit = 30,
+  }) async {
+    if (_token.isEmpty) return ChatMessagePage.empty;
     try {
       final data = await _request(
         'GET',
@@ -571,10 +585,14 @@ class ChatStore extends GetxController with ApiMixin {
       if (list.isNotEmpty) {
         _lastMessageByConv[conversationId] = list.last;
       }
-      return list;
+      return ChatMessagePage(
+        messages: list,
+        nextCursor: data.safeString('next_cursor'),
+        hasMore: data.safeBool('has_more') ?? false,
+      );
     } catch (e) {
-      log('ChatStore fetchMessages error: $e');
-      return [];
+      log('ChatStore fetchMessagePage error: $e');
+      return ChatMessagePage.empty;
     }
   }
 
@@ -982,6 +1000,40 @@ class ChatStore extends GetxController with ApiMixin {
     } catch (e) {
       log('ChatStore updateGroupAnnouncement error: $e');
       return false;
+    }
+  }
+
+  /// 修改群名（群主/管理员）
+  Future<bool> updateGroupTitle(String groupId, String title) async {
+    if (title.trim().isEmpty) return false;
+    try {
+      await _request('PUT', '/api/v1/groups/$groupId', body: {'title': title});
+      // 同步本地会话列表标题
+      final idx = conversationList.indexWhere((c) => c.id == groupId);
+      if (idx >= 0) {
+        conversationList[idx] = conversationList[idx].copyWith(
+          title: title.trim(),
+        );
+      }
+      return true;
+    } catch (e) {
+      log('ChatStore updateGroupTitle error: $e');
+      return false;
+    }
+  }
+
+  /// 扫码加入群聊（服务端自助加群，幂等；成功后加入会话房间）
+  Future<ChatConversation?> joinGroup(String groupId) async {
+    if (_token.isEmpty) return null;
+    try {
+      await _request('POST', '/api/v1/groups/$groupId/join');
+      joinConversation(groupId);
+      await refreshConversationList();
+      return conversationList.firstWhereOrNull((c) => c.id == groupId) ??
+          ChatConversation(id: groupId, type: 'GROUP');
+    } catch (e) {
+      log('ChatStore joinGroup error: $e');
+      return null;
     }
   }
 

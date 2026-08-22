@@ -162,6 +162,21 @@ class ChatGroupMember {
   }
 }
 
+/// LUMO-Chat 消息分页结果（消息升序 + 游标 + 是否还有更早消息）
+class ChatMessagePage {
+  final List<ChatMessage> messages;
+  final String? nextCursor;
+  final bool hasMore;
+
+  const ChatMessagePage({
+    this.messages = const [],
+    this.nextCursor,
+    this.hasMore = false,
+  });
+
+  static const empty = ChatMessagePage();
+}
+
 /// 占位引用：避免模型与 store 循环依赖，运行时由 ChatStore 注入当前用户 ID。
 class ChatStoreRef {
   static String currentUserId = '';

@@ -45,7 +45,7 @@ class CompanyService
      */
     public function info(int $company_id)
     {
-        $info = Company::query()->where('id', $company_id)->first([
+        $info = Company::query()->with('user:id,number')->where('id', $company_id)->first([
             'id', 'name', 'name_en', 'city_name', 'address', 'business_type', 'introduction', 'email', 'phone', 'website', 'other_contact', 'wechat', 'whats_app', 'line'
         ]);
         if (!$info) {
@@ -56,6 +56,9 @@ class CompanyService
         $info['wechat'] = $info['wechat'] ?? '';
         $info['whats_app'] = $info['whats_app'] ?? '';
         $info['line'] = $info['line'] ?? '';
+        // 聊天入口：企业所属用户的 user_number（企业详情页直接发消息用）
+        $info['user_number'] = $info['user']['number'] ?? '';
+        unset($info['user']);
 
         $types = CityType::options();
 
