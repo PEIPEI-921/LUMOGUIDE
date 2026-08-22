@@ -113,7 +113,7 @@ class ChatStore extends GetxController with ApiMixin {
     try {
       _socket?.dispose();
       final socket = socket_io.io(
-        '${ApiUrl.lumoChatBaseUrl}/ws',
+        '${ApiUrl.lumoChatWsBaseUrl}/ws',
         socket_io.OptionBuilder()
             .setTransports(['websocket'])
             .setAuth({'token': _token})

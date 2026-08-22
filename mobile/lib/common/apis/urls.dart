@@ -11,11 +11,22 @@ abstract class ApiUrl {
 
   static const apiUrl = '${baseUrl}api/';
 
-  /// LUMO-Chat（IM-as-a-Service）服务地址。
+  /// LUMO-Chat（IM-as-a-Service）服务地址（REST）。
   /// 可用 `--dart-define=LUMO_CHAT_URL=http://...` 覆盖（本地联调/预发）。
+  /// 生产经 Nginx 反代时用带路径前缀的地址（如 https://api.lumoguide.com/im）。
   static const lumoChatBaseUrl = String.fromEnvironment(
     'LUMO_CHAT_URL',
     defaultValue: 'http://localhost:3000',
+  );
+
+  /// LUMO-Chat WebSocket 服务地址。
+  /// 与 REST 分开：Socket.IO 的 namespace 取自 URL 路径（/ws），
+  /// baseUrl 不能带路径前缀，否则 namespace 会变成 /im/ws 导致连接失败。
+  /// 生产反代：https://api.lumoguide.com（engine.io path /socket.io 由 Nginx 反代）。
+  /// 可用 `--dart-define=LUMO_CHAT_WS_URL=http://...` 覆盖。
+  static const lumoChatWsBaseUrl = String.fromEnvironment(
+    'LUMO_CHAT_WS_URL',
+    defaultValue: lumoChatBaseUrl,
   );
 
   static const register = '/auth/register';
