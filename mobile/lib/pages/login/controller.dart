@@ -87,7 +87,8 @@ class LoginController extends GetxController with ApiMixin {
       AlertUtils.error(res.message);
       return;
     }
-    // 記住密碼：同時保存帳號和密碼，下次登錄自動填充
+    // 記住密碼：同時保存帳號和密碼，下次登錄自動填充；
+    // 退出登錄保留（logout 不清除），僅註銷帳號時清除。
     if (rememberPassword.value) {
       StorageStone.setAccount(email.value);
       StorageStone.setPassword(password.value);
