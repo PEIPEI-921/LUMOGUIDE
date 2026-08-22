@@ -129,6 +129,8 @@ App 端 `google-services.json` 已就绪（Firebase 项目 `lumoguide`）。服�
 
 ## 四、联调验证清单
 
+> 以下为**自动化/接口级**验证（已全部通过）；**真机验收**见第五节。
+
 | 功能 | 验证方法 |
 |------|----------|
 | 群名修改 | 群主进群详情 → 修改群名称 → 成功提示；消息大厅列表标题同步 |
@@ -137,12 +139,33 @@ App 端 `google-services.json` 已就绪（Firebase 项目 `lumoguide`）。服�
 | 历史分页 | 会话消息 >50 条 → 上滑到顶自动加载更早消息 → 「沒有更多消息了」 |
 | 消息编辑 | 长按自己的文本消息 → 编辑 → 修改内容 → 气泡显示「已編輯」 |
 | 商家聊天 | 企业详情页右上角气泡按钮；商家列表卡片右上角气泡按钮 → 进入单聊 |
+| 群公告 | 群主/管理员修改公告 → 重新进入群详情可见（已持久化，DB 直查一致） |
+
+## 五、真机验收清单（上线前执行）
+
+| # | 步骤 | 预期结果 |
+|---|------|----------|
+| 1 | Android 手机安装新版：`https://lumoguide.com/dl/app-release.apk`（版本 ≥ 1.0.9+30） | 安装成功，覆盖旧版升级 |
+| 2 | 登录 → 首次启动允许「通知」权限 | 权限弹窗出现 |
+| 3 | 确认 FCM token 已上报：服务器 `docker exec im-redis redis-cli -a im_redis_2024 --no-auth-warning HGETALL 'im:device_tokens:<app_id>:<user_number>'` | 存在 android 平台 token |
+| 4 | 另一账号发送消息（App 切后台/杀掉） | Android 收到系统通知，标题含发送者名 |
+| 5 | 点击通知 | 进入对应聊天会话 |
+| 6 | 消息 >50 条的会话上滑到顶 | 自动加载更早消息，最终显示「沒有更多消息了」 |
+| 7 | 长按自己的文本消息 → 编辑 → 保存 | 气泡内容更新并显示「已編輯」 |
+| 8 | 群主修改群名 / 群公告 | 群详情即时更新，刷新不丢失 |
+| 9 | 扫群二维码 → 确认加入 | 加入群聊，能收历史+实时消息 |
+| 10 | 企业详情页 / 商家列表 | 右上角/卡片出现气泡聊天按钮，点击进入单聊 |
+| 11 | iOS 设备同测 1-2、4-5（APNs） | iOS 通知正常（生产 composite apns 通道） |
+| 12 | 切换 App 语言为 English | 所有聊天/群组界面无繁体中文残留 |
+
+> 服务器监控：`pm2 logs im-server --lines 20 --nostream` 应见 `[fcm-push] ... delivered`（Android）与 APNs delivery 日志。
 
 ---
 
-## 五、已知限制（本次未处理）
+## 六、已知限制（本次未处理）
 
-- **iOS APNs**：LUMO-Chat 服务端 `apns-push.service.ts` 仍为 skeleton（与本次范围无关）；iOS 推送需 APNs 证书（.p8/.p12）+ Key ID，另行实施。
+- **消息状态显示**：SENT/DELIVERED/READ 未渲染；发送失败无本地重试/失败标记。
 - **消息类型**：仅文本/图片；语音/文件/视频仍未实现。
 - **删除会话**：仍为本地删除（LUMO-Chat 无删除会话接口），刷新后重现。
-- **群公告**：LUMO-Chat 服务端 `updateAnnouncement` 仍未持久化（标题代理），建议后续在 conversations 表增加 announcement 列。
+- **common_detail 联系方式**：`sendEmail()/openWebsite()/openCompany()` 为空 stub。
+- **群名/公告修改无 socket 广播**：其他成员需重新进入群详情看到更新。
