@@ -126,6 +126,12 @@ class ChatStore extends GetxController with ApiMixin {
 
       socket.onConnect((_) {
         _connected.value = true;
+        // 重连后补发当前打开的会话（在线推送判断用）
+        if (_activeConversationId != null) {
+          socket.emit('active_conversation', {
+            'conversation_id': _activeConversationId,
+          });
+        }
         log('ChatStore: socket connected');
       });
 
@@ -812,6 +818,17 @@ class ChatStore extends GetxController with ApiMixin {
   /// 加入会话房间（新会话需显式 join）
   void joinConversation(String conversationId) {
     _socket?.emit('join_conversation', {'conversation_id': conversationId});
+  }
+
+  /// 当前打开的会话（在线推送判断：正在看该会话则不推）。
+  /// 聊天页打开时上报会话 ID，离开时上报 null。
+  String? _activeConversationId;
+
+  void setActiveConversation(String? conversationId) {
+    _activeConversationId = conversationId;
+    _socket?.emit('active_conversation', {
+      'conversation_id': conversationId,
+    });
   }
 
   /// 发送输入状态

@@ -58,6 +58,8 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
     super.onReady();
     ChatStore.to.activeConversationId = conversationID;
     ChatStore.to.openConversation(conversationID!);
+    // 上报当前打开的会话（在线推送判断：正在看该会话则不推）
+    ChatStore.to.setActiveConversation(conversationID);
     _loadMessages();
     _subscribeEvents();
     if (conversation.isGroup) {
@@ -69,6 +71,8 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
 
   @override
   void onClose() {
+    // 离开对话页 → 上报 null（之后收到的消息要推送）
+    ChatStore.to.setActiveConversation(null);
     ChatStore.to.activeConversationId = null;
     _newMsgSub?.cancel();
     _recalledSub?.cancel();
