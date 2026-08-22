@@ -214,9 +214,7 @@ class _MessageBubble extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onLongPress: isMine && message.type == 'TEXT' && !message.isRecalled
-          ? () => _showActionSheet(context)
-          : null,
+      onLongPress: !message.isRecalled ? () => _showActionSheet(context) : null,
       child: Padding(padding: EdgeInsets.symmetric(vertical: 6.w), child: row),
     );
   }
@@ -277,18 +275,112 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 转发：所有可长按消息（撤回的除外）
             ListTile(
-              leading: const Icon(Icons.undo, color: AppColors.primary),
-              title: Text('撤回'.tr),
+              leading: const Icon(Icons.forward_rounded, color: AppColors.primary),
+              title: Text('轉發'.tr),
               onTap: () {
                 Get.back();
-                controller.recallMessage(message);
+                _showForwardTargets();
               },
             ),
+            // 撤回：仅自己的消息
+            if (message.isMine && !message.isRecalled)
+              ListTile(
+                leading: const Icon(Icons.undo, color: AppColors.primary),
+                title: Text('撤回'.tr),
+                onTap: () {
+                  Get.back();
+                  controller.recallMessage(message);
+                },
+              ),
           ],
         ),
       ),
     );
+  }
+
+  /// 选择转发目标会话（排除当前会话）→ 发送消息内容
+  void _showForwardTargets() {
+    final targets = ChatStore.to.conversations
+        .where((c) => c.id != message.conversationId)
+        .toList();
+    if (targets.isEmpty) {
+      Loading.toast('暫無可轉發的會話'.tr);
+      return;
+    }
+    Get.bottomSheet(
+      SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.w),
+              child: Text(
+                '選擇轉發目標'.tr,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: targets.length,
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: AppColors.primaryText.withValues(alpha: 0.08)),
+                itemBuilder: (context, index) {
+                  final conv = targets[index];
+                  return ListTile(
+                    leading: Icon(
+                      conv.isGroup ? Icons.groups : Icons.person,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      _forwardTargetTitle(conv),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                    onTap: () {
+                      Get.back();
+                      _forwardTo(conv);
+                    },
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 8.w),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _forwardTargetTitle(ChatConversation conv) {
+    if (conv.isGroup) {
+      return conv.title?.isNotEmpty ?? false ? conv.title! : '群聊'.tr;
+    }
+    return conv.peerUserId?.isNotEmpty ?? false ? conv.peerUserId! : '聊天'.tr;
+  }
+
+  /// 转发消息内容到目标会话
+  Future<void> _forwardTo(ChatConversation target) async {
+    try {
+      if (message.type == 'IMAGE') {
+        await ChatStore.to.sendImageMessage(target.id, message.content);
+      } else {
+        await ChatStore.to.sendTextMessage(target.id, message.content);
+      }
+      Loading.toast('已轉發'.tr);
+    } catch (e) {
+      Loading.error('轉發失敗'.tr);
+    }
   }
 
   String? _formatTime(int ms) {
