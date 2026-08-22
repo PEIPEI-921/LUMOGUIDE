@@ -108,6 +108,10 @@ class UserStore extends GetxController with ApiMixin {
       return false;
     }
     await StorageStone.logout();
+    // 註銷帳號：連同記住的帳號/密碼一起清除
+    await StorageStone.setAccount('');
+    await StorageStone.setPassword('');
+    await StorageStone.setRememberMe(false);
     return true;
   }
 

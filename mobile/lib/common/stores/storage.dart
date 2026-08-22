@@ -71,6 +71,8 @@ class StorageStone {
   }
 
   /// 退出登录
+  /// 記住的帳號/密碼（rememberMe）保留，下次登錄自動填充；
+  /// 註銷帳號（deleteAccount）才需要額外清除。
   static logout() async {
     await setToken('');
     await setUserInfo('');
@@ -78,10 +80,6 @@ class StorageStone {
     // 清除 IM 憑證，防止冷啟動時以舊用戶自動登入 IM
     await setUserNumber('');
     await setLumoChatToken('');
-    // 清除記住的帳號/密碼，避免退出登錄後敏感信息殘留設備
-    await setAccount('');
-    await setPassword('');
-    await setRememberMe(false);
   }
 
   /// 首页数据
