@@ -131,7 +131,7 @@ class _MessageListView extends StatelessWidget {
 // ─── 消息气泡 ──────────────────────────────────────────────────
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
+  _MessageBubble({
     super.key,
     required this.controller,
     required this.message,
@@ -139,6 +139,9 @@ class _MessageBubble extends StatelessWidget {
 
   final ChatController controller;
   final ChatMessage message;
+
+  /// 用于定位气泡，长按时在其上方弹出操作条
+  final GlobalKey _bubbleKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +168,10 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
-    final bubble = _buildBubble(isMine);
+    final bubble = KeyedSubtree(
+      key: _bubbleKey,
+      child: _buildBubble(isMine),
+    );
     final time = _formatTime(message.createdAt);
 
     final row = Row(
@@ -214,7 +220,9 @@ class _MessageBubble extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onLongPress: !message.isRecalled ? () => _showActionSheet(context) : null,
+      onLongPress: !message.isRecalled
+          ? () => _showMessageActionBar(context)
+          : null,
       child: Padding(padding: EdgeInsets.symmetric(vertical: 6.w), child: row),
     );
   }
@@ -269,35 +277,57 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  void _showActionSheet(BuildContext context) {
-    Get.bottomSheet(
-      SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 转发：所有可长按消息（撤回的除外）
-            ListTile(
-              leading: const Icon(Icons.forward_rounded, color: AppColors.primary),
-              title: Text('轉發'.tr),
-              onTap: () {
-                Get.back();
+  /// 微信风格：长按后在消息气泡上方弹出操作条（转发 / 撤回[仅自己]）
+  void _showMessageActionBar(BuildContext context) {
+    final box = _bubbleKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final overlay = Overlay.of(context);
+    final pos = box.localToGlobal(Offset.zero);
+    final size = box.size;
+    final screenSize = MediaQuery.of(context).size;
+
+    const barHeight = 52.0;
+    const barWidth = 200.0;
+
+    // 显示在消息上方；上方空间不足（接近顶部）时放到消息下方
+    double top = pos.dy - barHeight - 10;
+    if (top < MediaQuery.of(context).padding.top + 8) {
+      top = pos.dy + size.height + 10;
+    }
+    // 水平居中于气泡，并限制在屏幕内
+    double left = pos.dx + size.width / 2 - barWidth / 2;
+    left = left.clamp(8.0, screenSize.width - barWidth - 8.0);
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) => Stack(
+        children: [
+          // 点击任意处关闭
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => entry.remove(),
+            ),
+          ),
+          Positioned(
+            left: left,
+            top: top,
+            child: _MessageActionBar(
+              showRecall: message.isMine && !message.isRecalled,
+              onForward: () {
+                entry.remove();
                 _showForwardTargets();
               },
+              onRecall: () {
+                entry.remove();
+                controller.recallMessage(message);
+              },
             ),
-            // 撤回：仅自己的消息
-            if (message.isMine && !message.isRecalled)
-              ListTile(
-                leading: const Icon(Icons.undo, color: AppColors.primary),
-                title: Text('撤回'.tr),
-                onTap: () {
-                  Get.back();
-                  controller.recallMessage(message);
-                },
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+    overlay.insert(entry);
   }
 
   /// 选择转发目标会话（排除当前会话）→ 发送消息内容
@@ -714,6 +744,94 @@ class _ChatImageBubbleState extends State<_ChatImageBubble> {
               color: AppColors.assistantText,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 微信风格消息操作条：深色半透明横条，水平排列「转发」「撤回（仅自己）」
+class _MessageActionBar extends StatelessWidget {
+  final bool showRecall;
+  final VoidCallback onForward;
+  final VoidCallback onRecall;
+
+  const _MessageActionBar({
+    required this.showRecall,
+    required this.onForward,
+    required this.onRecall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ActionItem(
+            icon: Icons.forward_rounded,
+            label: '轉發'.tr,
+            onTap: onForward,
+          ),
+          if (showRecall) ...[
+            Container(
+              width: 1,
+              height: 22,
+              color: Colors.white.withValues(alpha: 0.2),
+            ),
+            _ActionItem(
+              icon: Icons.undo,
+              label: '撤回'.tr,
+              onTap: onRecall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 操作条单项：图标 + 文字（竖排）
+class _ActionItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            4.verticalSpace,
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
         ),
       ),
     );
