@@ -101,12 +101,20 @@ class SystemMessage extends Model
             $user = User::find($user_id);
             if (!$user || empty($user->number)) return;
 
+            // 业务未读（系统消息/关注/评论）作为 badge 的增量，
+            // LUMO-Chat 投递时会再加聊天未读，得到桌面角标总数。
+            $list_data = Redis::hGetAll("message_list:{$user_id}") ?? [];
+            $business_unread = (int)($list_data['evaluate_my'] ?? 0)
+                + (int)($list_data['follow_my'] ?? 0)
+                + (int)($list_data['system'] ?? 0);
+
             $payload = [
                 'app_id' => $app_id,
                 'user_id' => $user->number,
                 'title' => $title,
                 'body' => $body,
                 'data' => $data,
+                'badge' => $business_unread,
             ];
 
             $http = new \GuzzleHttp\Client(['timeout' => 5]);

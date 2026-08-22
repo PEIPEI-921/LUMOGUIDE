@@ -178,4 +178,20 @@ class PushService extends GetxService {
       // 非 iOS 环境忽略
     }
   }
+
+  /// 业务未读（系统消息/关注/评论），由 MessageController 加载后更新
+  int businessUnread = 0;
+
+  /// 同步桌面角标 = IM 未读 + 业务未读。
+  /// 由 ChatStore（IM 未读变化）和 MessageController（业务未读变化）调用。
+  Future<void> syncBadge() async {
+    try {
+      final imUnread = Get.isRegistered<ChatStore>()
+          ? ChatStore.to.totalUnreadCount.value
+          : 0;
+      await setBadge(imUnread + businessUnread);
+    } catch (e) {
+      // 非 iOS 环境忽略
+    }
+  }
 }

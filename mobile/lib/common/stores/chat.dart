@@ -989,10 +989,10 @@ class ChatStore extends GetxController with ApiMixin {
     }
   }
 
-  /// 未读总数变化 → 同步 App 图标角标（桌面 badge）
+  /// 未读总数变化 → 同步 App 图标角标（IM 未读 + 业务未读）
   void _syncBadge() {
     try {
-      PushService.to.setBadge(totalUnreadCount.value);
+      PushService.to.syncBadge();
     } catch (e) {
       // 非 iOS 环境忽略
     }

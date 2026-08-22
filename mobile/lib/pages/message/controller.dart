@@ -474,6 +474,17 @@ class MessageController extends GetxController
     }
     _messageList.value = MessageLists.fromJson(res.dataJson);
     endLoad([]);
+    // 业务未读（系统消息/关注/评论）同步到桌面角标
+    try {
+      if (Get.isRegistered<PushService>()) {
+        final ml = _messageList.value;
+        PushService.to.businessUnread =
+            ml.systemCount + ml.followMyCount + ml.evaluateMyCount;
+        PushService.to.syncBadge();
+      }
+    } catch (e) {
+      // 非 iOS 环境忽略
+    }
   }
 }
 
