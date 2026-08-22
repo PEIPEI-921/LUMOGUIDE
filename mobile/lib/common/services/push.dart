@@ -58,12 +58,10 @@ class PushService extends GetxService {
     try {
       if (!_isReadyForNavigation()) {
         _pendingTap = data;
-        _debugReport('handleNotificationTap: cached pending (not ready)');
         return;
       }
       await _processTap(data);
     } catch (e) {
-      _debugReport('handleNotificationTap error: $e');
       dev.log('[PushService] handleNotificationTap error: $e');
     }
   }
@@ -71,24 +69,16 @@ class PushService extends GetxService {
   /// App 初始化/登录完成后再调用，处理之前缓存的点击通知。
   Future<void> retryPendingTap() async {
     final pending = _pendingTap;
-    if (pending == null) {
-      _debugReport('retryPendingTap: NO pending');
-      return;
-    }
-    if (!_isReadyForNavigation()) {
-      _debugReport('retryPendingTap: not ready');
-      return;
-    }
+    if (pending == null) return;
+    if (!_isReadyForNavigation()) return;
     // 守卫：主导航（welcome → ROOT/LOGIN）进行中时保留 pending，
     // 否则 push 的页面会被随后的 Get.offAll(ROOT) 清掉（回到首页）。
     final currentRoute = Get.currentRoute;
     if (currentRoute == AppRoutes.WELCOME ||
         currentRoute == AppRoutes.LOGIN) {
-      _debugReport('retryPendingTap: guarded on $currentRoute');
       return;
     }
     _pendingTap = null;
-    _debugReport('retryPendingTap: processing, route=$currentRoute');
     await _processTap(pending);
   }
 
@@ -111,41 +101,17 @@ class PushService extends GetxService {
     final convId =
         (data['conversation_id'] ?? innerMap['conversation_id']) as String? ??
             '';
-    _debugReport('_processTap: convId=$convId');
     if (convId.isEmpty) return;
-    // 优先用内存会话对象，缺失时拉取会话详情
+    // 优先用内存会话对象，缺失时拉取会话详情；仍失败则用最小会话对象跳转
     ChatConversation? conv = ChatStore.to.conversationList
         .firstWhereOrNull((c) => c.id == convId);
     conv ??= await ChatStore.to.getConversation(convId);
-    if (conv == null) {
-      // 降级：getConversation 失败时用最小会话对象跳转（聊天页只需 id 拉消息）
-      _debugReport('_processTap: getConversation null, fallback minimal conv');
-      conv = ChatConversation(id: convId, type: 'DIRECT');
-    }
+    conv ??= ChatConversation(id: convId, type: 'DIRECT');
     await Get.toNamed(
       AppRoutes.CHAT,
       arguments: {'conversation': conv},
     );
-    _debugReport('_processTap: navigated to CHAT');
-  }
-
-  /// 临时调试：上报关键路径到后端（排查冷启动跳转）
-  void _debugReport(String msg) {
-    try {
-      final client = dio.Dio(dio.BaseOptions(
-        baseUrl: ApiUrl.baseUrl,
-        sendTimeout: const Duration(seconds: 3),
-        receiveTimeout: const Duration(seconds: 3),
-      ));
-      client.post('/api/common/appError', data: {
-        'page': 'push_debug',
-        'error': msg,
-        'time': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {}
-  }
-
-  /// 处理原生回调
+  }  /// 处理原生回调
   Future<dynamic> _handleNativeCall(MethodCall call) async {
     switch (call.method) {
       case 'onTokenReceived':
