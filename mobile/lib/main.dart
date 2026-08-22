@@ -74,11 +74,42 @@ void main() async {
   });
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   static bool get isDesktop =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // App 切后台：即使停留在对话页也视为"不在看"→ 消息要推送 + 角标；
+    // 回前台恢复。ChatStore 未注册（启动早期）时忽略。
+    final isBackground = state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached;
+    try {
+      if (Get.isRegistered<ChatStore>()) {
+        ChatStore.to.onAppLifecycleChanged(isBackground);
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +144,7 @@ class MyApp extends StatelessWidget {
               child: EasyLoading.init()(context, child),
             );
 
-            if (isDesktop) {
+            if (MyApp.isDesktop) {
               app = Container(
                 color: AppColors.primary,
                 child: Center(

@@ -831,6 +831,19 @@ class ChatStore extends GetxController with ApiMixin {
     });
   }
 
+  /// App 生命周期变化：切后台时清除"正在看会话"标记（之后消息要推送），
+  /// 回前台若仍在对话页则恢复上报（继续不推）。
+  void onAppLifecycleChanged(bool isBackground) {
+    if (isBackground) {
+      _socket?.emit('active_conversation', {'conversation_id': null});
+    } else {
+      final convId = activeConversationId;
+      if (convId != null) {
+        _socket?.emit('active_conversation', {'conversation_id': convId});
+      }
+    }
+  }
+
   /// 发送输入状态
   void sendTyping(String conversationId, bool isTyping) {
     _socket?.emit('typing', {
