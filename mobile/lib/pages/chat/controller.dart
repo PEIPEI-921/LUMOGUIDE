@@ -71,8 +71,9 @@ class ChatController extends GetxController with ApiMixin, UserStoreMixin {
     ChatStore.to.openConversation(conversationID!);
     // 上报当前打开的会话（在线推送判断：正在看该会话则不推）
     ChatStore.to.setActiveConversation(conversationID);
-    _loadMessages();
+    // 先订阅实时事件，再加载历史：避免消息在订阅建立前到达而丢失
     _subscribeEvents();
+    _loadMessages();
     if (conversation.isGroup) {
       _loadGroupMemberNames();
     } else {

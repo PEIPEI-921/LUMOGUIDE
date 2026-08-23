@@ -73,9 +73,27 @@ class ChatStore extends GetxController with ApiMixin {
 
   @override
   void onClose() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _socket?.dispose();
     _socket = null;
     super.onClose();
+  }
+
+  /// 断线自动重连定时器（socket_io_client 的 10 次重连耗尽后靠它持续恢复）
+  Timer? _reconnectTimer;
+
+  /// 断开/连接失败后安排重连：3 秒后若仍未连接且有 token 则重建连接。
+  /// 解决网络波动/后台切换导致 socket 永久断连、实时消息收不到的问题。
+  void _scheduleReconnect() {
+    if (_reconnectTimer?.isActive ?? false) return;
+    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+      _reconnectTimer = null;
+      if (!_connected.value && _token.isNotEmpty) {
+        log('ChatStore: 断线自动重连...');
+        _connectSocket();
+      }
+    });
   }
 
   // ─── 生命周期 ────────────────────────────────────────────────
@@ -126,6 +144,8 @@ class ChatStore extends GetxController with ApiMixin {
 
       socket.onConnect((_) {
         _connected.value = true;
+        _reconnectTimer?.cancel();
+        _reconnectTimer = null;
         // 重连后补发当前打开的会话（在线推送判断用）
         if (_activeConversationId != null) {
           socket.emit('active_conversation', {
@@ -145,6 +165,8 @@ class ChatStore extends GetxController with ApiMixin {
       socket.onDisconnect((_) {
         _connected.value = false;
         log('ChatStore: socket disconnected');
+        // socket_io_client 自动重连次数有限（10 次），耗尽后需自行恢复
+        _scheduleReconnect();
       });
 
       socket.onConnectError((data) {
@@ -157,6 +179,8 @@ class ChatStore extends GetxController with ApiMixin {
             msg.toLowerCase().contains('expired')) {
           _handleAuthFailure();
         }
+        // 网络类错误：持续重连（限 10 次的自动重连可能耗尽）
+        _scheduleReconnect();
       });
 
       socket.on('server_ack', (data) {
@@ -911,11 +935,16 @@ class ChatStore extends GetxController with ApiMixin {
   }
 
   /// App 生命周期变化：切后台时清除"正在看会话"标记（之后消息要推送），
-  /// 回前台若仍在对话页则恢复上报（继续不推）。
+  /// 回前台若仍在对话页则恢复上报（继续不推）；socket 断开则触发重连。
   void onAppLifecycleChanged(bool isBackground) {
     if (isBackground) {
       _socket?.emit('active_conversation', {'conversation_id': null});
     } else {
+      // 回前台：socket 若已断开（后台被系统回收/网络波动），立即重连恢复实时消息
+      if (!_connected.value && _token.isNotEmpty) {
+        log('ChatStore: 回前台，socket 未连接，重连中...');
+        _connectSocket();
+      }
       final convId = activeConversationId;
       if (convId != null) {
         _socket?.emit('active_conversation', {'conversation_id': convId});
