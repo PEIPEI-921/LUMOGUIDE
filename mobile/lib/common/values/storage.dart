@@ -29,3 +29,6 @@ const String STORAGE_PENDING_DEEP_LINK_KEY = 'pending_deep_link';
 
 /// 冷啟動延遲深鏈是否已檢查過（每次安裝只檢查一次，deferred token 服務端一次性消費）
 const String STORAGE_DEEP_LINK_COLD_CHECKED_KEY = 'deep_link_cold_checked';
+
+/// 上次運行版本號（用於版本升級檢測：升級後自動登出，讓新功能重新登錄後生效）
+const String STORAGE_APP_VERSION_KEY = 'app_version';

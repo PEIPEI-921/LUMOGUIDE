@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../apis/mixin.dart';
 import '../apis/urls.dart';
@@ -43,6 +44,46 @@ class UserStore extends GetxController with ApiMixin {
     if (_isLogin.value) {
       getProfile();
       _uploadUserRecord();
+    }
+    // 版本升級檢測：版本變化（含舊版本首次升級）時自動清除登錄態，
+    // 強制重新登錄，讓聊天/推送等依賴登錄初始化的新功能自動生效。
+    checkVersionUpgrade();
+  }
+
+  /// 版本升級檢測。
+  ///
+  /// 邏輯：本地記錄的上次運行版本與當前版本不同（首次升級時上次版本為空）
+  /// 且當前有登錄態 → 清除登錄態（token/IM 憑證/資料）+ 斷開 IM + 跳登錄頁。
+  /// 首次安裝（無登錄態）不受影響。
+  Future<void> checkVersionUpgrade() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final current = '${info.version}+${info.buildNumber}';
+      final last = StorageStone.appVersion;
+      await StorageStone.setAppVersion(current);
+      if (last != current && _isLogin.value) {
+        log(
+          '版本升級 $last → $current：自動登出，請重新登錄',
+          name: 'UserStore',
+        );
+        await StorageStone.logout();
+        _isLogin.value = false;
+        _profile.value = UserInfo();
+        token = '';
+        try {
+          await ChatStore.to.logout();
+        } catch (e) {
+          log('UserStore: 升級登出 IM 失敗: $e', name: 'UserStore');
+        }
+        // 啟動早期（welcome 頁）不主動跳轉，welcome 會按未登錄流程進登錄頁；
+        // 已進入主界面則直接跳登錄頁。
+        if (Get.currentRoute != AppRoutes.LOGIN &&
+            Get.currentRoute != AppRoutes.WELCOME) {
+          Get.offAllNamed(AppRoutes.LOGIN);
+        }
+      }
+    } catch (e) {
+      log('checkVersionUpgrade error: $e', name: 'UserStore');
     }
   }
 

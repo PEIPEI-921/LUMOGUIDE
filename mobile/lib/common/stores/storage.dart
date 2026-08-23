@@ -132,4 +132,11 @@ class StorageStone {
   static setDeepLinkColdChecked(bool value) async {
     await StorageService.to.setBool(STORAGE_DEEP_LINK_COLD_CHECKED_KEY, value);
   }
+
+  /// 上次運行版本號（版本升級檢測用）
+  static String get appVersion =>
+      StorageService.to.getString(STORAGE_APP_VERSION_KEY);
+  static setAppVersion(String value) async {
+    await StorageService.to.setString(STORAGE_APP_VERSION_KEY, value);
+  }
 }
