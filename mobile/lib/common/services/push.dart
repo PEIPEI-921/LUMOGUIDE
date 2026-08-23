@@ -184,6 +184,28 @@ class PushService extends GetxService {
     }
   }
 
+  /// Android 前台本地通知（socket 实时消息提醒）。
+  /// 服务端对在线用户不推 FCM，前台消息靠这里弹系统通知。
+  Future<void> showForegroundNotification({
+    required String title,
+    required String body,
+    String conversationId = '',
+    String messageId = '',
+    String senderId = '',
+  }) async {
+    try {
+      await _channel.invokeMethod('showForegroundNotification', {
+        'title': title,
+        'body': body,
+        'conversation_id': conversationId,
+        'message_id': messageId,
+        'sender_id': senderId,
+      });
+    } catch (e) {
+      dev.log('[PushService] showForegroundNotification error: $e');
+    }
+  }
+
   /// 业务未读（系统消息/关注/评论），由 MessageController 加载后更新
   int businessUnread = 0;
 

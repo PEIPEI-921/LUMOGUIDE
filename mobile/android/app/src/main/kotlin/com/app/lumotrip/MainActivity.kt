@@ -50,11 +50,40 @@ class MainActivity : FlutterFragmentActivity() {
                         reply.success(null)
                     }
                     "getToken" -> reply.success(FcmService.getToken(this@MainActivity) ?: "")
-                    "setBadge" -> reply.success(null) // Android 无通用角标 API，忽略
+                    "setBadge" -> {
+                        // Android 桌面角标（ShortcutBadger，国产 ROM 可能需手动开启权限）
+                        val count = (call.arguments as? Int) ?: 0
+                        try {
+                            if (count > 0) {
+                                me.leolin.shortcutbadger.ShortcutBadger.applyCount(
+                                    this@MainActivity, count
+                                )
+                            } else {
+                                me.leolin.shortcutbadger.ShortcutBadger.removeCount(
+                                    this@MainActivity
+                                )
+                            }
+                        } catch (e: Exception) {
+                            // launcher 不支持角标时忽略
+                        }
+                        reply.success(null)
+                    }
                     "getPendingNotification" -> {
                         val p = pendingTap
                         pendingTap = null
                         reply.success(p)
+                    }
+                    "showForegroundNotification" -> {
+                        val args = call.arguments as? Map<*, *>
+                        FcmService.showForegroundNotification(
+                            this@MainActivity,
+                            args?.get("title") as? String ?: "新消息",
+                            args?.get("body") as? String ?: "",
+                            args?.get("conversation_id") as? String ?: "",
+                            args?.get("message_id") as? String ?: "",
+                            args?.get("sender_id") as? String ?: "",
+                        )
+                        reply.success(null)
                     }
                     else -> reply.notImplemented()
                 }

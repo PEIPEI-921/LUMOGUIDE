@@ -98,5 +98,47 @@ class FcmService : FirebaseMessagingService() {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().remove(KEY_TOKEN).apply()
         }
+
+        /**
+         * 前台本地通知（socket 实时消息提醒，服务端在线不推 FCM 时的补充）。
+         * 点击通知 → PendingIntent → MainActivity（携带 conversation_id）→ Dart 跳转聊天页。
+         */
+        fun showForegroundNotification(
+            context: Context,
+            title: String,
+            body: String,
+            conversationId: String,
+            messageId: String,
+            senderId: String,
+        ) {
+            if (body.isEmpty()) return
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra("conversation_id", conversationId)
+                putExtra("message_id", messageId)
+                putExtra("sender_id", senderId)
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                conversationId.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(context, MyApplication.CHANNEL_IM)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            try {
+                NotificationManagerCompat.from(context)
+                    .notify(conversationId.hashCode(), notification)
+            } catch (e: SecurityException) {
+                // 通知权限被拒时忽略
+            }
+        }
     }
 }

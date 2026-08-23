@@ -733,6 +733,9 @@ class ChatStore extends GetxController with ApiMixin {
       // 非当前打开会话且非自己发的消息则累计未读
       if (!isOwnMessage && activeConversationId != msg.conversationId) {
         _incrementUnread(msg.conversationId);
+        // Android 前台：socket 实时收到消息但服务端在线不推 FCM，
+        // 这里主动弹本地系统通知（复用原生通知渠道），保证前台也有消息提醒。
+        _notifyForegroundMessage(msg);
       }
       // 会话列表排序：最新消息的会话置顶
       final idx = conversationList.indexWhere((c) => c.id == msg.conversationId);
@@ -750,6 +753,46 @@ class ChatStore extends GetxController with ApiMixin {
       _newMessageController.add(msg);
     } catch (e) {
       log('ChatStore _handleNewMessage error: $e');
+    }
+  }
+
+  /// Android 前台收到实时消息 → 弹本地通知提醒。
+  /// 标题取发送者显示名（extra.sender_name，服务端推送注入），正文为消息预览。
+  void _notifyForegroundMessage(ChatMessage msg) {
+    try {
+      if (!Get.isRegistered<PushService>()) return;
+      final senderName =
+          (msg.extra['sender_name'] as String?)?.isNotEmpty == true
+              ? msg.extra['sender_name'] as String
+              : msg.senderId;
+      PushService.to.showForegroundNotification(
+        title: senderName,
+        body: _notificationPreview(msg),
+        conversationId: msg.conversationId,
+        messageId: msg.messageId,
+        senderId: msg.senderId,
+      );
+    } catch (e) {
+      log('ChatStore notifyForeground error: $e');
+    }
+  }
+
+  /// 通知正文预览（与消息大厅预览一致）
+  String _notificationPreview(ChatMessage msg) {
+    if (msg.isRecalled) return '[已撤回]';
+    switch (msg.type) {
+      case 'TEXT':
+        return msg.content;
+      case 'IMAGE':
+        return '[圖片]';
+      case 'VOICE':
+        return '[語音]';
+      case 'VIDEO':
+        return '[視頻]';
+      case 'FILE':
+        return '[文件]';
+      default:
+        return '[消息]';
     }
   }
 
