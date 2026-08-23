@@ -114,6 +114,10 @@ cd backend
 
 ## 三、Firebase 凭据获取（Android 推送必需）
 
+> ⚠️ **.env 文件权限（重要教训）**：Laravel 由 php-fpm 以 `www` 用户运行，`.env` 权限必须 **`root:www` + 640**（`chown root:www .env && chmod 640 .env`）。
+> 曾误设 `600 root` 导致 php-fpm（www）读不到 .env → DB 凭据/JWT_SECRET 全部缺失 → 全部 API 500（真机无法浏览）。
+> LUMO-Chat（pm2 以 root 运行）同样设为 640 root:www 保持一致。
+
 App 端 `google-services.json` 已就绪（Firebase 项目 `lumoguide`）。服务端 FCM 发送还需**服务账号私钥**：
 
 1. 打开 [Firebase 控制台](https://console.firebase.google.com) → 项目 `lumoguide` → 齿轮图标 → **项目设置** → **服务账号** 标签页
