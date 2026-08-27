@@ -272,6 +272,12 @@ class GuideService
             unset($data[$k]['edit_data']);
         }
 
+        // 查看城市管理列表即视为已读（在组装响应之后执行，本次列表仍显示未读红点，
+        // 下次拉取即已读），避免「我的→城市」未读角標一直存在
+        if ($guide_id > 0) {
+            City::query()->where('guide_id', $guide_id)->where('is_read', 0)->update(['is_read' => 1]);
+        }
+
         return ['total' => $res['total'], 'data' => $data];
     }
 
@@ -495,6 +501,15 @@ class GuideService
                 $data[$k]['audit_feedback'] = $v['edit_data']['audit_feedback'];
             }
             unset($data[$k]['edit_data']);
+        }
+
+        // 查看发布内容列表即视为已读，避免「我的→發布/商家」未读角標一直存在
+        if ($guide_id > 0) {
+            CityContent::query()
+                ->where('publisher_id', $guide_id)
+                ->where('publisher_type', 'guide')
+                ->where('is_read', 0)
+                ->update(['is_read' => 1]);
         }
 
         return ['total' => $res['total'], 'data' => $data];

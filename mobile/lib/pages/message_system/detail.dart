@@ -123,9 +123,12 @@ class _MessageSystemDetailPageState extends State<MessageSystemDetailPage> {
     VoidCallback? onTap;
     // 第一个括号 = 城市名 → 城市详情
     if (index == 0) {
-      final cityId = model.contentType == 'city'
-          ? model.contentId
-          : model.cityId;
+      // 后端两种消息类型都把城市 ID 存在 city_id 欄位：
+      // - city 類型：saveDataWithType(..., 'city', $city_id) → content_id 恆為 0
+      // - city_content 類型：city_id 同樣是城市 ID
+      final cityId = (model.cityId != null && model.cityId! > 0)
+          ? model.cityId
+          : model.contentId;
       if (cityId != null && cityId > 0) {
         onTap = () =>
             Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': cityId});

@@ -27,7 +27,12 @@ class Handler extends ExceptionHandler
      * @var array<int, class-string<\Throwable>>
      */
     protected $dontReport = [
-        //
+        // 客户端 token 失效/过期属预期行为（App 会因 401 引导重新登录），
+        // 无需写入 error 日志产生堆栈噪音。
+        \Tymon\JWTAuth\Exceptions\TokenExpiredException::class,
+        \Tymon\JWTAuth\Exceptions\TokenInvalidException::class,
+        \Tymon\JWTAuth\Exceptions\JWTException::class,
+        \Illuminate\Auth\AuthenticationException::class,
     ];
 
     /**

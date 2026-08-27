@@ -166,9 +166,10 @@ class MessageSystemModel {
     final t = (contentType ?? '').trim();
     // 會員到期類型：始終可跳轉會員中心
     if (t == 'membership') return true;
-    // 其他類型需要有效的 contentId
-    final id = contentId;
-    if (id == null || id <= 0) return false;
+    // city 類型：城市 ID 存在 city_id 欄位（content_id 恆為 0）
+    // city_content 類型：內容 ID 在 content_id，城市 ID 在 city_id
+    final id = t == 'city' ? (cityId ?? 0) : (contentId ?? 0);
+    if (id <= 0) return false;
     return t == 'city' || t == 'city_content';
   }
 
@@ -181,12 +182,17 @@ class MessageSystemModel {
       return;
     }
 
+    // city 類型 → 城市詳情（城市 ID 在 city_id 欄位）
+    if (t == 'city') {
+      final id = cityId ?? 0;
+      if (id <= 0) return;
+      Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': id});
+      return;
+    }
+
     final id = contentId;
     if (id == null || id <= 0) return;
     switch (t) {
-      case 'city':
-        Get.toNamed(AppRoutes.CITY_DETAIL, arguments: {'id': id});
-        return;
       case 'city_content':
         final cid = cityId ?? 0;
         final tid = cityContentType ?? 0;
