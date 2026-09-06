@@ -102,7 +102,7 @@ const SearchPage = {
       </div>
 
       <!-- Empty (no search yet) -->
-      <div v-else class="ds-empty" style="color:var(--color-assistant-text)"
+      <div v-else class="ds-empty" style="color:var(--color-assistant-text)">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round" style="margin-bottom:12px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <p style="color:var(--color-assistant-text)">{{ $t('輸入關鍵字開始搜索') }}</p>
       </div>
