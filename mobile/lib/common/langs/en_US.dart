@@ -240,6 +240,7 @@ const Map<String, String> en_US = {
   '轉發失敗': 'Forward failed',
   '發送超時': 'Send timed out, please retry',
   '聊天服務未就緒': 'Chat service is not ready',
+  '聊天連接失敗，點擊重試': 'Chat unavailable. Tap to retry',
   '創建會話失敗': 'Failed to create conversation',
   '移除成員': 'Remove member',
   '設置為管理員': 'Set as admin',

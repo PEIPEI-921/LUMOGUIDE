@@ -29,6 +29,7 @@ class MessagePage extends StatelessWidget {
             const MessageCategoryWidget(),
             10.w.verticalSpace,
             const _MyGroupsEntry(),
+            const _ChatRetryBanner(),
             IRefresh(
               controller: controller,
               child: controller.topFixedList.isEmpty
@@ -191,6 +192,60 @@ class _MyGroupsEntry extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
           )
           .padding(bottom: 10.w);
+    });
+  }
+}
+
+/// 聊天会话拉取异常时的提示条：点击重新连接。
+/// 修复场景：LUMO-Chat token 失效后 App 自动恢复失败 → 聊天区静默空白，
+/// 现在显示可点击的「重新连接」入口，不再是无任何提示的空状态。
+class _ChatRetryBanner extends StatelessWidget {
+  const _ChatRetryBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<MessageController>();
+    return Obx(() {
+      if (ChatStore.to.conversationIssue.value == null) {
+        return const SizedBox.shrink();
+      }
+      return Container(
+            margin: EdgeInsets.only(bottom: 10.w),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF4E0),
+              borderRadius: BorderRadius.circular(8.w),
+              border: Border.all(color: const Color(0xFFF0C878)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.wifi_off,
+                  size: 16.w,
+                  color: const Color(0xFFB25E09),
+                ),
+                8.w.horizontalSpace,
+                Expanded(
+                  child: Text(
+                    '聊天連接失敗，點擊重試'.tr,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: const Color(0xFFB25E09),
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.refresh,
+                  size: 16.w,
+                  color: const Color(0xFFB25E09),
+                ),
+              ],
+            ),
+          )
+          .gestures(
+            onTap: controller.onRetryChat,
+            behavior: HitTestBehavior.opaque,
+          );
     });
   }
 }

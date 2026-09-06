@@ -58,6 +58,38 @@ class ChatStore extends GetxController with ApiMixin {
   socket_io.Socket? _socket;
   Dio? _dio;
 
+  /// LUMO-Chat access_token 有效期（服务端签发 3600s）。
+  static const Duration _tokenLifetime = Duration(seconds: 3600);
+
+  /// 过期前主动预刷新余量：避免每次都要等一次 401 重试才换新 token。
+  static const Duration _tokenPreRefreshAhead = Duration(minutes: 10);
+
+  /// token 获取时间（_refreshToken / init 成功时更新）。
+  DateTime? _tokenObtainedAt;
+
+  /// token 是否接近过期（获取时间未知的旧会话也视为需要刷新，换取一次后即记录时间）。
+  bool get _tokenMayBeStale {
+    final obtained = _tokenObtainedAt;
+    if (obtained == null) return _token.isNotEmpty;
+    return DateTime.now().difference(obtained) >=
+        (_tokenLifetime - _tokenPreRefreshAhead);
+  }
+
+  /// 当前是否处于登录态（供「本地无 IM token 但已登录」时向后端换 token 用）。
+  bool get _isLoginActive {
+    if (!Get.isRegistered<UserStore>()) return false;
+    try {
+      return UserStore.to.isLogin;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 会话/IM 异常提示（null = 正常）。会话列表拉取失败时置值，
+  /// 供消息页显示「点击重试」提示条，避免聊天区静默空白。
+  final conversationIssue = RxnString();
+  bool get hasConversationIssue => conversationIssue.value != null;
+
   @override
   void onInit() {
     super.onInit();
@@ -90,10 +122,25 @@ class ChatStore extends GetxController with ApiMixin {
     _reconnectTimer = Timer(const Duration(seconds: 3), () {
       _reconnectTimer = null;
       if (!_connected.value && _token.isNotEmpty) {
-        log('ChatStore: 断线自动重连...');
-        _connectSocket();
+        log('ChatStore: 断线自动重连（先确保 token 新鲜）...');
+        unawaited(_reconnectWithFreshToken());
       }
     });
+  }
+
+  /// 重连前先确保 token 新鲜：本地 token 过期/缺失但已登录 → 先向后端
+  /// 换取新 token 再建立连接，避免「拿着已过期 token 反复撞 socket」死循环
+  /// （现象：消息页聊天区空白 + 服务端不断出现 Connection auth failed）。
+  Future<void> _reconnectWithFreshToken() async {
+    if (_token.isEmpty && !_isLoginActive) return;
+    if (_token.isEmpty || _tokenMayBeStale) {
+      final ok = await _refreshToken();
+      if (!ok) {
+        log('ChatStore: 重连前刷新 token 失败，等待下次自动重试');
+        return;
+      }
+    }
+    _connectSocket();
   }
 
   // ─── 生命周期 ────────────────────────────────────────────────
@@ -102,6 +149,7 @@ class ChatStore extends GetxController with ApiMixin {
   /// 失败不抛异常，UI 自动降级（聊天不可用但主流程正常）。
   Future<void> init({required String token, required String userId}) async {
     _token = token;
+    _tokenObtainedAt = DateTime.now();
     currentUserId = userId;
     ChatStoreRef.currentUserId = userId;
     _isReady.value = true;
@@ -229,11 +277,13 @@ class ChatStore extends GetxController with ApiMixin {
     }
     _socket = null;
     _token = '';
+    _tokenObtainedAt = null;
     currentUserId = '';
     ChatStoreRef.currentUserId = '';
     _connected.value = false;
     _isReady.value = false;
     conversationList.clear();
+    conversationIssue.value = null;
     _unreadByConv.clear();
     _lastMessageByConv.clear();
     totalUnreadCount.value = 0;
@@ -313,6 +363,7 @@ class ChatStore extends GetxController with ApiMixin {
         final newToken = res.dataJson.safeString('lumo_chat_token') ?? '';
         if (newToken.isNotEmpty) {
           _token = newToken;
+          _tokenObtainedAt = DateTime.now();
           await StorageStone.setLumoChatToken(newToken);
           log('ChatStore: token refreshed');
           completer.complete(true);
@@ -330,28 +381,44 @@ class ChatStore extends GetxController with ApiMixin {
     return false;
   }
 
-  /// 认证失败（token 过期/无效）：刷新 token 后重建连接
+  /// 认证失败（token 过期/无效）：刷新 token 后重建连接。
+  /// 并发场景下等待同一刷新结果，避免「刷新进行中直接 return」导致 token
+  /// 永远无法恢复（死 token → 聊天区空白且永不自动修复）。
   Future<void> _handleAuthFailure() async {
-    if (_refreshing) return;
+    if (_refreshing) {
+      final pending = _refreshCompleter;
+      if (pending != null) {
+        final ok = await pending.future;
+        if (ok) {
+          await refreshConversationList();
+          _connectSocket();
+        }
+      }
+      return;
+    }
     final ok = await _refreshToken();
     if (ok) {
       await refreshConversationList();
       _connectSocket();
+    } else {
+      log('ChatStore: token 刷新失败（auth failure），等待下次重试');
     }
   }
 
-  /// 确保 socket 已连接：未连接时刷新 token 并重建连接，最多等待 8 秒
+  /// 确保 socket 已连接：token 过期/缺失时先换新再重建连接，最多等待 8 秒
   Future<bool> _ensureSocketConnected() async {
     if (_connected.value) return true;
+    if (_token.isEmpty && !_isLoginActive) return false;
     try {
-      final ok = await _refreshToken();
-      if (ok) {
-        _connectSocket();
-        final deadline = DateTime.now().add(const Duration(seconds: 8));
-        while (DateTime.now().isBefore(deadline)) {
-          if (_connected.value) return true;
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-        }
+      if (_token.isEmpty || _tokenMayBeStale) {
+        final ok = await _refreshToken();
+        if (!ok) return false;
+      }
+      _connectSocket();
+      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      while (DateTime.now().isBefore(deadline)) {
+        if (_connected.value) return true;
+        await Future<void>.delayed(const Duration(milliseconds: 200));
       }
     } catch (e) {
       log('ChatStore: ensure socket connected error: $e');
@@ -361,9 +428,25 @@ class ChatStore extends GetxController with ApiMixin {
 
   // ─── 会话 ────────────────────────────────────────────────────
 
-  /// 刷新会话列表（更新响应式列表 + 补拉缺失的预览 + 加入会话房间 + 补算未读）
-  Future<void> refreshConversationList() async {
-    if (_token.isEmpty) return;
+  /// 刷新会话列表（更新响应式列表 + 补拉缺失的预览 + 加入会话房间 + 补算未读）。
+  ///
+  /// 返回是否成功。修复「死 token 导致消息页聊天区空白」：
+  /// - 本地 token 接近过期/缺失但已登录 → 先向后端换新 token 再拉取；
+  /// - 失败不再静默：置 [conversationIssue]，消息页据此显示「点击重试」。
+  Future<bool> refreshConversationList() async {
+    // 未登录且本地无 IM token：无从换取，直接失败（不产生无意义请求）
+    if (_token.isEmpty && !_isLoginActive) {
+      return false;
+    }
+    // 主动预刷新：避免每次都先吃一次 401 重试
+    if (_token.isEmpty || _tokenMayBeStale) {
+      final ok = await _refreshToken();
+      if (!ok) {
+        log('ChatStore: 刷新会话前换 token 失败');
+        conversationIssue.value = '聊天連接失敗，請檢查網絡或重新登錄';
+        return false;
+      }
+    }
     try {
       final data = await _request(
         'GET',
@@ -385,9 +468,31 @@ class ChatStore extends GetxController with ApiMixin {
       _joinConversationRooms(list);
       _fetchMissingPreviews(list);
       _syncUnreadFromServer(list);
+      conversationIssue.value = null;
+      return true;
     } catch (e) {
       log('ChatStore refreshConversationList error: $e');
+      conversationIssue.value = '聊天連接失敗，請檢查網絡或重新登錄';
+      return false;
     }
+  }
+
+  /// 供 UI「点击重试」：强制换取新 token（不等时钟过期判断，覆盖服务端侧失效）
+  /// 后重拉会话列表，并在 socket 断开时重建连接。
+  Future<bool> retryConnection() async {
+    if (_token.isEmpty && !_isLoginActive) {
+      conversationIssue.value = '請先登錄';
+      return false;
+    }
+    final ok = await _refreshToken();
+    if (!ok) {
+      log('ChatStore: retryConnection 换 token 失败');
+      conversationIssue.value = '聊天連接失敗，請重新登錄';
+      return false;
+    }
+    final refreshed = await refreshConversationList();
+    if (!_connected.value) _connectSocket();
+    return refreshed;
   }
 
   /// 单聊会话按 peer 去重（保留 updatedAt 最新；群聊不去重）。
@@ -939,16 +1044,39 @@ class ChatStore extends GetxController with ApiMixin {
   void onAppLifecycleChanged(bool isBackground) {
     if (isBackground) {
       _socket?.emit('active_conversation', {'conversation_id': null});
-    } else {
-      // 回前台：socket 若已断开（后台被系统回收/网络波动），立即重连恢复实时消息
-      if (!_connected.value && _token.isNotEmpty) {
-        log('ChatStore: 回前台，socket 未连接，重连中...');
-        _connectSocket();
+      return;
+    }
+    // 回前台：token 过期/缺失、socket 断开、或会话列表仍为空 → 先恢复再上报。
+    // 修复：后台停留超过 token 有效期（1h）后回前台，聊天区一直空白的场景。
+    final needRecover = _token.isEmpty ||
+        _tokenMayBeStale ||
+        !_connected.value ||
+        conversationList.isEmpty;
+    if (needRecover) {
+      unawaited(_recoverOnForeground());
+    }
+    final convId = activeConversationId;
+    if (convId != null) {
+      _socket?.emit('active_conversation', {'conversation_id': convId});
+    }
+  }
+
+  /// 回前台恢复：先确保 token 新鲜 → socket 未连接则重连 → 会话列表为空则重拉。
+  Future<void> _recoverOnForeground() async {
+    if (_token.isEmpty && !_isLoginActive) return;
+    if (_token.isEmpty || _tokenMayBeStale) {
+      final ok = await _refreshToken();
+      if (!ok) {
+        log('ChatStore: 回前台刷新 token 失败');
+        return;
       }
-      final convId = activeConversationId;
-      if (convId != null) {
-        _socket?.emit('active_conversation', {'conversation_id': convId});
-      }
+    }
+    if (!_connected.value) {
+      log('ChatStore: 回前台，socket 未连接，重连中...');
+      _connectSocket();
+    }
+    if (conversationList.isEmpty) {
+      await refreshConversationList();
     }
   }
 

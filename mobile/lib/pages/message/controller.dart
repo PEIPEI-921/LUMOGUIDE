@@ -22,6 +22,7 @@ class MessageController extends GetxController
   static const Duration _messageListPollInterval = Duration(seconds: 30);
 
   StreamSubscription? _chatStreamSub;
+  StreamSubscription? _chatIssueSub;
 
   List<MessageTopFixedModel> get topFixedList {
     final List<MessageTopFixedModel> messages = [];
@@ -208,12 +209,17 @@ class MessageController extends GetxController
     _chatStreamSub = ChatStore.to.onNewMessage.listen((_) {
       update();
     });
+    // 会话列表拉取异常（如 LUMO-Chat token 失效）→ 刷新页面显示重试提示条
+    _chatIssueSub = ChatStore.to.conversationIssue.listen((_) {
+      update();
+    });
   }
 
   @override
   void onClose() {
     _stopMessageListPoll();
     _chatStreamSub?.cancel();
+    _chatIssueSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.onClose();
   }
@@ -279,8 +285,19 @@ class MessageController extends GetxController
   }
 
   Future<void> _refreshConversationList() async {
-    if (ChatStore.to.isReady) {
-      await ChatStore.to.refreshConversationList();
+    if (!isLogin) return;
+    // ChatStore 内部会处理 token 过期/缺失的自动换新，无需在此判断 isReady
+    await ChatStore.to.refreshConversationList();
+  }
+
+  /// 聊天异常提示条点击：强制换新 IM token 并重拉会话列表（重新连接）
+  Future<void> onRetryChat() async {
+    Loading.show();
+    try {
+      await ChatStore.to.retryConnection();
+      update();
+    } finally {
+      Loading.dismiss();
     }
   }
 

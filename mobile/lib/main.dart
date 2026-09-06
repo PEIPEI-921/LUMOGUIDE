@@ -16,7 +16,7 @@ void _reportAppError(String error, String stack) {
       data: {
         'page': 'flutter_runtime',
         'error': error,
-        'stack': stack.length > 2000 ? stack.substring(0, 2000) : stack,
+        'stack': stack.length > 3900 ? stack.substring(0, 3900) : stack,
         'time': DateTime.now().toIso8601String(),
       },
       options: Options(
@@ -36,7 +36,12 @@ void main() async {
   if (!isTestEnv) {
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      _reportAppError(details.exceptionAsString(), details.toString());
+      // 上报完整 Dart 堆叠（details.stack），便于服务端定位 UI 崩溃位置；
+      // 此前只发 details.toString()，服务端只收到 "Instance of 'FlutterErrorDetails'"。
+      _reportAppError(
+        details.exceptionAsString(),
+        details.stack?.toString() ?? details.toString(),
+      );
     };
 
     PlatformDispatcher.instance.onError = (error, stack) {
