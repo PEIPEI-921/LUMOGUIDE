@@ -65,6 +65,25 @@ void main() {
       expect(r!.type, 'invite');
       expect(r.id, 0);
     });
+    test('資訊分享 Universal Link（t=news）', () {
+      final r = DeepLinkService.parseDeepLinkUri(
+        Uri.parse('https://lumoguide.com/share?c=INV&t=news&i=321'),
+      );
+      expect(r, isNotNull);
+      expect(r!.code, 'INV');
+      expect(r.type, 'news');
+      expect(r.id, 321);
+    });
+
+    test('資訊分享 自定义 scheme（t=news）', () {
+      final r = DeepLinkService.parseDeepLinkUri(
+        Uri.parse('lumoguide://share?t=news&i=88'),
+      );
+      expect(r, isNotNull);
+      expect(r!.code, '');
+      expect(r.type, 'news');
+      expect(r.id, 88);
+    });
   });
 
   group('parseDeepLinkUri 无效输入（返回 null）', () {

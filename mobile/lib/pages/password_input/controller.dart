@@ -96,9 +96,16 @@ class PasswordInputController extends GetxController with ApiMixin {
       }
       Loading.success('註冊成功'.tr);
       await Future.delayed(const Duration(seconds: 1));
-      await Get.offAllNamed(AppRoutes.ROOT);
+      // ⚠️ 不 await offAllNamed：其 Future 要到 ROOT 被 pop 才會完成（App 存活期間
+      // 永不返回），否則註冊後的深鏈恢復永遠不會執行。
+      Get.offAllNamed(AppRoutes.ROOT);
       // 主導航完成後再處理深鏈：註冊/登錄前掃碼的待處理參數在此恢復
       DeepLinkService.checkPendingDeepLink();
+      for (final delay in const [500, 1500, 3000]) {
+        Future<void>.delayed(Duration(milliseconds: delay), () {
+          DeepLinkService.checkPendingDeepLink();
+        });
+      }
       // Get.back();
       return;
     }

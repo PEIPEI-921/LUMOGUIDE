@@ -4,6 +4,7 @@ class News {
   int? id;
   String? title;
   String? desc;
+  String? content;
   String? createdAt;
   NewsUser? user;
   int? evaluateCount;
@@ -15,10 +16,18 @@ class News {
   /// 是否可以評論 0 不可以 1 可以
   int? isEvaluate;
 
+  /// 文章正文：優先返回完整 `content`（詳情/分享使用），
+  /// 舊數據無 content 時回退到摘要 `desc`（與 Web 端行為一致）。
+  String? get fullContent {
+    final c = content?.trim() ?? '';
+    return c.isNotEmpty ? content : desc;
+  }
+
   News({
     this.id,
     this.title,
     this.desc,
+    this.content,
     this.createdAt,
     this.user,
     this.evaluateCount,
@@ -33,6 +42,7 @@ class News {
       id: json.safeInt('id'),
       title: json.safeString('title'),
       desc: json.safeString('desc'),
+      content: json.safeString('content'),
       createdAt: json.safeString('created_at'),
       user: json.safeObject('user', NewsUser.fromJson),
       evaluateCount: json.safeInt('evaluate_count'),
@@ -48,6 +58,7 @@ class News {
       'id': id,
       'title': title,
       'desc': desc,
+      'content': content,
       'created_at': createdAt,
       'user': user?.toJson(),
       'evaluate_count': evaluateCount,

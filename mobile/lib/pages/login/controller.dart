@@ -105,9 +105,16 @@ class LoginController extends GetxController with ApiMixin {
     }
     Loading.success('登錄成功'.tr);
     await Future.delayed(const Duration(seconds: 1));
-    await Get.offAllNamed(AppRoutes.ROOT);
+    // ⚠️ 不 await offAllNamed：其 Future 要到 ROOT 被 pop 才會完成（App 存活期間
+    // 永不返回），否則登錄後的深鏈恢復 / 後續處理永遠不會執行。
+    Get.offAllNamed(AppRoutes.ROOT);
     // 主導航完成後再處理深鏈：登錄前掃碼的待處理參數在此恢復（綁定邀請 + 跳轉內容頁）
     DeepLinkService.checkPendingDeepLink();
+    for (final delay in const [500, 1500, 3000]) {
+      Future<void>.delayed(Duration(milliseconds: delay), () {
+        DeepLinkService.checkPendingDeepLink();
+      });
+    }
     // Get.back();
   }
 

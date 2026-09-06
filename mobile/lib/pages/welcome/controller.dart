@@ -55,14 +55,19 @@ class WelcomeController extends GetxController {
     // await _preloadHomeDataAndImages();
     log('end dateTime: ${DateTime.now()}');
 
-    if (UserStore.to.isLogin) {
-      await Get.offAll(
+    // 主導航（welcome → ROOT / LOGIN）。
+    // ⚠️ 不能 `await` offAll：其 Future 要到 ROOT/LOGIN 被 pop 才會完成，
+    // App 存活期間永不返回 → 下方所有啟動工作（enterApp / 冷啟動深鏈處理 /
+    // 推送點擊重試）永遠不執行，掃碼冷啟動就無法直達內容頁。
+    final isLoggedIn = UserStore.to.isLogin;
+    if (isLoggedIn) {
+      Get.offAll(
         () => GetRouterOutlet(initialRoute: AppRoutes.ROOT),
         transition: Transition.noTransition,
         duration: Duration.zero,
       );
     } else {
-      await Get.offAll(
+      Get.offAll(
         () => GetRouterOutlet(initialRoute: AppRoutes.LOGIN),
         transition: Transition.noTransition,
         duration: Duration.zero,
@@ -71,14 +76,24 @@ class WelcomeController extends GetxController {
     ConfigService.to.enterApp();
 
     // 處理冷啟動深鏈：getInitialLink() 可能早於 runApp() 到達，
-    // 此時導航器未就緒、跳轉靜默失敗。welcome 完成主導航後補一次處理，
+    // 此時導航器未就緒、跳轉靜默失敗。主導航發起後補處理（含延時重試，
+    // 避免導航過渡期間 currentRoute 尚未切換被 route guard 攔下），
     // 讓已登錄用戶掃碼也能直接進入對應內容詳情頁。
     DeepLinkService.checkPendingDeepLink();
+    for (final delay in const [500, 1500, 3000]) {
+      Future<void>.delayed(Duration(milliseconds: delay), () {
+        DeepLinkService.checkPendingDeepLink();
+      });
+    }
 
     // 主導航（offAll）完成後重試緩存的推送點擊，避免被 offAll 清掉
-    try {
-      PushService.to.retryPendingTap();
-    } catch (_) {}
+    for (final delay in const [1, 2, 3]) {
+      Future<void>.delayed(Duration(seconds: delay), () {
+        try {
+          PushService.to.retryPendingTap();
+        } catch (_) {}
+      });
+    }
   }
 
   _loadConfig() async {

@@ -4,6 +4,8 @@ import '../stores/user.dart';
 ///
 /// 格式: https://lumoguide.com/share?c={inviteCode}&t={type}&i={id}
 ///
+/// type 支持: guide / city / content / trip / news / invite
+///
 /// 使用 https:// 而非自定義 scheme，因為手機相機/掃碼器只識別 http/https 鏈接。
 ///
 /// 掃描後的行為依賴於平台配置：

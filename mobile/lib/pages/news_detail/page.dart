@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../common/index.dart';
 import 'controller.dart';
 import 'widgets/comment_list.dart';
+import 'widgets/share_card.dart';
 import 'widgets/title.dart';
 
 class NewsDetailPage extends StatelessWidget {
@@ -12,36 +13,71 @@ class NewsDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(NewsDetailController());
     return IScaffold(
-      title: '資訊詳情'.tr,
-      body: Obx(
-        () => Column(
+      appBar: IAppBar(
+        title: '資訊詳情'.tr,
+        actions: [
+          Icon(Icons.share, size: 20.w, color: AppColors.primaryText)
+              .padding(all: 12.w)
+              .gestures(
+                onTap: controller.shareNewsCard,
+                behavior: HitTestBehavior.opaque,
+              ),
+        ],
+      ),
+      body: Obx(() {
+        final loaded = controller.news.id != null;
+        return Stack(
           children: [
             Column(
               children: [
-                const NewsDetailTitleWidget(),
+                Column(
+                  children: [
+                    const NewsDetailTitleWidget(),
 
-                Text(
-                      controller.news.desc ?? '',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: AppColors.primaryText,
-                      ),
-                    )
-                    .padding(horizontal: 14.w, bottom: 10.w)
-                    .alignment(Alignment.centerLeft),
-                _NewsDetailPictureWidget(pictures: controller.news.pictures),
-                const NewsDetailCommentWidget(),
+                    Text(
+                          controller.news.fullContent ?? '',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.primaryText,
+                            height: 1.7,
+                          ),
+                        )
+                        .padding(horizontal: 14.w, bottom: 10.w)
+                        .alignment(Alignment.centerLeft),
+                    _NewsDetailPictureWidget(
+                      pictures: controller.news.pictures,
+                    ),
+                    const NewsDetailCommentWidget(),
+                  ],
+                ).scrollable().expanded(),
+                controller.news.isEvaluate == 1
+                    ? CommentBar(
+                        count: controller.evaluateCount,
+                        onTap: () => controller.onEvaluate(),
+                      )
+                    : const SizedBox.shrink(),
               ],
-            ).scrollable().expanded(),
-            controller.news.isEvaluate == 1
-                ? CommentBar(
-                    count: controller.evaluateCount,
-                    onTap: () => controller.onEvaluate(),
-                  )
-                : const SizedBox.shrink(),
+            ).decorated(color: Colors.white),
+            // 隱形分享卡片（生成分享圖用，寬度固定 375）
+            if (loaded)
+              Positioned(
+                left: 0,
+                top: 0,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.01,
+                    child: SizedBox(
+                      width: 375.w,
+                      child: NewsShareCardWidget(
+                        repaintKey: controller.shareCardKey,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
-        ).decorated(color: Colors.white),
-      ),
+        );
+      }),
     );
   }
 }
