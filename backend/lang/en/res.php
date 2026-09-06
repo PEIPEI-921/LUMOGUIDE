@@ -124,11 +124,11 @@ return [
     'content_max' => 'Review content cannot exceed 255 characters',
     'title_max' => 'Title cannot exceed 255 characters',
 
-    'token_required' => 'Token missing',
-    'token_expired' => 'Token expired',
-    'token_invalid' => 'Token invalid',
-    'token_error' => 'Token missing or failed to resolve',
-    'token_auth' => 'Unauthenticated or login status expired',
+    'token_required' => 'Please sign in to continue',
+    'token_expired' => 'Your sign-in has expired. Please sign in again.',
+    'token_invalid' => 'Sign-in is invalid. Please sign in again.',
+    'token_error' => 'Sign-in could not be verified. Please sign in again.',
+    'token_auth' => 'Not signed in or sign-in has expired. Please sign in again.',
 
     // guide
     'photo_required' => 'Photo/LOGO cannot be empty',

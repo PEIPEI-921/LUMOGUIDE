@@ -118,11 +118,11 @@ return [
     'content_max' => '評價內容最大255個字符',
     'title_max' => '不能超過255個字符',
 
-    'token_required' => 'Token 缺失',
-    'token_expired' => 'Token 已過期',
-    'token_invalid' => 'Token 無效',
-    'token_error' => 'Token 缺失或解析失敗',
-    'token_auth' => '未認證或登錄狀態已失效',
+    'token_required' => '請先登入後再操作',
+    'token_expired' => '登入已過期，請重新登錄',
+    'token_invalid' => '登入狀態無效，請重新登錄',
+    'token_error' => '登入狀態異常，請重新登錄',
+    'token_auth' => '未登錄或登入已過期，請重新登錄',
 
     // guide
     'photo_required' => '照片/LOGO不能為空',
