@@ -72,19 +72,23 @@ class NewsDetailTitleWidget extends StatelessWidget {
                                     behavior: HitTestBehavior.opaque,
                                   ),
                             ],
-                            5.w.horizontalSpace,
-                            Text(
-                                  controller.news.user?.identityType ?? '',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 10.sp,
+                            if ((controller.news.user?.identityType ?? '')
+                                .isNotEmpty) ...[
+                              5.w.horizontalSpace,
+                              Text(
+                                    controller.news.user?.identityType ?? '',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 10.sp,
+                                    ),
+                                  )
+                                  .padding(horizontal: 7.w, vertical: 4.w)
+                                  .decorated(
+                                    borderRadius: BorderRadius.circular(100),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.1),
                                   ),
-                                )
-                                .padding(horizontal: 7.w, vertical: 4.w)
-                                .decorated(
-                                  borderRadius: BorderRadius.circular(100),
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                ),
+                            ],
                           ],
                         ).expanded(),
                         10.w.horizontalSpace,

@@ -93,20 +93,22 @@ class _Item extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ).flexible(),
-                10.w.horizontalSpace,
-                Text(
-                      news.user?.identityType ?? '',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 10.sp,
-                      ),
-                    )
-                    .padding(horizontal: 7.w, vertical: 4.w)
-                    .decorated(
+                if ((news.user?.identityType ?? '').isNotEmpty) ...[
+                  10.w.horizontalSpace,
+                  Text(
+                        news.user?.identityType ?? '',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 10.sp,
+                        ),
+                      )
+                      .padding(horizontal: 7.w, vertical: 4.w)
+                      .decorated(
                       borderRadius: BorderRadius.circular(100),
                       color: AppColors.primary.withValues(alpha: 0.1),
                     ),
               ],
+            ],
             ),
             10.w.verticalSpace,
             Column(
