@@ -43,8 +43,17 @@ class InformationService
             ->orderBy('top_order', 'desc')
             ->paginate($limit, ['id', 'title', 'guide_id', 'user_id', 'guide_type_id', 'first_picture', 'pictures', 'desc', 'created_at'])->toArray();
 
+        // 認證身份名稱映射（GuideType id → name）：導遊資訊作者身份標籤的來源
+        $guideTypes = \App\Models\GuideType::query()->pluck('name', 'id')->toArray();
+
         $data = [];
         foreach ($res['data'] as $v) {
+            $identity = '';
+            if (!empty($v['guide']['identity_type'])) {
+                $identity = $guideTypes[$v['guide']['identity_type']] ?? '';
+            } elseif (!empty($v['user']['identity_str'])) {
+                $identity = $v['user']['identity_str'];
+            }
             $data[] = [
                 'id' => $v['id'],
                 'title' => $v['title'],
@@ -57,7 +66,7 @@ class InformationService
                     'guide_id' => $v['guide']['id'] ?? 0,
                     'photo' => $v['guide']['photo'] ?? '',
                     'city_id' => $v['guide']['city_id'] ?? 0,
-                    'identity_type' => $v['user']['identity_str'] ?? '',
+                    'identity_type' => $identity,
                 ],
                 'evaluate_count' => ContentEvaluate::query()->where('content_type', \App\Enums\City::ContentTypeInformation)->where('content_id', $v['id'])->count(),
             ];
@@ -92,6 +101,14 @@ class InformationService
         $data->save();
 
         $data = $data->toArray();
+        // 認證身份名稱映射（GuideType id → name）
+        $guideTypes = \App\Models\GuideType::query()->pluck('name', 'id')->toArray();
+        $identity = '';
+        if (!empty($data['guide']['identity_type'])) {
+            $identity = $guideTypes[$data['guide']['identity_type']] ?? '';
+        } elseif (!empty($data['user']['identity_str'])) {
+            $identity = $data['user']['identity_str'];
+        }
         return [
             'id' => $data['id'],
             'title' => $data['title'],
@@ -108,7 +125,7 @@ class InformationService
                 'photo' => $data['guide']['photo'] ?? '',
                 'guide_id' => $data['guide']['id'] ?? 0,
                 'city_id' => $data['guide']['city_id'] ?? 0,
-                'identity_type' => $data['user']['identity_str'] ?? '',
+                'identity_type' => $identity,
             ],
         ];
     }
