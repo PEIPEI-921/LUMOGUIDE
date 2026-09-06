@@ -55,7 +55,8 @@ android {
                 signingConfig = signingConfigs.release
             }
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../proguard-rules.pro'
+            // proguard-android-optimize.txt：開啟 R8 優化（Play 提示未啟用優化）
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../proguard-rules.pro'
         }
     }
 }

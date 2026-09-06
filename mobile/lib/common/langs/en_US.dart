@@ -5,6 +5,8 @@ const Map<String, String> en_US = {
   '否': 'No',
   '取消': 'Cancel',
   '完成': 'Done',
+  '移動 / 縮放，調整裁剪範圍': 'Move / zoom to adjust the crop area',
+  '裁剪失敗，請重試': 'Crop failed, please retry',
   '確定': 'OK',
   '確認': 'Confirm',
   '提示': 'Notice',

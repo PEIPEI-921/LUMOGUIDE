@@ -23,6 +23,14 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- 關閉 Flutter 引擎的深鏈初始路由導入（與 iOS FlutterDeepLinkingEnabled=false 對齊）：
+                 冷啟動經 VIEW intent 啟動時，引擎若把深鏈 URI 設為 defaultRouteName，
+                 GetX PageRedirect 會因找不到對應路由拋 null 斷言（紅屏）。
+                 深鏈統一由 app_links 插件讀取 Intent 處理（DeepLinkService）。 -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -51,10 +59,6 @@
               <data android:scheme="https" android:host="lumoguide.com" android:pathPrefix="/share" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
         <!-- FCM 推送服务（Android 聊天/业务推送） -->
         <service
             android:name=".FcmService"

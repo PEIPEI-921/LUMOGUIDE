@@ -1,43 +1,79 @@
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../values/colors.dart';
+import '../widgets/image_crop_page.dart';
 
 class ImagePickerUtil {
-  /// image_cropper 不支持 macOS 桌面端，桌面端跳过裁剪
-  static bool get _supportsCrop => !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux;
+  /// 裁剪走純 Flutter 的 [ImageCropPage]（原 ucrop 已移除：修復 Android 15/16
+  /// 兼容警告 + 大圖全解析記憶體問題）。桌面端與原行為一致：跳過裁剪。
+  static bool get _supportsCrop =>
+      !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux;
+
+  /// 打開裁剪頁對 [sourcePath] 做 1:1 裁剪；取消返回 ''，成功返回裁剪檔路徑。
+  static Future<String> _cropSquare(
+    NavigatorState navigator,
+    String sourcePath,
+  ) async {
+    final file = File(sourcePath);
+    if (!file.existsSync()) return '';
+    Uint8List bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (_) {
+      return '';
+    }
+    if (bytes.isEmpty) return '';
+    final result = await navigator.push<Uint8List>(
+      MaterialPageRoute(
+        builder: (_) => ImageCropPage(imageBytes: bytes, aspectRatio: 1),
+      ),
+    );
+    if (result == null) return '';
+    return _writeTempFile(result);
+  }
+
+  static Future<String> _writeTempFile(Uint8List bytes) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/crop_${DateTime.now().millisecondsSinceEpoch}.${_extOf(bytes)}',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      return file.path;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _extOf(Uint8List bytes) {
+    if (bytes.length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50) {
+      return 'png';
+    }
+    if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+      return 'jpg';
+    }
+    return 'png';
+  }
 
   static Future<String> selectImageFromGallery(
     BuildContext context, {
     bool canEdit = true,
   }) async {
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      if (androidInfo.version.sdkInt < 33) {
-      }
-    } else {
-    }
-
+    final navigator = Navigator.of(context);
     final file = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
     if (file == null) return '';
     if (!canEdit || !_supportsCrop) return file.path;
 
-    final cropperFile = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        IOSUiSettings(doneButtonTitle: '完成'.tr, cancelButtonTitle: '取消'.tr),
-        AndroidUiSettings(),
-      ],
-    );
-    if (cropperFile == null) return '';
-    return cropperFile.path;
+    return _cropSquare(navigator, file.path);
   }
 
   /// 仅从相机拍照选择，不弹 sheet
@@ -45,28 +81,21 @@ class ImagePickerUtil {
     BuildContext context, {
     bool canEdit = true,
   }) async {
+    final navigator = Navigator.of(context);
     final file = await ImagePicker().pickImage(
       source: ImageSource.camera,
       imageQuality: 50,
     );
     if (file == null) return '';
     if (!canEdit || !_supportsCrop) return file.path;
-    final cropperFile = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        IOSUiSettings(doneButtonTitle: '完成'.tr, cancelButtonTitle: '取消'.tr),
-        AndroidUiSettings(),
-      ],
-    );
-    if (cropperFile == null) return '';
-    return cropperFile.path;
+    return _cropSquare(navigator, file.path);
   }
 
   static Future<String> selectImage(
     BuildContext context, {
     bool canEdit = true,
   }) async {
+    final navigator = Navigator.of(context);
     final source = await showCupertinoModalPopup<ImageSource>(
       context: context,
       builder: (context) {
@@ -107,20 +136,6 @@ class ImagePickerUtil {
       },
     );
     if (source == null) return '';
-    if (source == ImageSource.camera) {
-    }
-    if (source == ImageSource.gallery) {
-      if (Platform.isAndroid) {
-        final androidInfo = await DeviceInfoPlugin().androidInfo;
-        if (androidInfo.version.sdkInt >= 33) {
-          // Android 13+ 使用 Photo Picker，无需权限
-        } else {
-          
-        }
-      } else {
-        
-      }
-    }
     XFile? file = await ImagePicker().pickImage(
       source: source,
       imageQuality: 50,
@@ -128,16 +143,7 @@ class ImagePickerUtil {
     if (file == null) return '';
     if (!canEdit || !_supportsCrop) return file.path;
 
-    final cropperFile = await ImageCropper().cropImage(
-      sourcePath: file.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      uiSettings: [
-        IOSUiSettings(doneButtonTitle: '完成'.tr, cancelButtonTitle: '取消'.tr),
-        AndroidUiSettings(),
-      ],
-    );
-    if (cropperFile == null) return '';
-    return cropperFile.path;
+    return _cropSquare(navigator, file.path);
   }
 
   static Future<List<String>> selectImages(
@@ -145,34 +151,19 @@ class ImagePickerUtil {
     int limit = 9,
     bool canEdit = true,
   }) async {
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      if (androidInfo.version.sdkInt < 33) {
-      }
-    } else {
-      // iOS 需要请求权限
-    }
+    final navigator = Navigator.of(context);
     final files = await ImagePicker().pickMultiImage(limit: limit);
     if (files.isEmpty) return [];
     final paths = files.map((e) => e.path).toList();
     if (!canEdit || !_supportsCrop) return paths;
 
-    List<String> editedPaths = [];
+    final editedPaths = <String>[];
     for (final file in files) {
-      final cropperFile = await ImageCropper().cropImage(
-        sourcePath: file.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          IOSUiSettings(doneButtonTitle: '完成'.tr, cancelButtonTitle: '取消'.tr),
-          AndroidUiSettings(),
-        ],
-      );
-      if (cropperFile != null) {
-        editedPaths.add(cropperFile.path);
+      final cropped = await _cropSquare(navigator, file.path);
+      if (cropped.isNotEmpty) {
+        editedPaths.add(cropped);
       }
     }
-
     return editedPaths;
-    // final cropperFiles = await ImageCropper().cropImages(
   }
 }
