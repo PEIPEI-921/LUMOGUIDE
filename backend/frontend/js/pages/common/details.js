@@ -84,7 +84,6 @@ const GuideDetailPage = {
         </div>
       </div>
     </div>
-    </div>
   `,
 
   data() {
@@ -209,7 +208,6 @@ const CommonDetailPage = {
         </div>
       </div>
     </div>
-    </div>
   `,
 
   data() {
@@ -330,7 +328,6 @@ const CompanyDetailPage = {
           {{ company.is_follow ? $t('已關注') : $t('關注商家') }}
         </button>
       </div>
-    </div>
     </div>
   `,
 
