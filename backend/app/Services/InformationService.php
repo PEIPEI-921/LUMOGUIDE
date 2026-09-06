@@ -44,7 +44,7 @@ class InformationService
             ->paginate($limit, ['id', 'title', 'guide_id', 'user_id', 'guide_type_id', 'first_picture', 'pictures', 'desc', 'created_at'])->toArray();
 
         // 認證身份名稱映射（GuideType id → name）：導遊資訊作者身份標籤的來源
-        $guideTypes = \App\Models\GuideType::query()->pluck('name', 'id')->toArray();
+        $guideTypes = \Illuminate\Support\Facades\Cache::remember('guide_type_names', 3600, fn () => \App\Models\GuideType::query()->pluck('name', 'id')->toArray());
 
         $data = [];
         foreach ($res['data'] as $v) {
@@ -102,7 +102,7 @@ class InformationService
 
         $data = $data->toArray();
         // 認證身份名稱映射（GuideType id → name）
-        $guideTypes = \App\Models\GuideType::query()->pluck('name', 'id')->toArray();
+        $guideTypes = \Illuminate\Support\Facades\Cache::remember('guide_type_names', 3600, fn () => \App\Models\GuideType::query()->pluck('name', 'id')->toArray());
         $identity = '';
         if (!empty($data['guide']['identity_type'])) {
             $identity = $guideTypes[$data['guide']['identity_type']] ?? '';
