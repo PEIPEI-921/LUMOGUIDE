@@ -49,6 +49,10 @@ class DeepLinkService {
   static void _handleDeepLink(Uri uri) {
     try {
       final parsed = parseDeepLinkUri(uri);
+      log(
+        '收到深鏈: $uri → ${parsed == null ? '忽略（格式不匹配）' : 'type=${parsed.type} id=${parsed.id}'}',
+        name: 'DeepLink',
+      );
       if (parsed == null) return;
 
       // 保存待處理深鏈參數（未登錄時登錄後恢復跳轉 + 綁定邀請）
@@ -116,9 +120,13 @@ class DeepLinkService {
   static Future<void> checkPendingDeepLink() async {
     try {
       final raw = StorageStone.pendingDeepLink;
+      log('checkPendingDeepLink: pending=${raw.isEmpty ? '空' : raw}', name: 'DeepLink');
       if (raw.isEmpty) return;
       // 未登錄：保持待處理，等待登錄
-      if (!Get.isRegistered<UserStore>() || !UserStore.to.isLogin) return;
+      if (!Get.isRegistered<UserStore>() || !UserStore.to.isLogin) {
+        log('checkPendingDeepLink: 未登錄，保留待處理', name: 'DeepLink');
+        return;
+      }
 
       // 等待導航器就緒（冷啟動深鏈早於 runApp 時，GetMaterialApp 尚未構建）
       await _waitForNavigator();
@@ -128,7 +136,9 @@ class DeepLinkService {
       // welcome 的 offAll(ROOT) 或登錄後的 offAllNamed(ROOT) 清掉，
       // 因此保留待處理參數，等主導航完成後由對應頁面補調用處理。
       final currentRoute = Get.currentRoute;
+      log('checkPendingDeepLink: currentRoute=$currentRoute', name: 'DeepLink');
       if (currentRoute == AppRoutes.WELCOME || currentRoute == AppRoutes.LOGIN) {
+        log('checkPendingDeepLink: 主導航未完成，稍後再處理', name: 'DeepLink');
         return;
       }
 
@@ -146,6 +156,7 @@ class DeepLinkService {
         await _bindInviter(code);
       }
       // 跳轉到對應內容頁
+      log('checkPendingDeepLink: 跳轉 type=$type id=$id', name: 'DeepLink');
       _navigateToContent(type, id);
       await _clearPendingDeepLink();
     } catch (e) {
@@ -334,6 +345,9 @@ class DeepLinkService {
         break;
       case 'content':
         Get.toNamed(AppRoutes.COMMON_DETAIL, arguments: {'id': id});
+        break;
+      case 'news':
+        Get.toNamed(AppRoutes.NEWS_DETAIL, arguments: {'id': id});
         break;
       case 'trip':
         Get.toNamed(AppRoutes.JOURNEY_DETAIL, arguments: {'id': id});
