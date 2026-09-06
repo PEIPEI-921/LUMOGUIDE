@@ -34,6 +34,15 @@ Route::get('/share', fn() => response()->file(base_path('frontend/share.html')))
 Route::get('/share.html', fn() => response()->file(base_path('frontend/share.html')));
 Route::get('/invite.html', fn() => response()->file(base_path('frontend/invite.html')));
 
+// Dcat Admin 表單處理端點 (/manage/dcat-api/form) 僅註冊 POST。
+// 對 GET 給友好重導（回後台首頁），避免直接開啟該網址時顯示 405 錯誤頁。
+Route::get(
+    '/' . config('admin.route.prefix', 'admin') . '/dcat-api/form',
+    function () {
+        return redirect('/' . config('admin.route.prefix', 'admin'));
+    }
+);
+
 // Protocol pages (Blade views) — must be before SPA catch-all
 Route::get('/protocol/{type}', function ($type) {
     $content = systemConfig($type);

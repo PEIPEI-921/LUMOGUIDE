@@ -91,6 +91,14 @@ class AuditCityForm extends Form implements LazyRenderable
 
         $res->save();
 
+        // Dcat 表單常規走 AJAX：回 JSON + 刷新；
+        // 瀏覽器原生送出（例如 lazy 彈窗表單的 .form() ajax 未綁定）時，
+        // 直接重導回上一頁，避免停留在 /manage/dcat-api/form
+        // （該端點只接受 POST），後續手動刷新才不會出現 GET → 405。
+        if (!request()->ajax()) {
+            return redirect()->back();
+        }
+
         return $this->response()->success('審核完成')->refresh();
     }
 

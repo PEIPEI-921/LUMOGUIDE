@@ -359,7 +359,7 @@ class CommonController extends BaseController
         $type = $request->get('type', '');
         $id = (int) $request->get('id', 0);
 
-        if (!in_array($type, ['guide', 'city', 'content', 'trip']) || $id <= 0) {
+        if (!in_array($type, ['guide', 'city', 'content', 'trip', 'news']) || $id <= 0) {
             throw new ApiException(__('res.param_error'));
         }
 
@@ -399,7 +399,7 @@ class CommonController extends BaseController
         if (strlen($token) < 8 || strlen($token) > 32) {
             throw new ApiException(__('res.param_error'));
         }
-        if (!in_array($contentType, ['guide', 'city', 'content', 'trip', 'invite'])) {
+        if (!in_array($contentType, ['guide', 'city', 'content', 'trip', 'news', 'invite'])) {
             throw new ApiException(__('res.param_error'));
         }
 
