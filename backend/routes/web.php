@@ -45,7 +45,9 @@ Route::get(
 
 // Protocol pages (Blade views) — must be before SPA catch-all
 Route::get('/protocol/{type}', function ($type) {
-    $content = systemConfig($type);
+    // system_config 中的 mark 实际为 {$type}_protocol（user_protocol / privacy_protocol / vip_user_protocol），
+    // 原先直接查裸 $type 导致 /protocol/user 永远 404。这里优先查带后缀的 key，并保留旧 key 兼容。
+    $content = systemConfig($type . '_protocol') ?: systemConfig($type);
     if (!$content) abort(404);
     return view('protocol', [
         'content' => $content
