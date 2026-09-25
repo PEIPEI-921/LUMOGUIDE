@@ -1,0 +1,59 @@
+# LUMOGUIDE 本地/迁移环境基础设施
+#
+# 原仓库没有 compose（生产是 aaPanel 上的原生 MySQL 5.7 + 本机 redis-server），
+# 这里按迁移包 README 的版本清单补齐，便于在新机复现。
+#
+#   docker compose up -d
+#   docker compose ps
+#
+# 版本对齐（见迁移包 README）：
+#   MySQL 5.7.44  ← 转储由 5.7.44 导出，用 5.7 恢复最稳妥
+#   Redis 7       ← guide 队列（生产为本机 redis-server，无密码）
+#
+# 端口仅绑定 loopback，不对外暴露。
+name: lumo-guide
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: guide-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    environment:
+      # 口令一律由环境变量提供，不写入仓库（可在同目录 .env 中定义，已被 .gitignore 忽略）。
+      # MYSQL_PASSWORD 无默认值：未设置时 compose 会直接报错，避免误用弱口令起库。
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_change_me}
+      MYSQL_DATABASE: lumo_guide
+      MYSQL_USER: lumo_guide
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD 未设置：请在同目录 .env 中定义}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - guidedata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root_change_me}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: guide-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - guideredis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  guidedata:
+  guideredis:

@@ -7,6 +7,14 @@
 *.pem
 *.mobileprovision
 
+# 环境变量与备份文件（含数据库口令、API 密钥，勿提交）
+.env
+.env.local
+.env.*.local
+.env.dev-backup
+*.env.dev-backup
+.env.*-backup
+
 # IDE
 .idea/
 .vscode/
